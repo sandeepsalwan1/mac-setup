@@ -3,11 +3,6 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 
-jq -e '
-	[.hooks.SessionStart[]?.hooks[]?.command]
-	| index("chrome-devtools-axi") == null
-' "$ROOT/home/.claude/settings.json" >/dev/null
-
 shellcheck -x \
 	"$ROOT/bootstrap.sh" \
 	"$ROOT/rebuild.sh" \

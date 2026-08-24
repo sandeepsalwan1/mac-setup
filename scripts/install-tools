@@ -17,6 +17,7 @@ die() {
 
 install_npm_tools() {
 	local npm_bin spec package_name wanted_version installed_version
+	local chrome_bridge_changed=0
 
 	if [ "${MAC_SETUP_SKIP_NPM:-0}" = "1" ]; then
 		note 'npm tool installation skipped by environment'
@@ -50,7 +51,63 @@ install_npm_tools() {
 
 		note "installing $spec"
 		"$npm_bin" install --global --prefix "$NPM_PREFIX" "$spec"
+		case "$package_name" in
+		chrome-devtools-axi | chrome-devtools-mcp) chrome_bridge_changed=1 ;;
+		esac
 	done <"$NPM_GLOBALS_FILE"
+
+	if [ "$chrome_bridge_changed" = "1" ]; then
+		note 'recycling the default Chrome DevTools AXI bridge'
+		(
+			unset CHROME_DEVTOOLS_AXI_PORT CHROME_DEVTOOLS_AXI_SESSION
+			"$NPM_PREFIX/bin/chrome-devtools-axi" stop
+		)
+	fi
+}
+
+cleanup_chrome_devtools_hooks() {
+	local settings temp plugin marker
+	marker='chrome-devtools-axi'
+
+	for settings in "$HOME/.claude/settings.json" "$HOME/.codex/hooks.json"; do
+		[ -f "$settings" ] || continue
+		temp="$(mktemp "${settings}.tmp.XXXXXX")"
+		if ! jq --arg marker "$marker" '
+			def managed:
+				type == "object"
+				and (.command? | type == "string" and contains($marker));
+			if (.hooks | type) == "object" then
+				.hooks |= (
+					if (.SessionStart | type) == "array" then
+						.SessionStart |= map(
+							if (.hooks | type) == "array" then
+								.hooks |= map(select(managed | not))
+							else . end
+						)
+						| .SessionStart |= map(select((.hooks | type) != "array" or (.hooks | length) > 0))
+					else . end
+					| if (.session_start | type) == "array" then
+						.session_start |= map(select(managed | not))
+					else . end
+				)
+			else . end
+		' "$settings" >"$temp"; then
+			rm -f "$temp"
+			die "could not clean managed Chrome hooks from $settings"
+		fi
+		if cmp -s "$settings" "$temp"; then
+			rm -f "$temp"
+		else
+			mv "$temp" "$settings"
+			note "removed managed Chrome hooks from $settings"
+		fi
+	done
+
+	plugin="$HOME/.config/opencode/plugins/axi-chrome-devtools-axi.js"
+	if [ -f "$plugin" ] && grep -Fq 'axi-sdk-js managed opencode plugin: chrome-devtools-axi' "$plugin"; then
+		rm -f "$plugin"
+		note "removed managed Chrome hook from $plugin"
+	fi
 }
 
 install_no_mistakes() {
@@ -116,4 +173,5 @@ install_no_mistakes() {
 }
 
 install_npm_tools
+cleanup_chrome_devtools_hooks
 install_no_mistakes
