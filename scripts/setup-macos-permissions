@@ -1,0 +1,221 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+WEZTERM_APP="${WEZTERM_APP:-/Applications/WezTerm.app}"
+EXPECTED_WEZTERM_BUNDLE_ID="${EXPECTED_WEZTERM_BUNDLE_ID:-com.github.wez.wezterm}"
+EXPECTED_WEZTERM_TEAM_ID="${EXPECTED_WEZTERM_TEAM_ID:-P4A6FU9KZ3}"
+PLIST_BUDDY_BIN="${PLIST_BUDDY_BIN:-/usr/libexec/PlistBuddy}"
+CODESIGN_BIN="${CODESIGN_BIN:-/usr/bin/codesign}"
+PS_BIN="${PS_BIN:-/bin/ps}"
+OPEN_BIN="${OPEN_BIN:-/usr/bin/open}"
+OSASCRIPT_BIN="${OSASCRIPT_BIN:-/usr/bin/osascript}"
+PROFILES_BIN="${PROFILES_BIN:-/usr/bin/profiles}"
+MODE=status
+
+usage() {
+	printf '%s\n' \
+		'Usage: setup-macos-permissions [--status|--check-wezterm|--guide|--launch]' \
+		'' \
+		'--status          Verify app identities and report the current launcher.' \
+		'--check-wezterm   Succeed only in a direct WezTerm-launched shell.' \
+		'--guide           Open each relevant macOS consent pane in sequence.' \
+		'--launch          Open --guide in a new direct WezTerm tab.'
+}
+
+note() {
+	printf 'mac-permissions: %s\n' "$1"
+}
+
+die() {
+	printf 'mac-permissions: %s\n' "$1" >&2
+	exit 1
+}
+
+while [ "$#" -gt 0 ]; do
+	case "$1" in
+	--status) MODE=status ;;
+	--check-wezterm) MODE=check ;;
+	--guide) MODE=guide ;;
+	--launch) MODE=launch ;;
+	-h | --help)
+		usage
+		exit 0
+		;;
+	*)
+		usage >&2
+		exit 64
+		;;
+	esac
+	shift
+done
+
+[ "$(uname -s)" = Darwin ] || die 'this permission guide supports macOS only'
+
+verify_signed_app() {
+	local app_path=$1 expected_bundle_id=$2 expected_team_id=$3
+	local bundle_id signature team_id
+
+	[ -d "$app_path" ] || die "app is missing: $app_path"
+	bundle_id="$("$PLIST_BUDDY_BIN" -c 'Print :CFBundleIdentifier' "$app_path/Contents/Info.plist" 2>/dev/null || true)"
+	[ "$bundle_id" = "$expected_bundle_id" ] ||
+		die "unexpected bundle identifier for $app_path: ${bundle_id:-missing}"
+
+	"$CODESIGN_BIN" --verify --deep --strict "$app_path" >/dev/null 2>&1 ||
+		die "invalid code signature for $app_path"
+	signature="$("$CODESIGN_BIN" -dv --verbose=4 "$app_path" 2>&1 || true)"
+	team_id="$(printf '%s\n' "$signature" | sed -n 's/^TeamIdentifier=//p' | head -n 1)"
+	[ "$team_id" = "$expected_team_id" ] ||
+		die "unexpected signing team for $app_path: ${team_id:-missing}"
+}
+
+find_codex_app() {
+	local candidate
+	for candidate in "${CODEX_APP:-}" '/Applications/Codex.app' '/Applications/Codex 2.app'; do
+		[ -n "$candidate" ] || continue
+		if [ -d "$candidate" ]; then
+			printf '%s\n' "$candidate"
+			return
+		fi
+	done
+	return 1
+}
+
+session_kind() {
+	local current_pid command_line
+
+	if [ -n "${MAC_SETUP_SESSION_KIND:-}" ]; then
+		printf '%s\n' "$MAC_SETUP_SESSION_KIND"
+		return
+	fi
+
+	current_pid=$PPID
+	while [ -n "$current_pid" ] && [ "$current_pid" -gt 1 ] 2>/dev/null; do
+		command_line="$("$PS_BIN" -o command= -p "$current_pid" 2>/dev/null || true)"
+		case "$command_line" in
+		*'/Codex.app/'* | *'/Codex 2.app/'* | codex\ * | */codex\ *)
+			printf '%s\n' codex
+			return
+			;;
+		*'herdr server'*)
+			printf '%s\n' herdr
+			return
+			;;
+		*'/WezTerm.app/Contents/MacOS/wezterm-gui'*)
+			printf '%s\n' wezterm
+			return
+			;;
+		esac
+		current_pid="$("$PS_BIN" -o ppid= -p "$current_pid" 2>/dev/null | tr -d ' ' || true)"
+	done
+
+	if [ "${TERM_PROGRAM:-}" = WezTerm ]; then
+		printf '%s\n' wezterm-unverified
+	else
+		printf '%s\n' other
+	fi
+}
+
+verify_wezterm() {
+	verify_signed_app "$WEZTERM_APP" "$EXPECTED_WEZTERM_BUNDLE_ID" "$EXPECTED_WEZTERM_TEAM_ID"
+}
+
+print_status() {
+	local current_session codex_app enrollment
+
+	verify_wezterm
+	current_session="$(session_kind)"
+	note "verified WezTerm: $WEZTERM_APP ($EXPECTED_WEZTERM_BUNDLE_ID, team $EXPECTED_WEZTERM_TEAM_ID)"
+	note "current launcher context: $current_session"
+
+	if codex_app="$(find_codex_app)"; then
+		verify_signed_app "$codex_app" com.openai.codex 2DC432GLL2
+		note "verified Codex: $codex_app (com.openai.codex, team 2DC432GLL2)"
+	fi
+
+	if [ -x "$PROFILES_BIN" ]; then
+		enrollment="$("$PROFILES_BIN" status -type enrollment 2>/dev/null || true)"
+		case "$enrollment" in
+		*'MDM enrollment: Yes'* | *'Enrolled via DEP: Yes'*)
+			note 'this Mac is managed; locked permission toggles require the employer MDM administrator'
+			;;
+		esac
+	fi
+}
+
+pause_after_permission() {
+	local label=$1
+	if [ "${MAC_SETUP_NONINTERACTIVE:-0}" != 1 ]; then
+		printf 'Enable the listed apps for %s, then press Return: ' "$label"
+		read -r _
+	fi
+}
+
+open_permission() {
+	local label=$1 anchor=$2 reason=$3 targets=$4
+	note "$label: $reason"
+	note "add and enable: $targets"
+	"$OPEN_BIN" "x-apple.systempreferences:com.apple.preference.security?$anchor"
+	pause_after_permission "$label"
+}
+
+run_guide() {
+	local current_session codex_app targets finder_ok accessibility_state
+
+	print_status
+	current_session="$(session_kind)"
+	[ "$current_session" = wezterm ] ||
+		die "run this guide in a direct WezTerm tab with: $ROOT/scripts/setup-macos-permissions --launch"
+
+	targets="$WEZTERM_APP"
+	if codex_app="$(find_codex_app)"; then
+		targets="$targets and $codex_app"
+	fi
+
+	open_permission 'Full Disk Access' Privacy_AllFiles \
+		'access repositories, developer files, and protected diagnostic paths' "$targets"
+	open_permission Accessibility Privacy_Accessibility \
+		'allow explicitly requested UI automation and system control' "$targets"
+	open_permission 'Developer Tools' Privacy_DevTools \
+		'run developer tools that macOS subjects to developer-tool policy' "$targets"
+	note 'requesting harmless Finder metadata once so macOS can register the Automation relationship'
+	"$OSASCRIPT_BIN" -e 'tell application "Finder" to get name of startup disk' >/dev/null 2>&1 || true
+	open_permission Automation Privacy_Automation \
+		'control Finder and System Events only when a workflow requests it' "$targets"
+	open_permission 'App Management' Privacy_AppBundles \
+		'install or update applications during an approved setup operation' "$targets"
+	open_permission 'Screen & System Audio Recording' Privacy_ScreenCapture \
+		'allow screenshot-based browser and computer-use verification' "$targets"
+
+	finder_ok=0
+	if "$OSASCRIPT_BIN" -e 'tell application "Finder" to get name of startup disk' >/dev/null 2>&1; then
+		finder_ok=1
+	fi
+	[ "$finder_ok" -eq 1 ] || die 'Finder Automation is still unavailable to this WezTerm session'
+
+	accessibility_state="$("$OSASCRIPT_BIN" -e 'tell application "System Events" to get UI elements enabled' 2>/dev/null || true)"
+	[ "$accessibility_state" = true ] || die 'Accessibility is still unavailable to this WezTerm session'
+
+	note 'Finder Automation and Accessibility probes passed without reading personal data'
+	note 'Full Disk, Developer Tools, App Management, and Screen Recording remain visible user or MDM decisions in System Settings'
+	note 'quit and reopen WezTerm and Codex after changing their permissions'
+	note "continue with: $ROOT/scripts/setup-vault --all"
+}
+
+case "$MODE" in
+status) print_status ;;
+check)
+	verify_wezterm
+	[ "$(session_kind)" = wezterm ] || exit 1
+	;;
+guide) run_guide ;;
+launch)
+	verify_wezterm
+	WEZTERM_BIN="${WEZTERM_BIN:-$(command -v wezterm 2>/dev/null || true)}"
+	[ -n "$WEZTERM_BIN" ] || WEZTERM_BIN="$WEZTERM_APP/Contents/MacOS/wezterm"
+	[ -x "$WEZTERM_BIN" ] || die 'wezterm command is unavailable'
+	"$WEZTERM_BIN" start --new-tab --cwd "$PWD" -- \
+		/usr/bin/env MAC_SETUP_PERMISSION_RELAUNCHED=1 "$ROOT/scripts/setup-macos-permissions" --guide
+	note 'opened the permission guide in a direct WezTerm tab'
+	;;
+esac

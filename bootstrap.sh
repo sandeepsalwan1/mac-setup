@@ -16,7 +16,7 @@ die() {
 
 [ "$(uname -s)" = Darwin ] || die 'this setup supports macOS only'
 
-note 'step 1/8: Determinate Nix'
+note 'step 1/9: Determinate Nix'
 if command -v nix >/dev/null 2>&1; then
 	note 'Nix is already installed'
 else
@@ -26,7 +26,7 @@ else
 	. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
 fi
 
-note 'step 2/8: stable dotfiles path'
+note 'step 2/9: stable dotfiles path'
 if [ -L "$DOTFILES_LINK" ]; then
 	if [ "$(cd "$DOTFILES_LINK" 2>/dev/null && pwd -P || true)" != "$DIR" ]; then
 		ln -sfn "$DIR" "$DOTFILES_LINK"
@@ -37,7 +37,7 @@ else
 	ln -s "$DIR" "$DOTFILES_LINK"
 fi
 
-note 'step 3/8: configured macOS user'
+note 'step 3/9: configured macOS user'
 REAL_USER="$(id -un)"
 FLAKE_USER="$(sed -nE 's/^[[:space:]]*user = "([^"]+)";.*/\1/p' "$DIR/flake.nix" | head -n 1)"
 [ -n "$FLAKE_USER" ] || die 'could not read the user setting from flake.nix'
@@ -61,30 +61,37 @@ else
 	note "flake.nix already matches $REAL_USER"
 fi
 
-note 'step 4/8: nix-darwin and Home Manager'
+note 'step 4/9: nix-darwin and Home Manager'
 NIX_BIN="$(command -v nix)"
 sudo "$NIX_BIN" run github:nix-darwin/nix-darwin/nix-darwin-26.05#darwin-rebuild -- \
 	switch --flake "$DOTFILES_LINK#mac"
 
 export PATH="/etc/profiles/per-user/$REAL_USER/bin:$HOME/.local/bin:$HOME/.local/share/npm/bin:$PATH"
 
-note 'step 5/8: additive Claude Code and Codex'
+note 'step 5/9: additive Claude Code and Codex'
 "$DIR/scripts/install-agent-tools"
 
-note 'step 6/8: pinned agent tools'
+note 'step 6/9: pinned agent tools'
 "$DIR/scripts/install-tools"
 
-note 'step 7/8: official Codex plugin skills'
+note 'step 7/9: official Codex plugin skills'
 "$DIR/scripts/link-official-codex-skills"
 
-note 'step 8/8: Automic Vault status'
+note 'step 8/9: Automic Vault status'
 if ! "$DIR/scripts/setup-vault"; then
 	note 'Vault is installed but still needs its first app setup'
 fi
 
+note 'step 9/9: macOS permission guide'
+if [ "${MAC_SETUP_SKIP_PERMISSION_GUIDE:-0}" = 1 ]; then
+	note 'permission guide skipped by MAC_SETUP_SKIP_PERMISSION_GUIDE'
+elif ! "$DIR/scripts/setup-macos-permissions" --launch; then
+	note 'permission guide could not launch automatically; run it from WezTerm after bootstrap'
+fi
+
 note 'done'
 printf '%s\n' \
-	'Open Automic Vault once, then run:' \
+	'Finish the guide in its direct WezTerm tab, then run there:' \
 	'  ~/.dotfiles/scripts/setup-vault --all' \
 	'Install/open the Codex desktop app and enable Browser and Computer Use, then run:' \
 	'  ~/.dotfiles/scripts/link-official-codex-skills' \

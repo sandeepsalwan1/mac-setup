@@ -1,0 +1,131 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+PERMISSIONS_BIN="${PERMISSIONS_BIN:-$ROOT/scripts/setup-macos-permissions}"
+AV_BIN="${AV_BIN:-$(command -v av 2>/dev/null || true)}"
+JQ_BIN="${JQ_BIN:-$(command -v jq 2>/dev/null || true)}"
+MODE=all
+SECRET_NAME=''
+
+usage() {
+	printf '%s\n' \
+		'Usage: setup-vault-access [--all-gates | --secret NAME]' \
+		'' \
+		'Guides persistent Automic Vault policy for exact verified launchers.' \
+		'It never reads or changes a Secret Value.'
+}
+
+note() {
+	printf 'vault-access: %s\n' "$1"
+}
+
+die() {
+	printf 'vault-access: %s\n' "$1" >&2
+	exit 1
+}
+
+while [ "$#" -gt 0 ]; do
+	case "$1" in
+	--all-gates) MODE=all ;;
+	--secret)
+		[ "$#" -ge 2 ] || die '--secret requires a Secret Name'
+		MODE=secret
+		SECRET_NAME=$2
+		shift
+		;;
+	-h | --help)
+		usage
+		exit 0
+		;;
+	*)
+		usage >&2
+		exit 64
+		;;
+	esac
+	shift
+done
+
+[ -n "$AV_BIN" ] || die 'Automic Vault is unavailable; run bootstrap.sh first'
+[ -n "$JQ_BIN" ] || die 'jq is unavailable after the Nix activation'
+"$PERMISSIONS_BIN" --check-wezterm >/dev/null 2>&1 ||
+	die "run this from a direct WezTerm tab: $ROOT/scripts/setup-macos-permissions --launch"
+
+pause_for_review() {
+	if [ "${MAC_SETUP_NONINTERACTIVE:-0}" != 1 ]; then
+		printf 'Finish this policy review in Automic Vault, then press Return: '
+		read -r _
+	fi
+}
+
+launcher_instructions() {
+	note 'add exact launcher overrides for signed WezTerm (com.github.wez.wezterm, team P4A6FU9KZ3)'
+	note 'add signed Codex only if this agent should have the same authority (com.openai.codex, team 2DC432GLL2)'
+	note 'leave All Other Apps at Approval Required'
+}
+
+catalog="$("$AV_BIN" hardeners --json)"
+
+if [ "$MODE" = all ]; then
+	"$AV_BIN" open
+	note 'in Settings, allow Secret Name Access for verified WezTerm and optionally verified Codex'
+	note 'because Herdr uses a detached server, enable Retained Launcher Provenance only for that workflow and end it when no longer needed'
+	pause_for_review
+
+	gate_ids="$(printf '%s' "$catalog" | "$JQ_BIN" -r \
+		'.hardeners[] | select(.applicable and .hardened and .secret_gate.id != null) | .secret_gate.id' | sort -u)"
+	while IFS= read -r gate_id || [ -n "$gate_id" ]; do
+		[ -n "$gate_id" ] || continue
+		"$AV_BIN" open --secret-gate "$gate_id"
+		note "Gate $gate_id: choose Full Access for WezTerm only when you want its strongest supported authority"
+		launcher_instructions
+		pause_for_review
+	done <<<"$gate_ids"
+
+	"$AV_BIN" list >/dev/null
+	note 'Secret Name Access works for this launcher; inspect Authorization History after the first harmless Tool read'
+	exit 0
+fi
+
+case "$SECRET_NAME" in
+'' | *[!A-Za-z0-9_]*) die 'Secret Name must contain only letters, digits, and underscores' ;;
+[0-9]*) die 'Secret Name must begin with a letter or underscore' ;;
+esac
+
+matched_gate=''
+# Automic Vault returns trusted glob patterns such as API_* in its local catalog.
+# shellcheck disable=SC2254
+while IFS=$'\t' read -r gate_id key_pattern || [ -n "${gate_id:-}${key_pattern:-}" ]; do
+	[ -n "${gate_id:-}" ] || continue
+	case "$SECRET_NAME" in
+	$key_pattern)
+		matched_gate=$gate_id
+		break
+		;;
+	esac
+done < <(printf '%s' "$catalog" | "$JQ_BIN" -r \
+	".hardeners[] | select(.applicable and .hardened and .secret_gate.id != null) | .secret_gate as \$gate | \$gate.key_patterns[] | [\$gate.id, .] | @tsv")
+
+case "$SECRET_NAME" in
+*PASSWORD* | *PASSCODE* | *PRIVATE_KEY* | *ADMIN* | *ROOT*)
+	note 'warning: this Secret Name appears highly privileged; Full or Direct Access lets the approved launcher apply it without per-use approval'
+	;;
+esac
+
+if [ -n "$matched_gate" ]; then
+	"$AV_BIN" open --secret-gate "$matched_gate"
+	note "$SECRET_NAME matches Tool-specific Gate $matched_gate"
+	note 'choose Full Access for WezTerm only if the Tool-specific strongest authority is really intended'
+	launcher_instructions
+	pause_for_review
+	note "run a harmless read through the $matched_gate Tool and confirm the decision source in Authorization History"
+else
+	"$AV_BIN" open
+	note "$SECRET_NAME has no hardened Tool-specific Gate"
+	note "open Secrets, select $SECRET_NAME, then add WezTerm under Direct Secret Access"
+	note 'choose Direct Access only if any Target launched from that exact app may receive this Secret'
+	launcher_instructions
+	pause_for_review
+	"$AV_BIN" inject "+$SECRET_NAME" -- /usr/bin/true
+	note 'the no-output Direct Access probe completed; confirm its launcher and decision source in Authorization History'
+fi

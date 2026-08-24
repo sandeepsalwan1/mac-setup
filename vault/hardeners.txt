@@ -1,6 +1,7 @@
 # Existing applicable tools are hardened. Missing tools are skipped.
 aws
 codex
+docker
 flyctl
 gh
 heroku

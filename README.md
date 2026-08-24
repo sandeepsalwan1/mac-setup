@@ -31,6 +31,7 @@ It performs these steps:
 6. Installs only the pinned agent tools that are missing or outdated.
 7. Links locally installed official Codex Browser and Computer Use skills when available.
 8. Reports what remains for Automic Vault onboarding.
+9. Opens the supported macOS permission guide in a direct, verified WezTerm tab.
 
 The first system switch requests the macOS administrator password. Automic
 Vault setup and secret entry also require direct user interaction.
@@ -58,6 +59,26 @@ upgrades a satisfied copy.
 Pinned npm tools are listed in `home/npm-globals.txt`. `scripts/install-tools`
 checks each command's installed version before running npm, and installs the
 pinned no-mistakes release only when needed.
+
+## macOS permissions
+
+Run setup and Vault onboarding in the direct WezTerm tab opened by:
+
+```sh
+~/.dotfiles/scripts/setup-macos-permissions --launch
+```
+
+The guide verifies WezTerm's bundle identifier and Apple signing team before it
+opens Full Disk Access, Accessibility, Developer Tools, Automation, App
+Management, and Screen & System Audio Recording. It includes signed Codex when
+the desktop app is installed. A Herdr or Codex shell can retain `TERM_PROGRAM`
+while running below a detached process, so the script checks the real launcher
+ancestry instead of trusting that variable.
+
+macOS requires the user, or an employer's MDM administrator, to approve these
+privacy controls. The script opens each exact pane, explains the targets, and
+tests Finder Automation plus Accessibility, but it does not bypass TCC, SIP, or
+Keychain protection. See [docs/macos-permissions.md](docs/macos-permissions.md).
 
 ## Agent setup
 
@@ -109,10 +130,25 @@ from their original secure sources. After completing the app's first launch:
 ~/.dotfiles/scripts/setup-vault --all
 ```
 
-The script skips existing Secret Names and already hardened tools. Values are
-entered directly through Automic Vault's `/dev/tty` prompt and are never read by
-the script. See [docs/automic-vault.md](docs/automic-vault.md) for the security
-boundary and recovery workflow.
+Run that command in the direct WezTerm tab created by the permission guide. It
+skips existing Secret Names and already hardened tools, then opens each
+Tool-specific Gate so you can give exact verified WezTerm, and optionally exact
+verified Codex, Full Access. All Other Apps stays at Approval Required.
+
+To add one secret later without replacing an effective existing Value:
+
+```sh
+~/.dotfiles/scripts/add-vault-secret NEW_SECRET_NAME
+```
+
+The command relaunches itself in direct WezTerm when necessary, passes only the
+Secret Name between processes, accepts the Value through Automic Vault's hidden
+`/dev/tty` prompt, and adds the non-secret name to the public manifest. It opens
+the matching Tool-specific Gate, or the exact secret's Direct Access screen when
+no tool gate exists. Use `--approval-required` to keep per-use approval, and use
+`--replace` only when deliberately changing an existing Value. See
+[docs/automic-vault.md](docs/automic-vault.md) for the security boundary and
+recovery workflow.
 
 ## Terminal mastery
 
