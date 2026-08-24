@@ -22,7 +22,11 @@ chmod +x "$TEST_BIN/present-tool"
 
 cat >"$TEST_BIN/chrome-devtools-axi" <<'SH'
 #!/usr/bin/env bash
-printf '%s\n' '0.1.29'
+if [ "${1:-}" = stop ]; then
+	printf '%s\n' "${CHROME_DEVTOOLS_AXI_SESSION-unset}:${CHROME_DEVTOOLS_AXI_PORT-unset}" >>"$BRIDGE_LOG"
+else
+	printf '%s\n' '0.1.29'
+fi
 SH
 chmod +x "$TEST_BIN/chrome-devtools-axi"
 
@@ -53,6 +57,9 @@ else
 	printf '#!/usr/bin/env bash\nprintf "%%s\\n" "%s"\n' "$version" >"$NPM_PREFIX/bin/$package_name"
 fi
 chmod +x "$NPM_PREFIX/bin/$package_name"
+if [ "${NPM_FAIL_AFTER_CHROME_INSTALL:-0}" = 1 ] && [ "$package_name" = chrome-devtools-mcp ]; then
+	exit 42
+fi
 SH
 chmod +x "$TEST_BIN/npm"
 
@@ -109,6 +116,7 @@ run_installer() {
 		NPM_PREFIX="$TEST_PREFIX" \
 		INSTALL_LOG="$INSTALL_LOG" \
 		BRIDGE_LOG="$BRIDGE_LOG" \
+		NPM_FAIL_AFTER_CHROME_INSTALL="${NPM_FAIL_AFTER_CHROME_INSTALL:-0}" \
 		CHROME_DEVTOOLS_AXI_SESSION=worker \
 		CHROME_DEVTOOLS_AXI_PORT=9999 \
 		MAC_SETUP_SKIP_NO_MISTAKES=1 \
@@ -154,10 +162,16 @@ missing-tool@2.0.0
 chrome-devtools-axi@0.1.30
 chrome-devtools-mcp@1.7.1
 EOF
-run_installer >/dev/null
+if NPM_FAIL_AFTER_CHROME_INSTALL=1 run_installer >/dev/null 2>&1; then
+	fail 'interrupted Chrome package installation unexpectedly succeeded'
+fi
 [ "$(tail -n 1 "$INSTALL_LOG")" = 'chrome-devtools-mcp@1.7.1' ] ||
 	fail 'installer did not adopt the changed MCP version'
 [ "$(wc -l <"$BRIDGE_LOG" | tr -d ' ')" = 2 ] ||
-	fail 'an MCP-only version change did not recycle the default bridge'
+	fail 'an interrupted MCP version change did not recycle the default bridge first'
+
+run_installer >/dev/null
+[ "$(wc -l <"$BRIDGE_LOG" | tr -d ' ')" = 2 ] ||
+	fail 'rerunning an interrupted Chrome upgrade recycled the bridge again'
 
 pass 'install-tools migrates Chrome state and remains idempotent'

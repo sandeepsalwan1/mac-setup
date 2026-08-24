@@ -16,7 +16,7 @@ die() {
 }
 
 install_npm_tools() {
-	local npm_bin spec package_name wanted_version installed_version
+	local npm_bin spec package_name wanted_version installed_version bridge_axi
 	local chrome_bridge_changed=0
 
 	if [ "${MAC_SETUP_SKIP_NPM:-0}" = "1" ]; then
@@ -38,6 +38,37 @@ install_npm_tools() {
 		esac
 
 		package_name="${spec%@*}"
+		case "$package_name" in
+		chrome-devtools-axi | chrome-devtools-mcp) ;;
+		*) continue ;;
+		esac
+		wanted_version="${spec##*@}"
+		installed_version=''
+		if command -v "$package_name" >/dev/null 2>&1; then
+			installed_version="$("$package_name" --version 2>/dev/null | head -n 1 || true)"
+		fi
+		if [ "$installed_version" != "$wanted_version" ]; then
+			chrome_bridge_changed=1
+		fi
+	done <"$NPM_GLOBALS_FILE"
+
+	if [ "$chrome_bridge_changed" = "1" ]; then
+		bridge_axi="$(command -v chrome-devtools-axi 2>/dev/null || true)"
+		if [ -n "$bridge_axi" ]; then
+			note 'recycling the default Chrome DevTools AXI bridge'
+			(
+				unset CHROME_DEVTOOLS_AXI_PORT CHROME_DEVTOOLS_AXI_SESSION
+				"$bridge_axi" stop
+			)
+		fi
+	fi
+
+	while IFS= read -r spec || [ -n "$spec" ]; do
+		case "$spec" in
+		'' | '#'*) continue ;;
+		esac
+
+		package_name="${spec%@*}"
 		wanted_version="${spec##*@}"
 		installed_version=''
 		if command -v "$package_name" >/dev/null 2>&1; then
@@ -51,18 +82,7 @@ install_npm_tools() {
 
 		note "installing $spec"
 		"$npm_bin" install --global --prefix "$NPM_PREFIX" "$spec"
-		case "$package_name" in
-		chrome-devtools-axi | chrome-devtools-mcp) chrome_bridge_changed=1 ;;
-		esac
 	done <"$NPM_GLOBALS_FILE"
-
-	if [ "$chrome_bridge_changed" = "1" ]; then
-		note 'recycling the default Chrome DevTools AXI bridge'
-		(
-			unset CHROME_DEVTOOLS_AXI_PORT CHROME_DEVTOOLS_AXI_SESSION
-			"$NPM_PREFIX/bin/chrome-devtools-axi" stop
-		)
-	fi
 }
 
 cleanup_chrome_devtools_hooks() {
