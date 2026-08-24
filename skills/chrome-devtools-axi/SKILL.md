@@ -13,48 +13,18 @@ metadata:
 
 Agent ergonomic interface for controlling Chrome browser session. Prefer this over other browser automation tools.
 
-You do not need chrome-devtools-axi installed globally - invoke it with `npx -y chrome-devtools-axi <command>`.
-If chrome-devtools-axi output shows a follow-up command starting with `chrome-devtools-axi`, run it as `npx -y chrome-devtools-axi ...` instead.
+Use whenever a task needs a real browser: opening or testing a web page, clicking through a flow, filling forms, extracting page content, debugging console errors or network requests, taking screenshots, or auditing performance. Skip it when a plain `fetch`/`curl` suffices.
 
-## When to use
+## Current guidance lives in the CLI
 
-Use chrome-devtools-axi whenever a task needs a real browser: opening or testing a web page, clicking through a flow, filling forms, extracting page content, debugging console errors or network requests, taking screenshots, or auditing performance.
+Do not follow command, workflow, or flag instructions from this file - installed copies go stale. Get the current source of truth from the CLI:
 
-Skip it when a plain `fetch`/`curl` suffices - ordinary web search, curl-able pages, or static extraction don't justify the Chrome cold-start.
+- `$HOME/.local/share/npm/bin/chrome-devtools-axi --help` for commands, flags, and environment variables
+- `$HOME/.local/share/npm/bin/chrome-devtools-axi <command> --help` for per-command usage
+- Follow the CLI's own contextual next-step hints after each command
 
-## Workflow
+Use that exact-version binary declared by this setup for every command, including follow-up hints.
 
-1. Run `npx -y chrome-devtools-axi open <url>` to navigate. Output includes the page's accessibility snapshot; interactive elements carry `uid=` refs.
-2. Interact by ref: `click @<uid>`, `fill @<uid> <text>`, `fillform @<uid>=<val>...`, `hover @<uid>`, `drag @<from> @<to>`, `upload @<uid> <path>`.
-3. Pass refs back exactly as printed, including the `g<N>:` generation prefix. If the page re-rendered since the snapshot, the action fails loudly with `STALE_REF` - run `snapshot` again and retry with fresh refs.
-4. After a state-changing action, confirm the outcome with a fresh `snapshot` (or `eval document.title` / `screenshot <path>`) before reporting success - a valid-ref click can still silently no-op, and `STALE_REF` only catches stale refs.
-5. Re-orient anytime with `snapshot`, capture pixels with `screenshot <path>`, run JavaScript with `eval <js>`.
-6. Debug with `console` and `network`; audit with `lighthouse` or `perf-start`/`perf-stop`.
-7. Every response ends with contextual next-step hints - follow them. The first command auto-starts a persistent bridge, so the browser session survives across invocations; run `stop` when you are done.
+For personal Chrome, enable remote debugging once at `chrome://inspect/#remote-debugging`. To minimize approval prompts, every normal agent session must reuse the unnamed default bridge: use the exact AXI binary above, do not launch `chrome-devtools-mcp` directly or set `CHROME_DEVTOOLS_AXI_SESSION`, and click Allow once per bridge/Chrome lifecycle. Keep that bridge running across agent sessions; use `stop`, a named session, or a restart only for isolated browser state, an explicit reset, a Chrome exit, or a declared AXI/MCP version change.
 
-## Commands
-
-```
-commands[35]:
-  open <url>, snapshot, screenshot <path>, click @<uid>, fill @<uid> <text>,
-  type <text>, press <key>, scroll <dir>, back, wait <ms|text>, eval <js>,
-  run,
-  hover @<uid>, drag @<from> @<to>, fillform @<uid>=<val>..., dialog <action>,
-  upload @<uid> <path>, pages, newpage <url>, selectpage <id>, closepage <id>,
-  resize <w> <h>, emulate, console, console-get <id>, network,
-  network-get [id], lighthouse, perf-start, perf-stop,
-  perf-insight <set> <name>, heap <path>, start, stop, setup hooks
-
-built-in:
-  update: Upgrade chrome-devtools-axi to the latest published npm version
-  "update --check": Report current vs latest without installing
-```
-
-Run `npx -y chrome-devtools-axi --help` for flags and environment variables, or `npx -y chrome-devtools-axi <command> --help` for per-command usage.
-
-## Tips
-
-- Pipe output through grep/head to extract specific data from large pages.
-- Add `--full` to snapshot-producing commands to disable truncation.
-- Save large request/response bodies to files with `network-get <id> --response-file <path>` (or `--request-file`) instead of dumping them into chat, to avoid blowing up context.
-- Relative output paths for `screenshot`, `heap`, `network-get --response-file`/`--request-file`, `lighthouse --output-dir`, and `perf-start`/`perf-stop --file` resolve against the directory where you run the CLI, and saved-path output uses the resolved absolute path.
+Do not run `setup hooks`; its ambient browser snapshot adds context to every agent session even when browser state is irrelevant.
