@@ -39,6 +39,7 @@ run_bootstrap() {
 	HOME="$TEST_HOME" \
 		PATH="$TEST_BIN:/usr/bin:/bin" \
 		SUDO_LOG="$SUDO_LOG" \
+		MAC_SETUP_SKIP_AGENT_CASKS=1 \
 		MAC_SETUP_SKIP_NPM=1 \
 		MAC_SETUP_SKIP_NO_MISTAKES=1 \
 		"$ROOT/bootstrap.sh"

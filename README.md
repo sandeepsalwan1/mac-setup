@@ -27,9 +27,10 @@ It performs these steps:
 2. Gives the checkout the stable `~/.dotfiles` path used by Home Manager.
 3. Checks the configured macOS username.
 4. Applies nix-darwin and Home Manager.
-5. Installs only the pinned agent tools that are missing or outdated.
-6. Links locally installed official Codex Browser and Computer Use skills when available.
-7. Reports what remains for Automic Vault onboarding.
+5. Installs Claude Code or Codex only when that command and its Homebrew receipt are both absent.
+6. Installs only the pinned agent tools that are missing or outdated.
+7. Links locally installed official Codex Browser and Computer Use skills when available.
+8. Reports what remains for Automic Vault onboarding.
 
 The first system switch requests the macOS administrator password. Automic
 Vault setup and secret entry also require direct user interaction.
@@ -40,8 +41,8 @@ The Homebrew baseline is deliberately small:
 
 - [Automic Vault](https://www.automicvault.com/) and its hardened GitHub CLI
 - [Herdr](https://herdr.dev/)
-- Claude Code
-- Codex CLI
+- Claude Code, only when `claude` is not already installed
+- Codex CLI, only when `codex` is not already installed
 - WezTerm
 
 Nix supplies `uv`, Node.js, Python, Git, Neovim, ripgrep, fd, fzf, jq,
@@ -49,7 +50,10 @@ lazygit, ShellCheck, shfmt, Gitleaks, TruffleHog, and Hack Nerd Font.
 
 Homebrew activation uses `cleanup = "none"` and `autoUpdate = false`. It neither
 deletes work-specific packages nor records later `brew install` commands in Git.
-Homebrew and Nix naturally skip packages that already satisfy the declaration.
+Claude Code and Codex are declared in `home/agent-casks.txt` and installed by a
+separate additive step. An existing command or Homebrew cask receipt satisfies
+that step regardless of how the tool originally arrived. It never reinstalls or
+upgrades a satisfied copy.
 
 Pinned npm tools are listed in `home/npm-globals.txt`. `scripts/install-tools`
 checks each command's installed version before running npm, and installs the

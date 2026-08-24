@@ -47,8 +47,6 @@
     ];
     casks = [
       "automic-vault/isotopes/automic-vault"
-      "claude-code"
-      "codex"
       "wezterm"
     ];
   };

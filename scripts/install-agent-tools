@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+AGENT_CASKS_FILE="${AGENT_CASKS_FILE:-$ROOT/home/agent-casks.txt}"
+
+note() {
+	printf 'install-agent-tools: %s\n' "$1"
+}
+
+die() {
+	printf 'install-agent-tools: %s\n' "$1" >&2
+	exit 1
+}
+
+find_brew() {
+	if [ -n "${BREW_BIN:-}" ]; then
+		printf '%s\n' "$BREW_BIN"
+	elif command -v brew >/dev/null 2>&1; then
+		command -v brew
+	elif [ -x /opt/homebrew/bin/brew ]; then
+		printf '%s\n' /opt/homebrew/bin/brew
+	elif [ -x /usr/local/bin/brew ]; then
+		printf '%s\n' /usr/local/bin/brew
+	else
+		return 1
+	fi
+}
+
+install_agent_tools() {
+	local cask_name command_name extra brew_bin
+
+	if [ "${MAC_SETUP_SKIP_AGENT_CASKS:-0}" = "1" ]; then
+		note 'Claude Code and Codex installation skipped by environment'
+		return
+	fi
+
+	[ -r "$AGENT_CASKS_FILE" ] || die "missing agent cask manifest: $AGENT_CASKS_FILE"
+	brew_bin=''
+
+	while IFS='|' read -r cask_name command_name extra ||
+		[ -n "${cask_name:-}${command_name:-}${extra:-}" ]; do
+		case "$cask_name" in
+		'' | '#'*) continue ;;
+		esac
+
+		[ -z "${extra:-}" ] || die "invalid manifest entry for $cask_name"
+		case "$cask_name" in
+		*[!A-Za-z0-9@+._/-]*) die "invalid Homebrew cask name: $cask_name" ;;
+		esac
+		case "$command_name" in
+		'' | *[!A-Za-z0-9._+-]*) die "invalid command name for $cask_name" ;;
+		esac
+
+		if command -v "$command_name" >/dev/null 2>&1; then
+			note "$command_name is already installed; leaving it untouched"
+			continue
+		fi
+
+		if [ -z "$brew_bin" ]; then
+			brew_bin="$(find_brew)" || die "Homebrew is required to install missing $command_name"
+		fi
+
+		if "$brew_bin" list --cask "$cask_name" >/dev/null 2>&1; then
+			note "$cask_name is already managed by Homebrew; leaving it untouched"
+			continue
+		fi
+
+		note "installing missing $command_name with Homebrew cask $cask_name"
+		HOMEBREW_NO_AUTO_UPDATE=1 "$brew_bin" install --cask "$cask_name"
+		if ! command -v "$command_name" >/dev/null 2>&1 &&
+			! "$brew_bin" list --cask "$cask_name" >/dev/null 2>&1; then
+			die "$cask_name installation completed without a command or Homebrew receipt"
+		fi
+	done <"$AGENT_CASKS_FILE"
+}
+
+install_agent_tools

@@ -1,0 +1,4 @@
+# cask|command
+# Existing commands and existing Homebrew receipts are treated as satisfied.
+claude-code|claude
+codex|codex
