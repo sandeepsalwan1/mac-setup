@@ -27,11 +27,12 @@ It performs these steps:
 2. Gives the checkout the stable `~/.dotfiles` path used by Home Manager.
 3. Checks the configured macOS username.
 4. Applies nix-darwin and Home Manager.
-5. Installs Claude Code or Codex only when that command and its Homebrew receipt are both absent.
-6. Installs only the pinned agent tools that are missing or outdated.
-7. Links locally installed official Codex Browser and Computer Use skills when available.
-8. Reports what remains for Automic Vault onboarding.
-9. Opens the supported macOS permission guide in a direct, verified WezTerm tab.
+5. Validates the Herdr Ctrl+Space prefix against macOS, Rectangle, Neovim, and WezTerm conflicts.
+6. Installs Claude Code or Codex only when that command and its Homebrew receipt are both absent.
+7. Installs only the pinned agent tools that are missing or outdated.
+8. Links locally installed official Codex Browser and Computer Use skills when available.
+9. Reports what remains for Automic Vault onboarding.
+10. Opens the complete macOS permission guide in a direct, verified WezTerm tab.
 
 The first system switch requests the macOS administrator password. Automic
 Vault setup and secret entry also require direct user interaction.
@@ -69,11 +70,12 @@ Run setup and Vault onboarding in the direct WezTerm tab opened by:
 ```
 
 The guide verifies WezTerm's bundle identifier and Apple signing team before it
-opens Full Disk Access, Accessibility, Developer Tools, Automation, App
-Management, and Screen & System Audio Recording. It includes signed Codex when
-the desktop app is installed. A Herdr or Codex shell can retain `TERM_PROGRAM`
-while running below a detached process, so the script checks the real launcher
-ancestry instead of trusting that variable.
+walks through every app-facing privacy category that can affect developer,
+remote-control, hardware, personal-data, or agent workflows. It also opens
+Notifications and finishes on the complete Privacy & Security list. It includes
+signed Codex when the desktop app is installed. A Herdr or Codex shell can retain
+`TERM_PROGRAM` while running below a detached process, so the script checks the
+real launcher ancestry instead of trusting that variable.
 
 macOS requires the user, or an employer's MDM administrator, to approve these
 privacy controls. The script opens each exact pane, explains the targets, and
@@ -163,6 +165,13 @@ learn panic
 ```
 
 Progress remains in the browser's local storage, not in Git.
+
+Herdr uses <kbd>Ctrl</kbd>+<kbd>Space</kbd> as its prefix, followed by the action
+key. This is easier to reach than its default <kbd>Ctrl</kbd>+<kbd>b</kbd> and does
+not collide with the tracked Neovim and WezTerm bindings, the current Rectangle
+shortcuts, or the current macOS input-source shortcut. Bootstrap refuses to
+continue if one of those later claims the chord. Plain <kbd>Tab</kbd> remains
+available for shell completion and Neovim.
 
 ## Daily use
 

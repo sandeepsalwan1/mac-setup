@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+HERDR_CONFIG="${HERDR_CONFIG:-$ROOT/home/.config/herdr/config.toml}"
+HERDR_BIN="${HERDR_BIN:-$(command -v herdr 2>/dev/null || true)}"
+DEFAULTS_BIN="${DEFAULTS_BIN:-/usr/bin/defaults}"
+PLUTIL_BIN="${PLUTIL_BIN:-/usr/bin/plutil}"
+JQ_BIN="${JQ_BIN:-$(command -v jq 2>/dev/null || true)}"
+OPEN_BIN="${OPEN_BIN:-/usr/bin/open}"
+RECTANGLE_PLIST="${RECTANGLE_PLIST:-$HOME/Library/Preferences/com.knollsoft.Rectangle.plist}"
+
+note() {
+	printf 'herdr-prefix: %s\n' "$1"
+}
+
+die() {
+	printf 'herdr-prefix: %s\n' "$1" >&2
+	exit 1
+}
+
+[ "$(uname -s)" = Darwin ] || die 'this keybinding check supports macOS only'
+[ -r "$HERDR_CONFIG" ] || die "missing Herdr config: $HERDR_CONFIG"
+grep -Eq '^[[:space:]]*prefix[[:space:]]*=[[:space:]]*"ctrl\+space"[[:space:]]*$' "$HERDR_CONFIG" ||
+	die 'Herdr prefix must remain ctrl+space'
+[ -n "$HERDR_BIN" ] || die 'Herdr is unavailable after the Homebrew activation'
+HERDR_CONFIG_PATH="$HERDR_CONFIG" "$HERDR_BIN" config check >/dev/null
+
+if rg -i '<c-(space|@)>|ctrl\+space|ctrl[[:space:]_-]*space' \
+	"$ROOT/home/.config/nvim" "$ROOT/home/.config/wezterm" >/dev/null; then
+	die 'Ctrl+Space conflicts with the tracked Neovim or WezTerm configuration'
+fi
+
+input_source_enabled="$({
+	"$DEFAULTS_BIN" export com.apple.symbolichotkeys - 2>/dev/null || true
+} | "$PLUTIL_BIN" -extract AppleSymbolicHotKeys.60.enabled raw -o - - 2>/dev/null || true)"
+if [ "$input_source_enabled" = true ]; then
+	note 'macOS uses Ctrl+Space for Select the previous input source'
+	"$OPEN_BIN" 'x-apple.systempreferences:com.apple.Keyboard-Settings.extension?Shortcuts' || true
+	die 'disable that Input Sources shortcut, then rerun bootstrap.sh'
+fi
+
+rectangle_conflicts=''
+if [ -r "$RECTANGLE_PLIST" ] && [ -n "$JQ_BIN" ]; then
+	rectangle_conflicts="$({
+		"$PLUTIL_BIN" -convert json -o - "$RECTANGLE_PLIST" 2>/dev/null || true
+	} | "$JQ_BIN" -r '
+		to_entries[]
+		| select(.value | type == "object")
+		| select((.value.keyCode // -1) == 49)
+		| select(((((.value.modifierFlags // 0) / 262144) | floor) % 2) == 1)
+		| .key
+	' 2>/dev/null || true)"
+fi
+if [ -n "$rectangle_conflicts" ]; then
+	note "Rectangle uses Ctrl+Space in: $(printf '%s' "$rectangle_conflicts" | paste -sd, -)"
+	"$OPEN_BIN" -b com.knollsoft.Rectangle || true
+	die 'change the listed Rectangle shortcut, then rerun bootstrap.sh'
+fi
+
+note 'Ctrl+Space is valid in Herdr and clear of macOS, Rectangle, Neovim, and WezTerm conflicts'

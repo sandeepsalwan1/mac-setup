@@ -10,13 +10,16 @@ shellcheck -x \
 	"$ROOT/scripts/install-agent-tools" \
 	"$ROOT/scripts/install-tools" \
 	"$ROOT/scripts/link-official-codex-skills" \
+	"$ROOT/scripts/check-herdr-prefix" \
 	"$ROOT/scripts/add-vault-secret" \
 	"$ROOT/scripts/setup-macos-permissions" \
 	"$ROOT/scripts/setup-vault" \
 	"$ROOT/scripts/setup-vault-access" \
 	"$ROOT/tests/security-scan.sh" \
 	"$ROOT/tests/bootstrap.test.sh" \
+	"$ROOT/tests/global-agents.test.sh" \
 	"$ROOT/tests/homebrew-config.test.sh" \
+	"$ROOT/tests/herdr-prefix.test.sh" \
 	"$ROOT/tests/install-agent-tools.test.sh" \
 	"$ROOT/tests/install-tools.test.sh" \
 	"$ROOT/tests/macos-permissions.test.sh" \
@@ -32,13 +35,16 @@ shfmt -d \
 	"$ROOT/scripts/install-agent-tools" \
 	"$ROOT/scripts/install-tools" \
 	"$ROOT/scripts/link-official-codex-skills" \
+	"$ROOT/scripts/check-herdr-prefix" \
 	"$ROOT/scripts/add-vault-secret" \
 	"$ROOT/scripts/setup-macos-permissions" \
 	"$ROOT/scripts/setup-vault" \
 	"$ROOT/scripts/setup-vault-access" \
 	"$ROOT/tests/security-scan.sh" \
 	"$ROOT/tests/bootstrap.test.sh" \
+	"$ROOT/tests/global-agents.test.sh" \
 	"$ROOT/tests/homebrew-config.test.sh" \
+	"$ROOT/tests/herdr-prefix.test.sh" \
 	"$ROOT/tests/install-agent-tools.test.sh" \
 	"$ROOT/tests/install-tools.test.sh" \
 	"$ROOT/tests/macos-permissions.test.sh" \
@@ -48,7 +54,9 @@ shfmt -d \
 	"$ROOT/tests/vault-access.test.sh"
 
 "$ROOT/tests/bootstrap.test.sh"
+"$ROOT/tests/global-agents.test.sh"
 "$ROOT/tests/homebrew-config.test.sh"
+"$ROOT/tests/herdr-prefix.test.sh"
 "$ROOT/tests/install-agent-tools.test.sh"
 "$ROOT/tests/install-tools.test.sh"
 "$ROOT/tests/macos-permissions.test.sh"

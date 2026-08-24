@@ -17,7 +17,7 @@ is. Do this and you can run a fleet.</p>
 <div class="tldr">
 <span class="label">Know this before you start</span>
 <table>
-  <tr><td><strong>Prefix</strong></td><td><kbd>Ctrl</kbd>+<kbd>b</kbd>, then the next key <em>on its own</em>. Written <kbd>^b</kbd> below.</td></tr>
+  <tr><td><strong>Prefix</strong></td><td><kbd>Ctrl</kbd>+<kbd>Space</kbd>, then the next key <em>on its own</em>. Written <kbd>^Space</kbd> below.</td></tr>
   <tr><td><strong>Hierarchy</strong></td><td>session &rarr; workspace <code>w1</code> &rarr; tab <code>w1:t1</code> &rarr; pane <code>w1:p1</code></td></tr>
   <tr><td><strong>Detach &ne; quit</strong></td><td>Closing the window leaves everything running. Only <code>herdr server stop</code> kills it.</td></tr>
   <tr><td><strong>Agent states</strong></td><td><code>working</code> &middot; <code>blocked</code> needs you &middot; <code>done</code> finished unseen &middot; <code>idle</code> seen &middot; <code>unknown</code></td></tr>
@@ -35,7 +35,7 @@ is. Do this and you can run a fleet.</p>
     <span><a href="../reference/herdr-cheatsheet.html">Full cheat sheet</a></span>
   </div>
   <p class="source"><strong>Truth lives in the binary, offline:</strong>
-  <code>herdr --default-config</code> for every option, <kbd>^b</kbd> <kbd>?</kbd> for your
+  <code>herdr --default-config</code> for every option, <kbd>^Space</kbd> <kbd>?</kbd> for your
   live merged bindings, <code>herdr --skill</code> for the CLI contract,
   <code>herdr config check</code> to validate. Every key here came from those.</p>
 </div>
@@ -48,43 +48,43 @@ is. Do this and you can run a fleet.</p>
 renderDrill('drill', [
   { section: 'Get in, look around' },
   { do: 'herdr', cmd: true, see: 'You are inside a Herdr session. Looks like a normal shell.' },
-  { do: '^b ?', see: 'Every active binding, with your overrides applied.',
+  { do: '^Space ?', see: 'Every active binding, with your overrides applied.',
     note: 'This is your machine\'s truth. Any cheat sheet, including mine, is second-best.' },
   { do: 'Esc or q to close the help', see: 'Back to the pane.' },
   { do: 'echo $HERDR_PANE_ID $HERDR_WORKSPACE_ID', cmd: true,
     see: 'Something like <code>w1:p1 w1</code>. Herdr injects your location into every pane.' },
 
   { section: 'Panes' },
-  { do: '^b %', see: 'The pane splits <strong>side by side</strong>.' },
-  { do: '^b "', see: 'It splits <strong>stacked</strong>, top and bottom.',
-    note: 'These two are your tmux-style overrides. Herdr\'s own defaults are <kbd>^b</kbd> <kbd>v</kbd> and <kbd>^b</kbd> <kbd>-</kbd>.' },
-  { do: '^b h then ^b j then ^b k then ^b l', see: 'Focus moves left, down, up, right. Same four keys as Neovim.' },
-  { do: '^b z', see: 'The focused pane goes full-screen.' },
-  { do: '^b z', see: 'Back to the split layout.',
+  { do: '^Space %', see: 'The pane splits <strong>side by side</strong>.' },
+  { do: '^Space "', see: 'It splits <strong>stacked</strong>, top and bottom.',
+    note: 'These two are your tmux-style overrides. Herdr\'s own defaults are <kbd>^Space</kbd> <kbd>v</kbd> and <kbd>^Space</kbd> <kbd>-</kbd>.' },
+  { do: '^Space h then ^Space j then ^Space k then ^Space l', see: 'Focus moves left, down, up, right. Same four keys as Neovim.' },
+  { do: '^Space z', see: 'The focused pane goes full-screen.' },
+  { do: '^Space z', see: 'Back to the split layout.',
     note: 'Zoom is the one people miss and then use constantly. Four agents on screen, one needs reading: zoom, read, unzoom.' },
-  { do: '^b x', see: 'Closes the focused pane.' },
+  { do: '^Space x', see: 'Closes the focused pane.' },
 
   { section: 'Tabs and workspaces' },
-  { do: '^b c', see: 'A new tab. It may ask for a name.' },
-  { do: '^b n then ^b p', see: 'Next tab, previous tab.' },
-  { do: '^b 1', see: 'Jumps straight to tab 1. Works for 1 through 9.' },
-  { do: '^b g', see: 'The goto picker. Type a few letters, Enter, and you are there.',
+  { do: '^Space c', see: 'A new tab. It may ask for a name.' },
+  { do: '^Space n then ^Space p', see: 'Next tab, previous tab.' },
+  { do: '^Space 1', see: 'Jumps straight to tab 1. Works for 1 through 9.' },
+  { do: '^Space g', see: 'The goto picker. Type a few letters, Enter, and you are there.',
     note: 'This is how you reach a specific agent fast once you have a dozen panes.' },
-  { do: '^b &', see: 'Closes the tab.' },
+  { do: '^Space &', see: 'Closes the tab.' },
 
   { section: 'Watch an agent' },
-  { do: '^b b', see: 'The sidebar appears, listing agents and their state.' },
+  { do: '^Space b', see: 'The sidebar appears, listing agents and their state.' },
   { do: 'cc', cmd: true,
     see: 'Claude starts. Within a second or two it shows up in the sidebar as <code>working</code>.',
     note: '<code>cc</code> is your alias for <code>claude --dangerously-skip-permissions</code>.' },
-  { do: 'Ask it something slow, then ^b c to open a new tab', see: 'You are elsewhere while it works.' },
+  { do: 'Ask it something slow, then ^Space c to open a new tab', see: 'You are elsewhere while it works.' },
   { do: 'Wait, then look at the sidebar', see: 'It reads <code>done</code>, not <code>idle</code>.',
     note: '<code>done</code> means finished <em>while you were not looking</em>. The sidebar is an unread inbox for your fleet.' },
-  { do: '^b g and jump to that agent\'s tab', see: 'Focusing it marks it seen, so it flips to <code>idle</code>.',
+  { do: '^Space g and jump to that agent\'s tab', see: 'Focusing it marks it seen, so it flips to <code>idle</code>.',
     warn: 'A CLI read does <em>not</em> mark it seen. That is deliberate, so scripts do not clear your inbox.' },
 
   { section: 'The part that converts people' },
-  { do: '^b q', see: 'Detached. You are back at a plain shell.' },
+  { do: '^Space q', see: 'Detached. You are back at a plain shell.' },
   { do: 'Quit WezTerm entirely. Then reopen it.', see: 'Fresh terminal, nothing running.' },
   { do: 'herdr', cmd: true, see: 'Everything is exactly as you left it. The agent never stopped.',
     note: 'Close the lid, lose wifi, walk away. Same result.' },
@@ -92,9 +92,9 @@ renderDrill('drill', [
   { section: 'Copy text out of a pane' },
   { do: 'Drag across some output with the mouse', see: 'It is already on your clipboard.',
     note: '<code>copy_on_select = true</code>. Your Neovim mouse is off; Herdr\'s is not.' },
-  { do: '^b e', see: 'The whole scrollback opens in Neovim. Search with <code>/</code>, yank with <code>y</code>, quit with <code>:q!</code>.',
+  { do: '^Space e', see: 'The whole scrollback opens in Neovim. Search with <code>/</code>, yank with <code>y</code>, quit with <code>:q!</code>.',
     note: 'Best way to pull a stack trace out of a long agent transcript.' },
-  { do: '^b y then v then move then y', see: 'Keyboard copy mode: <kbd>v</kbd> or <kbd>Space</kbd> selects, <kbd>y</kbd> or <kbd>Enter</kbd> copies, <kbd>q</kbd> or <kbd>Esc</kbd> cancels.',
+  { do: '^Space y then v then move then y', see: 'Keyboard copy mode: <kbd>v</kbd> or <kbd>Space</kbd> selects, <kbd>y</kbd> or <kbd>Enter</kbd> copies, <kbd>q</kbd> or <kbd>Esc</kbd> cancels.',
     note: 'Those five inner keys are hard-wired and cannot be rebound.' },
 
   { section: 'Drive it from a script (optional, 2 min)' },

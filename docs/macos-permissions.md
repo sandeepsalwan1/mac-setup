@@ -20,18 +20,31 @@ to authorize Vault from an ambiguous shell.
 
 ## What the guide requests
 
-The guide opens these developer-relevant System Settings panes one at a time:
+The guide opens every app-facing privacy category that can plausibly affect a
+terminal, developer tool, remote session, or agent workflow. The essential
+developer group includes:
 
 - Full Disk Access for repositories, developer files, and protected diagnostics
+- Files & Folders for Desktop, Documents, Downloads, and external volumes
 - Accessibility for explicitly requested UI automation
+- Input Monitoring for cross-application keyboard workflows
 - Developer Tools for developer-tool policy
 - Automation for Finder and System Events workflows
 - App Management for approved application installation and updates
 - Screen & System Audio Recording for screenshot-based browser and UI verification
+- Remote Desktop, Bluetooth, and Local Network for remote or device workflows
 
-Add and enable verified WezTerm. Add verified Codex when its desktop app should
-perform the same work. The guide does not request unrelated Camera, Microphone,
-Contacts, Calendars, or Photos access.
+It then explicitly directs you through Microphone, Camera, Speech Recognition,
+Location Services, Contacts, Calendars, Reminders, Photos, Media & Apple Music,
+Home, Motion & Fitness, Focus, Passkey Access, Pasteboard, Notifications, and a
+final complete Privacy & Security review. Add and enable verified WezTerm. Add
+verified Codex when its desktop app should perform the same work.
+
+Some personal-data categories do not offer an Add button. macOS lists an app
+there only after that signed app or one of its child tools makes a real request.
+The guide still opens and explains every category, and the final review catches
+new categories added by later macOS versions. Grant an absent capability when
+the real workflow causes macOS to ask for it.
 
 After the clicks, it runs harmless Finder Automation and Accessibility probes.
 The other permission decisions remain visibly controlled by System Settings,

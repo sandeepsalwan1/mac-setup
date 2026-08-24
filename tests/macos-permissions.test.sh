@@ -96,11 +96,42 @@ grep -Fq 'this Mac is managed' "$TMP_ROOT/status.out" ||
 	fail 'status did not report MDM enrollment'
 
 MAC_SETUP_SESSION_KIND=wezterm run_permissions --guide >"$TMP_ROOT/guide.out"
-for anchor in Privacy_AllFiles Privacy_Accessibility Privacy_DevTools Privacy_Automation Privacy_AppBundles Privacy_ScreenCapture; do
+for anchor in \
+	Privacy_AllFiles \
+	Privacy_FilesAndFolders \
+	Privacy_Accessibility \
+	Privacy_ListenEvent \
+	Privacy_DevTools \
+	Privacy_Automation \
+	Privacy_AppBundles \
+	Privacy_ScreenCapture \
+	Privacy_AudioCapture \
+	Privacy_RemoteDesktop \
+	Privacy_Bluetooth \
+	Privacy_LocalNetwork \
+	Privacy_Microphone \
+	Privacy_Camera \
+	Privacy_SpeechRecognition \
+	Privacy_LocationServices \
+	Privacy_Contacts \
+	Privacy_Calendars \
+	Privacy_Reminders \
+	Privacy_Photos \
+	Privacy_Media \
+	Privacy_HomeKit \
+	Privacy_Motion \
+	Privacy_Focus \
+	Privacy_PasskeyAccess \
+	Privacy_Pasteboard; do
 	grep -Fq "x-apple.systempreferences:com.apple.preference.security?$anchor" "$FIXTURE_OPEN_LOG" ||
 		fail "guide did not open $anchor"
 done
-[ "$(wc -l <"$FIXTURE_OPEN_LOG" | tr -d ' ')" = 6 ] ||
+
+grep -Fq 'x-apple.systempreferences:com.apple.Notifications-Settings.extension' "$FIXTURE_OPEN_LOG" ||
+	fail 'guide did not open Notifications'
+grep -Fxq 'x-apple.systempreferences:com.apple.preference.security' "$FIXTURE_OPEN_LOG" ||
+	fail 'guide did not finish on the complete Privacy & Security list'
+[ "$(wc -l <"$FIXTURE_OPEN_LOG" | tr -d ' ')" = 28 ] ||
 	fail 'guide opened an unexpected number of permission panes'
 grep -Fq 'Finder' "$FIXTURE_OSASCRIPT_LOG" || fail 'guide did not probe Finder Automation'
 grep -Fq 'UI elements enabled' "$FIXTURE_OSASCRIPT_LOG" || fail 'guide did not probe Accessibility'
@@ -119,4 +150,4 @@ if BAD_WEZTERM_SIGNATURE=1 MAC_SETUP_SESSION_KIND=wezterm run_permissions --stat
 	fail 'status accepted an invalid WezTerm code signature'
 fi
 
-pass 'macOS permission guide verifies app signatures, detects MDM, opens exact panes, and relaunches in WezTerm'
+pass 'macOS permission guide verifies app signatures, opens every relevant category, detects MDM, and relaunches in WezTerm'

@@ -1,5 +1,7 @@
 [keys]
-prefix = "ctrl+b"
+# Thumb plus left pinky, with no binding in this Neovim, WezTerm, or Rectangle setup.
+# Plain Tab is intentionally avoided because shells and Neovim need it directly.
+prefix = "ctrl+space"
 focus_pane_left  = "prefix+h"
 focus_pane_down  = "prefix+j"
 focus_pane_up    = "prefix+k"

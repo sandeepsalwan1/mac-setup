@@ -49,7 +49,7 @@ window.QBANK = {
     correct: 1,
     why: 'done is idle-you-have-not-seen. Focusing the tab flips it to idle; a CLI read deliberately does not. That is what makes the sidebar an unread inbox.' },
 
-  { q: 'Ctrl+b then the percent key splits the pane how?',
+  { q: 'Ctrl+Space then the percent key splits the pane how?',
     a: ['Into two panes arranged side by side',
         'Into two panes stacked top and bottom',
         'Into a new tab holding the second pane'],
@@ -64,18 +64,18 @@ window.QBANK = {
     why: 'Herdr is a background server. Closing the window is a detach. Only `herdr server stop` kills the panes.' },
 
   { q: 'Fastest way to read a long stack trace from an agent pane?',
-    a: ['Ctrl+b then e, opening scrollback in Neovim',
-        'Ctrl+b then y, then select it in copy mode',
-        'Ctrl+b then z, then scroll back through it'],
+    a: ['Ctrl+Space then e, opening scrollback in Neovim',
+        'Ctrl+Space then y, then select it in copy mode',
+        'Ctrl+Space then z, then scroll back through it'],
     correct: 0,
     why: 'edit_scrollback drops the history into Neovim with search, motions and yank. Copy mode works but is slower for anything long.' },
 
   { q: 'How do you find out what a key does on YOUR machine?',
     a: ['Read the keys table in your own config.toml',
-        'Press Ctrl+b and then the question-mark key',
+        'Press Ctrl+Space and then the question-mark key',
         'Search the herdr.dev configuration reference'],
     correct: 1,
-    why: 'Your config only overrides four bindings. The site shows defaults. Only the in-app list shows the merged result, which is what actually happens.' }
+    why: 'Your config overrides four actions plus the prefix. The site shows defaults. Only the in-app list shows the merged result, which is what actually happens.' }
 ],
   // 03 - Move without a mouse
   l3: [
@@ -267,7 +267,7 @@ window.QBANK = {
         'The keybindings in home/.config/herdr/config.toml',
         'A cask added to the list in configuration.nix'],
     correct: 1,
-    why: 'Anything under home/ is symlinked live - reload it with Ctrl+b Shift+R. Aliases and package lists live in .nix files and need a switch.' }
+    why: 'Anything under home/ is symlinked live - reload it with Ctrl+Space Shift+R. Aliases and package lists live in .nix files and need a switch.' }
 ]
 };
 

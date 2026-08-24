@@ -80,7 +80,7 @@ whole point is learning the one you own.
   Use for: the authoritative answer to "what is the key for X". Pipe to a file and read it:
   `herdr --default-config > /tmp/herdr-defaults.toml`.
 
-- **<kbd>Ctrl</kbd>+<kbd>b</kbd> then <kbd>?</kbd>** inside Herdr - live list of active bindings,
+- **<kbd>Ctrl</kbd>+<kbd>Space</kbd> then <kbd>?</kbd>** inside Herdr - live list of active bindings,
   reflecting your own `config.toml` overrides.
   Use for: the ground truth for your machine, not the defaults.
 

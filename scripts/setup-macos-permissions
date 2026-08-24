@@ -154,8 +154,16 @@ pause_after_permission() {
 open_permission() {
 	local label=$1 anchor=$2 reason=$3 targets=$4
 	note "$label: $reason"
-	note "add and enable: $targets"
+	note "review this category and add or enable when macOS offers it: $targets"
 	"$OPEN_BIN" "x-apple.systempreferences:com.apple.preference.security?$anchor"
+	pause_after_permission "$label"
+}
+
+open_setting() {
+	local label=$1 url=$2 reason=$3 targets=$4
+	note "$label: $reason"
+	note "review this category and add or enable when macOS offers it: $targets"
+	"$OPEN_BIN" "$url"
 	pause_after_permission "$label"
 }
 
@@ -172,10 +180,15 @@ run_guide() {
 		targets="$targets and $codex_app"
 	fi
 
+	note 'essential developer and agent permissions'
 	open_permission 'Full Disk Access' Privacy_AllFiles \
 		'access repositories, developer files, and protected diagnostic paths' "$targets"
+	open_permission 'Files & Folders' Privacy_FilesAndFolders \
+		'review Desktop, Documents, Downloads, network-volume, and removable-volume access' "$targets"
 	open_permission Accessibility Privacy_Accessibility \
 		'allow explicitly requested UI automation and system control' "$targets"
+	open_permission 'Input Monitoring' Privacy_ListenEvent \
+		'allow workflows that must observe keyboard input outside their own windows' "$targets"
 	open_permission 'Developer Tools' Privacy_DevTools \
 		'run developer tools that macOS subjects to developer-tool policy' "$targets"
 	note 'requesting harmless Finder metadata once so macOS can register the Automation relationship'
@@ -186,6 +199,53 @@ run_guide() {
 		'install or update applications during an approved setup operation' "$targets"
 	open_permission 'Screen & System Audio Recording' Privacy_ScreenCapture \
 		'allow screenshot-based browser and computer-use verification' "$targets"
+	open_permission 'System Audio Recording' Privacy_AudioCapture \
+		'allow audio capture when a requested agent workflow needs system audio' "$targets"
+	open_permission 'Remote Desktop' Privacy_RemoteDesktop \
+		'allow remote-control workflows when this Mac is intentionally operated remotely' "$targets"
+	open_permission Bluetooth Privacy_Bluetooth \
+		'allow command-line workflows to communicate with nearby devices' "$targets"
+	open_permission 'Local Network' Privacy_LocalNetwork \
+		'allow local development servers, devices, and agent services to communicate' "$targets"
+
+	note 'personal-data and hardware permissions; macOS may list an app only after a real capability request'
+	open_permission Microphone Privacy_Microphone \
+		'allow voice and audio workflows when explicitly requested' "$targets"
+	open_permission Camera Privacy_Camera \
+		'allow camera workflows when explicitly requested' "$targets"
+	open_permission 'Speech Recognition' Privacy_SpeechRecognition \
+		'allow on-device or system speech transcription workflows' "$targets"
+	open_permission 'Location Services' Privacy_LocationServices \
+		'allow location-aware workflows when explicitly requested' "$targets"
+	open_permission Contacts Privacy_Contacts \
+		'allow contact-aware workflows when explicitly requested' "$targets"
+	open_permission Calendars Privacy_Calendars \
+		'allow calendar workflows when explicitly requested' "$targets"
+	open_permission Reminders Privacy_Reminders \
+		'allow reminder workflows when explicitly requested' "$targets"
+	open_permission Photos Privacy_Photos \
+		'allow photo-library workflows when explicitly requested' "$targets"
+	open_permission 'Media & Apple Music' Privacy_Media \
+		'allow media-library workflows when explicitly requested' "$targets"
+	open_permission Home Privacy_HomeKit \
+		'allow Home data and accessory workflows when explicitly requested' "$targets"
+	open_permission 'Motion & Fitness' Privacy_Motion \
+		'allow motion-data workflows when explicitly requested' "$targets"
+	open_permission Focus Privacy_Focus \
+		'allow workflows to read whether notifications are silenced' "$targets"
+	open_permission 'Passkey Access for Web Browsers' Privacy_PasskeyAccess \
+		'allow browser passkey workflows when explicitly requested' "$targets"
+	open_permission Pasteboard Privacy_Pasteboard \
+		'review clipboard access used for copy, paste, and agent handoff' "$targets"
+
+	open_setting Notifications \
+		'x-apple.systempreferences:com.apple.Notifications-Settings.extension' \
+		'allow Herdr, WezTerm, Codex, and agent notifications so blocked or completed work is visible' \
+		'Herdr, WezTerm, Codex, and any agent app that appears'
+	open_setting 'Privacy & Security final review' \
+		'x-apple.systempreferences:com.apple.preference.security' \
+		'review the complete privacy list for any OS-version-specific category not deep-linked above' \
+		"$targets"
 
 	finder_ok=0
 	if "$OSASCRIPT_BIN" -e 'tell application "Finder" to get name of startup disk' >/dev/null 2>&1; then
@@ -197,7 +257,8 @@ run_guide() {
 	[ "$accessibility_state" = true ] || die 'Accessibility is still unavailable to this WezTerm session'
 
 	note 'Finder Automation and Accessibility probes passed without reading personal data'
-	note 'Full Disk, Developer Tools, App Management, and Screen Recording remain visible user or MDM decisions in System Settings'
+	note 'all other categories remain visible user or MDM decisions in System Settings'
+	note 'an absent app has not made the capability-specific request yet; grant it when the real workflow causes macOS to ask'
 	note 'quit and reopen WezTerm and Codex after changing their permissions'
 	note "continue with: $ROOT/scripts/setup-vault --all"
 }
