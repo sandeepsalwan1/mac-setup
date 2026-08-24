@@ -14,6 +14,7 @@ trufflehog filesystem \
 	--json \
 	--results=verified,unknown \
 	--fail-on-scan-errors \
+	--exclude-paths "$ROOT/tests/trufflehog-exclude-paths.txt" \
 	"$ROOT" >"$REPORT"
 
 # The vendored Autoreview hardening test intentionally uses

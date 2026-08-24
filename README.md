@@ -4,16 +4,16 @@ Sandeep's portable macOS setup for a new work Mac. It is based on
 [kunchenguid/dotfiles](https://github.com/kunchenguid/dotfiles) and uses
 nix-darwin plus Home Manager so the same clone can be applied repeatedly.
 
-This repository is intentionally private. It contains personal configuration,
-agent instructions, Secret Names, and selected skill snapshots. It never
-contains Secret Values, login state, chat history, databases, caches, or logs.
+This repository is public. It contains personal configuration, agent
+instructions, Secret Names, and selected skill snapshots. It never contains
+Secret Values, login state, chat history, databases, caches, or logs.
 
 ## Fresh Mac
 
-Sign in to GitHub or add your SSH key, then run:
+Run:
 
 ```sh
-git clone git@github.com:sandeepsalwan1/mac-setup.git ~/.dotfiles
+git clone https://github.com/sandeepsalwan1/mac-setup.git ~/.dotfiles
 ~/.dotfiles/bootstrap.sh
 ```
 
