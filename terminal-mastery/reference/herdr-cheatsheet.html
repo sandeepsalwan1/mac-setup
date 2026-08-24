@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Herdr cheat sheet</title>
+<link rel="stylesheet" href="../assets/course.css">
+</head>
+<body class="card">
+<div class="page">
+
+<p class="kicker">Reference &middot; herdr 0.8.2, verified on this machine</p>
+<h1>Herdr</h1>
+<p class="standfirst">Read from <code>herdr --default-config</code>,
+<code>herdr --skill</code> and your <code>~/.config/herdr/config.toml</code>. Prefix is
+<kbd>Ctrl</kbd>+<kbd>b</kbd>, written below as <kbd>^b</kbd> - press and release, then the
+next key alone.</p>
+
+<div class="cols">
+
+<section>
+<h2>Your four real overrides</h2>
+<table>
+  <tr><th>Action</th><th>Default</th><th>Yours</th></tr>
+  <tr><td>split_horizontal</td><td><kbd>^b</kbd> <kbd>-</kbd></td><td><kbd>^b</kbd> <kbd>"</kbd></td></tr>
+  <tr><td>split_vertical</td><td><kbd>^b</kbd> <kbd>v</kbd></td><td><kbd>^b</kbd> <kbd>%</kbd></td></tr>
+  <tr><td>close_tab</td><td><kbd>^b</kbd> <kbd>&#8679;X</kbd></td><td><kbd>^b</kbd> <kbd>&amp;</kbd></td></tr>
+  <tr><td>copy_mode</td><td><em>unset</em></td><td><kbd>^b</kbd> <kbd>y</kbd></td></tr>
+</table>
+<p>Everything else in your config restates a Herdr default.</p>
+</section>
+
+<section>
+<h2>Panes</h2>
+<table>
+  <tr><td><kbd>^b</kbd> <kbd>h</kbd><kbd>j</kbd><kbd>k</kbd><kbd>l</kbd></td><td>focus left / down / up / right</td></tr>
+  <tr><td><kbd>^b</kbd> <kbd>%</kbd></td><td>split side by side</td></tr>
+  <tr><td><kbd>^b</kbd> <kbd>"</kbd></td><td>split stacked</td></tr>
+  <tr><td><kbd>^b</kbd> <kbd>z</kbd></td><td><strong>zoom / unzoom</strong></td></tr>
+  <tr><td><kbd>^b</kbd> <kbd>x</kbd></td><td>close pane</td></tr>
+  <tr><td><kbd>^b</kbd> <kbd>r</kbd></td><td>resize mode, then <kbd>hjkl</kbd></td></tr>
+  <tr><td><kbd>^b</kbd> <kbd>Tab</kbd></td><td>cycle panes forward</td></tr>
+  <tr><td><kbd>^b</kbd> <kbd>&#8679;Tab</kbd></td><td>cycle panes back</td></tr>
+  <tr><td><kbd>^b</kbd> <kbd>&#8679;P</kbd></td><td>rename pane</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Tabs</h2>
+<table>
+  <tr><td><kbd>^b</kbd> <kbd>c</kbd></td><td>new tab</td></tr>
+  <tr><td><kbd>^b</kbd> <kbd>n</kbd> / <kbd>p</kbd></td><td>next / previous tab</td></tr>
+  <tr><td><kbd>^b</kbd> <kbd>1</kbd>..<kbd>9</kbd></td><td>jump to tab N</td></tr>
+  <tr><td><kbd>^b</kbd> <kbd>&amp;</kbd></td><td>close tab</td></tr>
+  <tr><td><kbd>^b</kbd> <kbd>&#8679;T</kbd></td><td>rename tab</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Workspaces</h2>
+<table>
+  <tr><td><kbd>^b</kbd> <kbd>w</kbd></td><td>workspace picker</td></tr>
+  <tr><td><kbd>^b</kbd> <kbd>g</kbd></td><td><strong>goto</strong> - fuzzy jump to anything</td></tr>
+  <tr><td><kbd>^b</kbd> <kbd>&#8679;N</kbd></td><td>new workspace</td></tr>
+  <tr><td><kbd>^b</kbd> <kbd>&#8679;G</kbd></td><td><strong>new git worktree</strong> as a workspace</td></tr>
+  <tr><td><kbd>^b</kbd> <kbd>&#8679;W</kbd></td><td>rename workspace</td></tr>
+  <tr><td><kbd>^b</kbd> <kbd>&#8679;D</kbd></td><td>close workspace (asks)</td></tr>
+</table>
+<p>In the picker, navigate with <kbd>h</kbd><kbd>j</kbd><kbd>k</kbd><kbd>l</kbd> and the
+up/down arrows.</p>
+</section>
+
+<section>
+<h2>Session and UI</h2>
+<table>
+  <tr><td><kbd>^b</kbd> <kbd>?</kbd></td><td><strong>every active binding</strong></td></tr>
+  <tr><td><kbd>^b</kbd> <kbd>b</kbd></td><td>toggle sidebar / agent panel</td></tr>
+  <tr><td><kbd>^b</kbd> <kbd>q</kbd></td><td><strong>detach</strong> - all keeps running</td></tr>
+  <tr><td><kbd>^b</kbd> <kbd>s</kbd></td><td>settings</td></tr>
+  <tr><td><kbd>^b</kbd> <kbd>e</kbd></td><td>edit scrollback in your editor</td></tr>
+  <tr><td><kbd>^b</kbd> <kbd>o</kbd></td><td>open notification target</td></tr>
+  <tr><td><kbd>^b</kbd> <kbd>&#8679;R</kbd></td><td>reload config.toml live</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Copy text - easiest first</h2>
+<table>
+  <tr><td>drag with the mouse</td><td>auto-copies (<code>copy_on_select = true</code>)</td></tr>
+  <tr><td><kbd>^b</kbd> <kbd>e</kbd></td><td>whole scrollback in Neovim. Best for long output.</td></tr>
+  <tr><td><kbd>^b</kbd> <kbd>y</kbd></td><td>copy mode</td></tr>
+</table>
+<p>Inside copy mode (not configurable):</p>
+<table>
+  <tr><td><kbd>h</kbd><kbd>j</kbd><kbd>k</kbd><kbd>l</kbd></td><td>move</td></tr>
+  <tr><td><kbd>v</kbd> or <kbd>Space</kbd></td><td>start selecting</td></tr>
+  <tr><td><kbd>y</kbd> or <kbd>Enter</kbd></td><td>copy and exit</td></tr>
+  <tr><td><kbd>q</kbd> or <kbd>Esc</kbd></td><td>cancel</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Agent states</h2>
+<table>
+  <tr><td><code>working</code></td><td>running - leave it</td></tr>
+  <tr><td><code>blocked</code></td><td><strong>needs you</strong> - approval or question</td></tr>
+  <tr><td><code>done</code></td><td><strong>finished while unseen</strong></td></tr>
+  <tr><td><code>idle</code></td><td>ready, and you have already looked</td></tr>
+  <tr><td><code>unknown</code></td><td>present but unclassified. Not proof of completion.</td></tr>
+</table>
+<p>Focusing the tab flips <code>done</code> to <code>idle</code>. A CLI read does not. Scan
+for <code>done</code> and <code>blocked</code>; ignore the rest.</p>
+</section>
+
+<section>
+<h2>Start, leave, return</h2>
+<table>
+  <tr><td><code>herdr</code></td><td>launch or reattach</td></tr>
+  <tr><td><kbd>^b</kbd> <kbd>q</kbd></td><td>detach</td></tr>
+  <tr><td><code>exit</code></td><td>close this pane</td></tr>
+  <tr><td><code>herdr server stop</code></td><td>stop everything</td></tr>
+  <tr><td><code>herdr status</code></td><td>client and server status</td></tr>
+  <tr><td><code>herdr --remote user@host</code></td><td>attach over SSH</td></tr>
+  <tr><td><code>herdr --session work</code></td><td>use a named session</td></tr>
+</table>
+</section>
+
+<section>
+<h2>IDs and context</h2>
+<pre><code>workspace  w1
+tab        w1:t1
+pane       w1:p1
+
+echo $HERDR_WORKSPACE_ID
+echo $HERDR_TAB_ID
+echo $HERDR_PANE_ID
+echo $HERDR_ENV        <span class="c"># "1" inside herdr</span></code></pre>
+<p>IDs are stable and never reused. Parse them from JSON responses, do not guess.</p>
+</section>
+
+<section>
+<h2>CLI - look around</h2>
+<pre><code>herdr status
+herdr workspace list
+herdr tab list --workspace w1
+herdr pane list --workspace w1
+herdr pane current --current
+herdr pane layout --pane w1:p1
+herdr agent list
+herdr agent explain &lt;name&gt;</code></pre>
+<p>Run a group bare to see its subcommands: <code>herdr agent</code>,
+<code>herdr pane</code>. Never bare <code>herdr</code> - that launches the TUI.</p>
+</section>
+
+<section>
+<h2>CLI - create and control</h2>
+<pre><code>herdr pane split --current --direction right \
+  --cwd "$PWD" --no-focus
+
+herdr agent start rev --kind codex --pane w1:p2
+herdr agent prompt rev "Review the diff." \
+  --wait --timeout 120000
+herdr agent wait rev --until blocked --timeout 120000
+herdr agent read rev --source recent-unwrapped --lines 120
+herdr agent send-keys rev esc
+herdr agent get rev
+
+herdr pane run w1:p2 "pytest -q"
+herdr pane wait-output w1:p2 --match "passed" \
+  --timeout 120000
+herdr pane read w1:p2 --source recent-unwrapped</code></pre>
+<p>Read sources: <code>visible</code>, <code>recent</code>,
+<code>recent-unwrapped</code> (best for transcripts), <code>detection</code>. Add
+<code>--format ansi</code> when colour is evidence.</p>
+</section>
+
+<section>
+<h2>CLI - housekeeping</h2>
+<pre><code>herdr worktree create | open | list | remove
+herdr session  list | attach | stop | delete
+herdr config check          <span class="c"># validate, names unknown keys</span>
+herdr config reset-keys     <span class="c"># back up and drop custom binds</span>
+herdr server reload-config
+herdr completion zsh
+herdr update
+herdr channel set stable|preview
+herdr --default-config      <span class="c"># every option, commented</span>
+herdr --skill               <span class="c"># CLI contract for an agent</span></code></pre>
+</section>
+
+<section>
+<h2>Rules of thumb</h2>
+<ul>
+<li>Use <code>--no-focus</code> for background work.</li>
+<li>Target <code>--current</code>, an explicit pane ID, or a unique agent name - never
+whatever happens to be focused.</li>
+<li>Do not close panes, tabs or workspaces you did not create.</li>
+<li>Never <code>herdr server stop</code> from inside a live session unless you mean it.</li>
+<li>Agent names: <code>[a-z][a-z0-9_-]{0,31}</code>, unique among live agents.</li>
+<li>Server errors are JSON on stderr, exit 1. Syntax errors exit 2.</li>
+</ul>
+</section>
+
+<section>
+<h2>Settings worth knowing</h2>
+<table>
+  <tr><td><code>ui.agent_panel_sort</code></td><td><code>"spaces"</code> groups by workspace (yours), <code>"priority"</code> floats urgent</td></tr>
+  <tr><td><code>ui.mouse_capture</code></td><td><code>true</code> - Herdr owns the mouse</td></tr>
+  <tr><td><code>ui.copy_on_select</code></td><td><code>true</code> - drag auto-copies</td></tr>
+  <tr><td><code>ui.status_indicators</code></td><td><code>"dots"</code> or <code>"symbols"</code></td></tr>
+  <tr><td><code>ui.confirm_close</code></td><td>ask before closing a workspace</td></tr>
+  <tr><td><code>ui.sidebar_start_collapsed</code></td><td>start with the panel hidden</td></tr>
+  <tr><td><code>[[keys.command]]</code></td><td>bind your own command to a key - popup, pane, or background</td></tr>
+</table>
+<p>A custom binding, for example <code>lazygit</code> in a popup on
+<kbd>^b</kbd> <kbd>alt</kbd>+<kbd>g</kbd>, is a <code>[[keys.command]]</code> block with
+<code>type = "popup"</code>.</p>
+</section>
+
+</div>
+
+<div class="footer">
+  <p class="source">Verified against <code>herdr 0.8.2</code> at
+  <code>/opt/homebrew/bin/herdr</code>. Regenerate the truth any time with
+  <code>herdr --default-config</code>, or press <kbd>^b</kbd> <kbd>?</kbd> in a live
+  session for your merged bindings.</p>
+</div>
+
+</div>
+</body>
+</html>

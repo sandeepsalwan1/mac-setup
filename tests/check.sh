@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+
+shellcheck -x \
+	"$ROOT/bootstrap.sh" \
+	"$ROOT/rebuild.sh" \
+	"$ROOT/home/bin/learn" \
+	"$ROOT/scripts/install-tools" \
+	"$ROOT/scripts/link-official-codex-skills" \
+	"$ROOT/scripts/setup-vault" \
+	"$ROOT/tests/security-scan.sh" \
+	"$ROOT/tests/bootstrap.test.sh" \
+	"$ROOT/tests/install-tools.test.sh" \
+	"$ROOT/tests/official-codex-skills.test.sh" \
+	"$ROOT/tests/setup-vault.test.sh" \
+	"$ROOT/tests/terminal-mastery.test.sh"
+
+shfmt -d \
+	"$ROOT/bootstrap.sh" \
+	"$ROOT/rebuild.sh" \
+	"$ROOT/home/bin/learn" \
+	"$ROOT/scripts/install-tools" \
+	"$ROOT/scripts/link-official-codex-skills" \
+	"$ROOT/scripts/setup-vault" \
+	"$ROOT/tests/security-scan.sh" \
+	"$ROOT/tests/bootstrap.test.sh" \
+	"$ROOT/tests/install-tools.test.sh" \
+	"$ROOT/tests/official-codex-skills.test.sh" \
+	"$ROOT/tests/setup-vault.test.sh" \
+	"$ROOT/tests/terminal-mastery.test.sh"
+
+"$ROOT/tests/bootstrap.test.sh"
+"$ROOT/tests/install-tools.test.sh"
+"$ROOT/tests/official-codex-skills.test.sh"
+"$ROOT/tests/setup-vault.test.sh"
+"$ROOT/tests/terminal-mastery.test.sh"
+"$ROOT/tests/pi-calm.test.sh"
+"$ROOT/tests/security-scan.sh"
+
+nix flake check --no-build "$ROOT"

@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+NPM_GLOBALS_FILE="${NPM_GLOBALS_FILE:-$ROOT/home/npm-globals.txt}"
+NPM_PREFIX="${NPM_PREFIX:-$HOME/.local/share/npm}"
+NO_MISTAKES_VERSION="${NO_MISTAKES_VERSION:-v1.57.0}"
+
+note() {
+	printf 'install-tools: %s\n' "$1"
+}
+
+die() {
+	printf 'install-tools: %s\n' "$1" >&2
+	exit 1
+}
+
+install_npm_tools() {
+	local npm_bin spec package_name wanted_version installed_version
+
+	if [ "${MAC_SETUP_SKIP_NPM:-0}" = "1" ]; then
+		note 'npm tool installation skipped by environment'
+		return
+	fi
+
+	npm_bin="${NPM_BIN:-$(command -v npm 2>/dev/null || true)}"
+	[ -n "$npm_bin" ] || die 'npm is unavailable after the Nix activation'
+	[ -r "$NPM_GLOBALS_FILE" ] || die "missing npm manifest: $NPM_GLOBALS_FILE"
+
+	mkdir -p "$NPM_PREFIX"
+	export NPM_CONFIG_PREFIX="$NPM_PREFIX"
+	export PATH="$NPM_PREFIX/bin:$PATH"
+
+	while IFS= read -r spec || [ -n "$spec" ]; do
+		case "$spec" in
+		'' | '#'*) continue ;;
+		esac
+
+		package_name="${spec%@*}"
+		wanted_version="${spec##*@}"
+		installed_version=''
+		if command -v "$package_name" >/dev/null 2>&1; then
+			installed_version="$("$package_name" --version 2>/dev/null | head -n 1 || true)"
+		fi
+
+		if [ "$installed_version" = "$wanted_version" ]; then
+			note "$package_name $wanted_version is already installed"
+			continue
+		fi
+
+		note "installing $spec"
+		"$npm_bin" install --global --prefix "$NPM_PREFIX" "$spec"
+	done <"$NPM_GLOBALS_FILE"
+}
+
+install_no_mistakes() {
+	local existing_version architecture filename expected_checksum url
+	local temp_dir archive actual_checksum install_dir install_bin link_dir link_path
+
+	if [ "${MAC_SETUP_SKIP_NO_MISTAKES:-0}" = "1" ]; then
+		note 'no-mistakes installation skipped by environment'
+		return
+	fi
+
+	existing_version=''
+	if command -v no-mistakes >/dev/null 2>&1; then
+		existing_version="$(no-mistakes --version 2>/dev/null | head -n 1 || true)"
+	elif [ -x "$HOME/.local/bin/no-mistakes" ]; then
+		existing_version="$("$HOME/.local/bin/no-mistakes" --version 2>/dev/null | head -n 1 || true)"
+	fi
+	case "$existing_version" in
+	*"$NO_MISTAKES_VERSION"*)
+		note "no-mistakes $NO_MISTAKES_VERSION is already installed"
+		return
+		;;
+	esac
+
+	case "$(uname -m)" in
+	arm64 | aarch64)
+		architecture=arm64
+		expected_checksum=b621637578afcd62bc0e8ddbe829d08ee093079d0e5fbb9edd1f15f7cfffe635
+		;;
+	x86_64 | amd64)
+		architecture=amd64
+		expected_checksum=7f84897c17bc963819dc7c576d1b2682ac1502581086345a7c0adccc86f783f8
+		;;
+	*) die "unsupported architecture: $(uname -m)" ;;
+	esac
+
+	filename="no-mistakes-${NO_MISTAKES_VERSION}-darwin-${architecture}.tar.gz"
+	url="https://github.com/kunchenguid/no-mistakes/releases/download/${NO_MISTAKES_VERSION}/${filename}"
+	temp_dir="$(mktemp -d "${TMPDIR:-/tmp}/mac-setup-tools.XXXXXX")"
+	archive="$temp_dir/$filename"
+	trap 'rm -rf "$temp_dir"' EXIT
+
+	note "downloading no-mistakes $NO_MISTAKES_VERSION"
+	curl --proto '=https' --tlsv1.2 -fsSL "$url" -o "$archive"
+	actual_checksum="$(shasum -a 256 "$archive" | awk '{print $1}')"
+	[ "$actual_checksum" = "$expected_checksum" ] ||
+		die "checksum mismatch for $filename"
+
+	tar -xzf "$archive" -C "$temp_dir"
+	install_dir="$HOME/.no-mistakes/bin"
+	install_bin="$install_dir/no-mistakes"
+	link_dir="$HOME/.local/bin"
+	link_path="$link_dir/no-mistakes"
+	mkdir -p "$install_dir" "$link_dir"
+	install -m 0755 "$temp_dir/no-mistakes" "$install_bin"
+
+	if [ -e "$link_path" ] && [ ! -L "$link_path" ]; then
+		mv "$link_path" "$link_path.pre-mac-setup"
+	fi
+	ln -sfn "$install_bin" "$link_path"
+	"$install_bin" daemon restart >/dev/null
+	note "installed no-mistakes $NO_MISTAKES_VERSION"
+}
+
+install_npm_tools
+install_no_mistakes

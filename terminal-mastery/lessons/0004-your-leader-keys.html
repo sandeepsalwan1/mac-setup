@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>04 - Your leader keys</title>
+<link rel="stylesheet" href="../assets/course.css">
+</head>
+<body>
+<div class="page">
+
+<p class="kicker">Lesson 04 &middot; Neovim &middot; 10 min</p>
+<h1>Your leader keys</h1>
+<p class="standfirst">Five shortcuts is the entire custom surface of your editor. After
+this you can open any file in any repo in about a second.</p>
+
+<div class="tldr">
+<span class="label">The whole set. There is no second page.</span>
+<table>
+  <tr><td><kbd>Space</kbd><kbd>f</kbd></td><td>find <strong>f</strong>iles by name</td></tr>
+  <tr><td><kbd>Space</kbd><kbd>s</kbd></td><td><strong>s</strong>earch text across the project</td></tr>
+  <tr><td><kbd>Space</kbd><kbd>b</kbd></td><td>switch <strong>b</strong>uffer (open file)</td></tr>
+  <tr><td><kbd>Space</kbd><kbd>e</kbd></td><td>file <strong>e</strong>xplorer (Oil)</td></tr>
+  <tr><td><kbd>Space</kbd><kbd>g</kbd></td><td><strong>g</strong>it (lesson 05)</td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>a</kbd></td><td>select all</td></tr>
+</table>
+</div>
+
+<div id="drill"></div>
+
+<h2>Check yourself</h2>
+<div id="quiz"></div>
+
+<div class="footer">
+  <div class="nav">
+    <span>Prev: <a href="0003-move-without-a-mouse.html">03</a> &middot; Next: <a href="0005-reading-ai-code.html">05 - Reading code you did not write</a></span>
+    <span><a href="../reference/nvim-cheatsheet.html">Full cheat sheet</a></span>
+  </div>
+  <p class="source"><strong>In-app help beats any list:</strong> <kbd>Space</kbd> and wait,
+  <kbd>g</kbd><kbd>?</kbd> inside Oil, <kbd>?</kbd> inside a picker. Offline manuals at
+  <code>:help oil</code>, <code>:help snacks-picker</code>, <code>:help which-key</code>.</p>
+  <p class="source">Want <kbd>g</kbd><kbd>d</kbd> actually working? Say the word and I will
+  write the LSP block - about fifteen lines.</p>
+</div>
+
+</div>
+<script src="../assets/questions.js"></script>
+<script src="../assets/drill.js"></script>
+<script src="../assets/quiz.js"></script>
+<script>
+renderDrill('drill', [
+  { section: 'The safety net' },
+  { do: 'cd ~/.dotfiles && nvim .', cmd: true,
+    see: 'Opening a directory drops you straight into Oil, the file browser.' },
+  { do: 'Press Space and wait a second', see: 'A popup lists every key you could press next, with descriptions.',
+    note: 'That is which-key. You never have to remember this lesson. Use it deliberately for the first week.' },
+  { do: 'Esc', see: 'Popup closes.' },
+  { do: 'Press Ctrl+w and wait', see: 'It works for built-in Vim too - window commands, <kbd>g</kbd>, <kbd>z</kbd>.',
+    note: 'So which-key teaches you Vim, not just your own mappings.' },
+
+  { section: 'Find files by name' },
+  { do: 'Space f', see: 'A picker opens: results on one side, live preview on the other.' },
+  { do: 'Type: keys', see: 'It narrows to <code>keys.lua</code> as you type.' },
+  { do: 'Type: nvmluakeys', see: 'Still finds it. Matching is fuzzy - the letters just have to appear in order.' },
+  { do: 'Ctrl+n then Ctrl+p', see: 'Move down and up the result list. Arrows work too.' },
+  { do: 'Press ? ', see: 'The picker\'s own keymap. Always current.' },
+  { do: 'Esc then Space f then type keys then Enter', see: 'You are in <code>keys.lua</code> - the file that defines your Escape mapping.' },
+
+  { section: 'Search text across the project' },
+  { do: 'Space s', see: 'Same widget, but now it searches file <em>contents</em>.' },
+  { do: 'Type: mapleader', see: 'One hit, in <code>vim_config.lua</code>.',
+    note: 'You just found a definition across a repo without knowing the filename. This is the one that matters in unfamiliar code.' },
+  { do: 'Enter', see: 'Jumps you to the exact line.' },
+  { do: 'Space s then type: herdr then Enter', see: 'Finds every mention across the whole dotfiles repo.',
+    note: 'Fast because <code>home.nix</code> installs ripgrep and fd, and Snacks uses them underneath.' },
+
+  { section: 'Oil - the file browser that is a text buffer' },
+  { do: 'Space e', see: 'A directory listing. It is an ordinary, editable buffer.' },
+  { do: 'g?', see: 'Oil\'s full keymap. Read it once.' },
+  { do: 'q or Esc to close the help', see: 'Back to the listing.' },
+  { do: 'Move to a directory with j and k, then Enter', see: 'You are inside it.' },
+  { do: '-', see: 'Back up to the parent. Just the minus key.' },
+  { do: 'Ctrl+p on a file', see: 'Previews it without opening.' },
+
+  { section: 'Manage files by editing text' },
+  { do: 'cd /tmp && nvim .', cmd: true, see: 'Oil, in a directory where nothing matters.' },
+  { do: 'o then type: newthing.txt then Esc', see: 'A new line appears in the listing. Nothing on disk yet.' },
+  { do: 'o then type: newdir/ then Esc', see: 'The trailing slash marks it a directory.' },
+  { do: ':w', see: 'Oil shows a confirmation of exactly what it will do. Accept it.',
+    note: 'Nothing touches disk until you confirm. That is why editing the listing is safe.' },
+  { do: 'Put the cursor on newthing.txt, then cw and retype the name, then :w', see: 'A rename.' },
+  { do: 'dd on that line, then :w', see: 'Deleted.',
+    note: '<code>dd</code> here, navigate elsewhere, <kbd>p</kbd> there = move a file. Same keys as editing text.' },
+  { do: 'Ctrl+c', see: 'Closes Oil.',
+    warn: 'Remember <kbd>Esc</kbd> in Normal mode runs <code>:w</code>. In an Oil buffer that triggers the apply prompt. Harmless - it always asks - but now you know why it appeared.' },
+
+  { section: 'Buffers and splits' },
+  { do: 'cd ~/.dotfiles && nvim home.nix', cmd: true, see: 'One file open.' },
+  { do: 'Space f then flake then Enter', see: 'A second file. Both are now buffers in memory.' },
+  { do: 'Space b', see: 'Lists your open buffers. Pick one.' },
+  { do: ':vs', see: 'Splits the window vertically.' },
+  { do: 'Ctrl+w l then Ctrl+w h', see: 'Move between the two halves.',
+    note: 'Third place today those four letters mean direction: Herdr panes, Vim cursor, Vim windows.' },
+  { do: 'Ctrl+w o', see: 'Closes every window except this one.' },
+  { do: ':q!', see: 'Out. Drill complete.' },
+
+  { section: 'One thing that will not work' },
+  { do: 'Put the cursor on a function name and press gd', see: 'Nothing found.',
+    warn: '<kbd>g</kbd><kbd>d</kbd> calls <code>Snacks.picker.lsp_definitions()</code>, which needs a language server. Your config installs none - no lspconfig, no mason, no <code>vim.lsp.enable()</code>. This is a gap in the inherited config, not something you broke.' },
+  { do: 'Use * or Space s instead', see: 'For reviewing AI-written code, those two are 90% as good.' }
+]);
+
+renderQuiz('quiz', QBANK.l4);
+</script>
+</body>
+</html>

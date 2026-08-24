@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>06 - Being the captain</title>
+<link rel="stylesheet" href="../assets/course.css">
+</head>
+<body>
+<div class="page">
+
+<p class="kicker">Lesson 06 &middot; Firstmate &middot; 20 min</p>
+<h1>Being the captain</h1>
+<p class="standfirst">Talk to one agent; it runs the rest. Set it up, dispatch a real
+task, check the work, merge it.</p>
+
+<div class="tldr">
+<span class="label">Know this before you start</span>
+<table>
+  <tr><td><strong>No binary</strong></td><td>The clone <em>is</em> the product. Launching an agent inside it makes that agent the first mate.</td></tr>
+  <tr><td><strong>You</strong></td><td>the captain. Only human, only merge authority.</td></tr>
+  <tr><td><strong>Crewmate</strong></td><td>disposable, one task, own worktree and Herdr tab.</td></tr>
+  <tr><td><strong>Secondmate</strong></td><td>persistent, own isolated home + standing charter. Local or SSH.</td></tr>
+  <tr><td><strong>Ship vs scout</strong></td><td>ship &rarr; a PR. scout &rarr; a report, never a PR.</td></tr>
+  <tr><td><strong>"merge it"</strong></td><td>the only phrase that authorises a merge.</td></tr>
+</table>
+</div>
+
+<div id="drill"></div>
+
+<h2>Check yourself</h2>
+<div id="quiz"></div>
+
+<div class="footer">
+  <div class="nav">
+    <span>Prev: <a href="0005-reading-ai-code.html">05</a> &middot; Next: <a href="0007-owning-the-machine.html">07 - Owning the machine</a></span>
+    <span><a href="../reference/firstmate-cheatsheet.html">Full cheat sheet</a></span>
+  </div>
+  <p class="source"><strong>Offline once cloned:</strong> <code>AGENTS.md</code> sections 1
+  (hard rules), 7 (task lifecycle) and 9 (how it talks to you) are the captain-relevant
+  ones. <code>docs/scripts.md</code> lists every script in a line each, and each script's
+  own header beats any doc - the project says so explicitly.</p>
+  <p class="source"><strong>Community:</strong> the author's Discord, linked from both repo
+  READMEs. Highest signal for "how do you actually run this day to day".</p>
+</div>
+
+</div>
+<script src="../assets/questions.js"></script>
+<script src="../assets/drill.js"></script>
+<script src="../assets/quiz.js"></script>
+<script>
+renderDrill('drill', [
+  { section: 'Install (there is nothing to install)' },
+  { do: 'gh auth login', cmd: true, see: 'Authenticated. Skip if you already are - check with <code>gh auth status</code>.' },
+  { do: 'cd ~/projects && git clone https://github.com/kunchenguid/firstmate', cmd: true,
+    see: 'A directory. That is the whole product.' },
+  { do: 'cd firstmate && ls', cmd: true,
+    see: '<code>AGENTS.md</code>, <code>bin/</code>, <code>docs/</code>, <code>skills/</code>.' },
+  { do: 'wc -l AGENTS.md && head -20 AGENTS.md', cmd: true,
+    see: '574 lines that turn a general agent into a fleet manager. Skim the top - it is readable.' },
+
+  { section: 'Point it at Herdr, then launch' },
+  { do: 'echo herdr > config/backend', cmd: true,
+    see: 'Crewmates will now appear as Herdr tabs you can watch.',
+    note: 'Optional - it auto-detects Herdr if you launch from inside a Herdr pane and not inside tmux. tmux is the verified default; Herdr is officially experimental.' },
+  { do: 'herdr', cmd: true, see: 'Get inside Herdr first, so the crew lands somewhere visible.' },
+  { do: 'cd ~/projects/firstmate && cc', cmd: true,
+    see: 'Claude starts, reads AGENTS.md, and greets you as <strong>captain</strong>.',
+    note: 'Being called captain is contractual, not personality. So is never using its internal jargon with you.' },
+
+  { section: 'Orient' },
+  { do: '/bearings', see: 'A four-section digest of live fleet state. Empty right now, which is correct.',
+    note: 'Use <code>/bearings</code> cold, <code>/ahoy</code> when returning to a live session. <code>/bearings file</code> also writes a dated report.' },
+  { do: 'Say: add my project at <your repo url>', see: 'It clones into <code>projects/</code> and registers a delivery posture.' },
+  { do: 'Say: what delivery mode did you give it and why?', see: 'It explains. Unregistered projects default to <code>no-mistakes</code> with yolo off.',
+    note: 'Modes: <code>no-mistakes</code> full pipeline, <code>direct-PR</code> push and open a PR, <code>local-only</code> clean local branch. <code>yolo</code> is separate and governs merges only.' },
+
+  { section: 'Dispatch something real' },
+  { do: 'Say: fix the typo in the README and open a PR', see: 'It spawns a crewmate, in its own git worktree, in its own Herdr tab.',
+    note: 'Verbs matter. "fix / add / implement" = a ship task. "investigate / audit / plan" = a scout, which produces a report and never a PR.' },
+  { do: '^b b', see: 'The Herdr sidebar. Your crewmate is there, <code>working</code>.' },
+  { do: '^b g then type part of its name then Enter', see: 'You are watching it work in real time.' },
+  { do: '^b z', see: 'Zoom in to read properly. Press again to unzoom.',
+    note: 'You may type into a crewmate\'s tab. The first mate treats that as authoritative and reconciles it.' },
+  { do: '^b g and go back to the first mate\'s tab', see: 'Let it supervise. Silence means healthy.',
+    warn: 'It deliberately will not report "still working", elapsed time, or empty polls. It reaches you for six things only: work ready to review, findings, a decision it cannot make, a real blocker, anything destructive, or a credential.' },
+
+  { section: 'Check the work yourself' },
+  { do: 'Say: show me the diff', see: 'It runs the review script and relays the outcome.' },
+  { do: 'In another pane: bin/fm-fleet-view.sh', cmd: true, see: 'The whole fleet as a readable table.' },
+  { do: 'bin/fm-review-diff.sh <task-id> --stat', cmd: true,
+    see: 'Which files, how many lines. Scope it before reading.',
+    note: 'It fetches the live PR head when a PR exists, so you never review a stale snapshot after fix rounds.' },
+  { do: 'bin/fm-review-diff.sh <task-id>', cmd: true, see: 'The full diff against the authoritative base.' },
+  { do: 'bin/fm-peek.sh <task-id>', cmd: true, see: 'Last 40 lines of that worker\'s terminal, without attaching.' },
+  { do: 'bin/fm-crew-state.sh <task-id>', cmd: true, see: 'One authoritative line: what it is actually doing now.' },
+  { do: 'gh pr checkout <n> then nvim then :DiffviewOpen main...HEAD', cmd: true,
+    see: 'Read it with lesson 05\'s tools. This is the real review.' },
+
+  { section: 'Decide' },
+  { do: 'Say: merge it', see: 'It merges and gives you the full URL of the result.',
+    note: 'That exact kind of explicit instruction is the only routine merge authority, unless the project is marked yolo.' },
+  { do: 'Or say: the error handling is wrong, it should return None not raise', see: 'It steers the worker in plain English. You never touch the worktree.' },
+  { do: 'Say: put this project on direct-PR with yolo on', see: 'Records a standing posture, so future work skips the full pipeline and it merges green work itself.',
+    warn: 'yolo never merges a red PR, and destructive, irreversible or security-sensitive merges always come back to you.' },
+
+  { section: 'Secondmates - only when you need one' },
+  { do: 'Say: what is the difference between a crewmate and a secondmate?', see: 'Persistence, an isolated home, and a standing charter. Both never speak to you directly.' },
+  { do: 'Say: set up a secondmate that owns all the frontend work on <project>', see: 'It provisions an isolated home and registers a scope.',
+    note: 'Worth it for a genuinely standing domain, or work that must run on another machine. Not worth it for a handful of tasks - crewmates are free.' },
+  { do: 'Remember: work routes by scope, not by clone list', see: 'A secondmate having a repo cloned does not make it the owner.',
+    warn: 'Remote secondmates always run on Herdr, no choice. Secondmates never spawn secondmates. Never hand-edit <code>data/secondmates.md</code>.' },
+
+  { section: 'Your daily rhythm' },
+  { do: '/bearings', see: 'Sitting down cold.' },
+  { do: '/ahoy', see: 'Returning to a session already running.' },
+  { do: '/afk', see: 'Walking away. Routine events get handled; only real escalations reach you, batched.' },
+  { do: '/stow', see: 'Before closing or a context reset. Writes what it learned to disk.' },
+  { do: '/updatefirstmate', see: 'Weekly. Fast-forward only, never disturbs work in flight.' }
+]);
+
+renderQuiz('quiz', QBANK.l6);
+</script>
+</body>
+</html>

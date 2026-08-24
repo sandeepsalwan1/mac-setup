@@ -1,0 +1,12 @@
+# Existing applicable tools are hardened. Missing tools are skipped.
+aws
+codex
+flyctl
+gh
+heroku
+huggingface-cli
+node
+pnpm
+stripe
+sudo
+supabase

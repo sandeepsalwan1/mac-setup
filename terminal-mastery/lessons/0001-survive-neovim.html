@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>01 - Survive Neovim</title>
+<link rel="stylesheet" href="../assets/course.css">
+</head>
+<body>
+<div class="page">
+
+<p class="kicker">Lesson 01 &middot; Neovim &middot; 10 min</p>
+<h1>Survive Neovim</h1>
+<p class="standfirst">Do this in a real terminal. By the end you can never be trapped.</p>
+
+<div class="tldr">
+<span class="label">Know this before you start</span>
+<table>
+  <tr><td><strong>Normal</strong> mode</td><td>the resting state. Every key is a command. Bottom-left is <em>blank</em>.</td></tr>
+  <tr><td><strong>Insert</strong> mode</td><td>keys type letters. Bottom-left says <code>-- INSERT --</code>.</td></tr>
+  <tr><td><kbd>Esc</kbd></td><td>always moves you toward Normal.</td></tr>
+  <tr><td><strong>In your config</strong></td><td><kbd>Esc</kbd> in Normal mode <strong>saves the file</strong>. Not a no-op.</td></tr>
+</table>
+</div>
+
+<div id="drill"></div>
+
+<h2>Check yourself</h2>
+<div id="quiz"></div>
+
+<div class="footer">
+  <div class="nav">
+    <span>Next: <a href="0002-herdr-your-terminal.html">02 - Herdr</a></span>
+    <span><a href="../reference/panic-card.html">Panic card</a> &middot; <a href="../reference/nvim-cheatsheet.html">Full cheat sheet</a></span>
+  </div>
+  <p class="source"><strong>Do next:</strong> run <code>vimtutor</code>. 25 minutes,
+  hands-on, already installed, offline. Ignore its advice that <kbd>Esc</kbd> does nothing
+  in Normal mode - true of stock Vim, false here.</p>
+  <p class="source">Every other quit/undo/mode key is on the
+  <a href="../reference/panic-card.html">panic card</a>. Stuck? Ask me.</p>
+</div>
+
+</div>
+<script src="../assets/questions.js"></script>
+<script src="../assets/drill.js"></script>
+<script src="../assets/quiz.js"></script>
+<script>
+renderDrill('drill', [
+  { section: 'Get in and out' },
+  { do: 'nvim /tmp/practice.txt', cmd: true,
+    see: 'An empty file. Bottom-left is blank, so you are in Normal mode.',
+    note: 'Pass a filename. Bare <code>nvim</code> breaks the Escape mapping - you will prove that in a minute.' },
+  { do: ':q', see: 'You are back at the shell. That is the basic quit.' },
+  { do: 'nvim /tmp/practice.txt', cmd: true, see: 'Back in.' },
+  { do: 'i', see: '<code>-- INSERT --</code> appears bottom-left. Keys now type letters.' },
+  { do: 'hello there', see: 'The text appears.' },
+  { do: 'Esc', see: 'Bottom-left goes blank. You are home in Normal mode.' },
+  { do: 'Esc', see: 'A message reports the file was written.',
+    note: 'That second Escape is your config saving. <kbd>Esc</kbd><kbd>Esc</kbd> is your new "done".' },
+  { do: ':q', see: 'It quits cleanly, because you already saved.' },
+
+  { section: 'The panic exit' },
+  { do: 'nvim /tmp/practice.txt', cmd: true, see: 'Back in.' },
+  { do: 'i then type any rubbish', see: 'Unsaved changes now exist.' },
+  { do: 'Esc then :q', see: '<code>E37: No write since last change</code>. Vim is refusing to lose your work.' },
+  { do: ':q!', see: 'You are out. Changes discarded.',
+    warn: 'Memorise as one gesture: <kbd>Esc</kbd> <kbd>Esc</kbd> <code>:q!</code> <kbd>Enter</kbd>. It exits from any state, at the cost of unsaved edits.' },
+
+  { section: 'Prove the Escape trap' },
+  { do: 'nvim', cmd: true, see: 'Opens with no filename.' },
+  { do: 'Esc', see: '<code>E32: No file name</code>.',
+    note: 'Nothing is broken. The mapping tried to <code>:w</code> a buffer that has nothing to write to.' },
+  { do: ':w /tmp/named.txt', see: 'Now it has a name.' },
+  { do: 'Esc', see: 'Writes cleanly this time. Trap understood.' },
+  { do: ':q', see: 'Out.' },
+
+  { section: 'Undo is your safety net' },
+  { do: 'nvim /tmp/practice.txt', cmd: true, see: 'Back in.' },
+  { do: 'i type a whole sentence then Esc', see: 'One Insert visit = one undo step, not one per character.' },
+  { do: 'u', see: 'The whole sentence vanishes.' },
+  { do: 'Ctrl+r', see: 'It comes back. That is redo.' },
+  { do: ':earlier 1m', see: 'The file rewinds to how it looked a minute ago.',
+    note: '<code>undofile</code> is on, so undo survives quitting and reopening. You cannot lose work by saving.' },
+  { do: ':q!', see: 'Out. Drill complete.' },
+
+  { section: 'Two things that will surprise you' },
+  { do: 'Try clicking in the buffer', see: 'Nothing happens. The mouse is off on purpose.',
+    note: 'Scroll with <kbd>Ctrl</kbd>+<kbd>d</kbd> and <kbd>Ctrl</kbd>+<kbd>u</kbd> instead. Lesson 03 covers moving properly.' },
+  { do: 'Copy a URL in Chrome, then press x in Neovim', see: 'Your clipboard is now the deleted character.',
+    warn: 'Deletes are cuts here. Use <code>"_x</code> or <code>"_dd</code> to delete into the black hole and keep your clipboard.' }
+]);
+
+renderQuiz('quiz', QBANK.l1);
+</script>
+</body>
+</html>

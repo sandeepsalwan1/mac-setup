@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panic card</title>
+<link rel="stylesheet" href="../assets/course.css">
+</head>
+<body class="card">
+<div class="page">
+
+<p class="kicker">Reference &middot; print this one</p>
+<h1>Panic card</h1>
+<p class="standfirst">Everything you need when you are stuck and cannot think. One page.
+Nothing here requires you to remember anything else.</p>
+
+<div class="cols">
+
+<section>
+<h2>Get out of Neovim</h2>
+<table>
+  <tr><td><kbd>Esc</kbd><kbd>Esc</kbd> <code>:q!</code> <kbd>Enter</kbd></td><td><strong>Quit, lose changes.</strong> Always works.</td></tr>
+  <tr><td><code>:wq</code> <kbd>Enter</kbd></td><td>Save and quit</td></tr>
+  <tr><td><code>:w</code> <kbd>Enter</kbd></td><td>Save, stay</td></tr>
+  <tr><td><code>:q</code> <kbd>Enter</kbd></td><td>Quit if nothing unsaved</td></tr>
+  <tr><td><kbd>Z</kbd><kbd>Z</kbd></td><td>Save and quit, no colon</td></tr>
+  <tr><td><kbd>Z</kbd><kbd>Q</kbd></td><td>Quit, lose changes, no colon</td></tr>
+  <tr><td><code>:qa!</code> <kbd>Enter</kbd></td><td>Quit <em>everything</em></td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>c</kbd></td><td>Close a plugin popup</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Undo anything</h2>
+<table>
+  <tr><td><kbd>u</kbd></td><td>Undo</td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>r</kbd></td><td>Redo</td></tr>
+  <tr><td><kbd>U</kbd></td><td>Undo all edits on this line</td></tr>
+  <tr><td><code>:earlier 5m</code></td><td>Rewind the file 5 minutes</td></tr>
+  <tr><td><code>:later 5m</code></td><td>Forward again</td></tr>
+</table>
+<p><code>undofile</code> is on, so undo survives quitting and reopening. You cannot lose
+work by saving.</p>
+</section>
+
+<section>
+<h2>Which mode am I in?</h2>
+<table>
+  <tr><td>bottom-left blank</td><td><strong>Normal.</strong> Home. Keys are commands.</td></tr>
+  <tr><td><code>-- INSERT --</code></td><td>Typing. <kbd>Esc</kbd> to leave.</td></tr>
+  <tr><td><code>-- VISUAL --</code></td><td>Selecting. <kbd>Esc</kbd> to leave.</td></tr>
+  <tr><td><code>:</code> at the bottom</td><td>Command line. <kbd>Esc</kbd> to cancel.</td></tr>
+</table>
+<p><kbd>Esc</kbd> always moves you toward Normal. Press it twice and you are home.</p>
+</section>
+
+<section>
+<h2>Traps unique to your config</h2>
+<table>
+  <tr><td><kbd>Esc</kbd> in Normal</td><td><strong>Saves the file.</strong> Not a no-op.</td></tr>
+  <tr><td><code>E32: No file name</code></td><td>You pressed Esc in a nameless buffer. Harmless. <code>:w name.txt</code> fixes it.</td></tr>
+  <tr><td>mouse does nothing</td><td>Deliberate, <code>mouse = ''</code>. Use <kbd>Ctrl</kbd>+<kbd>d</kbd> / <kbd>Ctrl</kbd>+<kbd>u</kbd>.</td></tr>
+  <tr><td>clipboard vanished</td><td><kbd>d</kbd> / <kbd>x</kbd> are cuts. Use <code>"_d</code> to delete into the bin.</td></tr>
+  <tr><td><kbd>g</kbd><kbd>d</kbd> finds nothing</td><td>No LSP installed. Use <kbd>*</kbd> or <kbd>Space</kbd><kbd>s</kbd>.</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Get out of Herdr</h2>
+<table>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>b</kbd> <kbd>q</kbd></td><td><strong>Detach.</strong> Agents keep running.</td></tr>
+  <tr><td><code>exit</code></td><td>Close just this pane</td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>b</kbd> <kbd>x</kbd></td><td>Close this pane</td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>b</kbd> <kbd>&amp;</kbd></td><td>Close this tab</td></tr>
+  <tr><td><code>herdr</code></td><td>Come back to it all</td></tr>
+  <tr><td><code>herdr server stop</code></td><td>Really stop everything</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Lost in Herdr</h2>
+<table>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>b</kbd> <kbd>?</kbd></td><td><strong>Show every key.</strong></td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>b</kbd> <kbd>g</kbd></td><td>Fuzzy-jump to anything</td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>b</kbd> <kbd>b</kbd></td><td>Toggle the agent sidebar</td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>b</kbd> <kbd>z</kbd></td><td>Zoom this pane full-screen</td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>b</kbd> <kbd>h</kbd><kbd>j</kbd><kbd>k</kbd><kbd>l</kbd></td><td>Move between panes</td></tr>
+</table>
+<p>Prefix is press-and-release, then the next key on its own.</p>
+</section>
+
+<section>
+<h2>Lost in Neovim</h2>
+<table>
+  <tr><td><kbd>Space</kbd>, wait</td><td><strong>Popup of every leader key.</strong></td></tr>
+  <tr><td><kbd>Space</kbd><kbd>f</kbd></td><td>Find file by name</td></tr>
+  <tr><td><kbd>Space</kbd><kbd>s</kbd></td><td>Search text in project</td></tr>
+  <tr><td><kbd>Space</kbd><kbd>e</kbd></td><td>File browser</td></tr>
+  <tr><td><kbd>Space</kbd><kbd>b</kbd></td><td>Switch open file</td></tr>
+  <tr><td><kbd>Space</kbd><kbd>g</kbd></td><td>Git</td></tr>
+  <tr><td><kbd>g</kbd><kbd>?</kbd></td><td>Help, inside Oil or diffview</td></tr>
+  <tr><td><kbd>?</kbd></td><td>Help, inside neogit or a picker</td></tr>
+  <tr><td><code>:help X</code></td><td>The real manual, offline</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Machine emergencies</h2>
+<table>
+  <tr><td><code>darwin-rebuild --list-generations</code></td><td>What you can go back to</td></tr>
+  <tr><td><code>sudo darwin-rebuild switch --rollback</code></td><td><strong>Undo the last switch</strong></td></tr>
+  <tr><td><code>nix flake check --no-build</code></td><td>Does the config even build</td></tr>
+  <tr><td><code>herdr config check</code></td><td>Is config.toml valid</td></tr>
+  <tr><td><code>:checkhealth</code></td><td>Neovim self-diagnosis</td></tr>
+  <tr><td><code>:Lazy</code></td><td>Plugin manager. <kbd>U</kbd> update, <kbd>S</kbd> sync.</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Firstmate, as captain</h2>
+<table>
+  <tr><td><code>/bearings</code></td><td>Cold start. What is going on.</td></tr>
+  <tr><td><code>/ahoy</code></td><td>Warm return. What did I miss.</td></tr>
+  <tr><td><code>/afk</code></td><td>Stepping away</td></tr>
+  <tr><td><code>/stow</code></td><td>Save knowledge before a reset</td></tr>
+  <tr><td><code>bin/fm-review-diff.sh &lt;id&gt; --stat</code></td><td>What changed</td></tr>
+  <tr><td><code>bin/fm-peek.sh &lt;id&gt;</code></td><td>What is that worker doing</td></tr>
+  <tr><td><code>bin/fm-fleet-view.sh</code></td><td>The whole fleet</td></tr>
+</table>
+<p>"merge it" is the only thing that authorises a merge.</p>
+</section>
+
+</div>
+
+<div class="footer">
+  <p class="source">Keep this open, or print it. Everything else is in
+  <a href="../README.md">the index</a>.</p>
+</div>
+
+</div>
+</body>
+</html>

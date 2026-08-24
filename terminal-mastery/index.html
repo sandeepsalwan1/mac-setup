@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Terminal mastery</title>
+<link rel="stylesheet" href="assets/course.css">
+<style>
+  body.hub { --measure: 46rem; }
+
+  .bar {
+    display: flex; align-items: center; gap: 0.8rem;
+    margin: 0 0 2.4rem;
+  }
+  .track {
+    flex: 1; height: 5px; border-radius: 3px;
+    background: var(--overlay); overflow: hidden;
+  }
+  .fill {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, var(--pine), var(--foam));
+    transition: width 0.35s ease;
+  }
+  .pct {
+    font-family: var(--mono); font-size: 0.7rem;
+    letter-spacing: 0.1em; color: var(--muted); white-space: nowrap;
+  }
+
+  a.card {
+    display: flex; align-items: flex-start; gap: 0.9rem;
+    border: 1px solid var(--overlay);
+    border-radius: 6px;
+    padding: 0.85rem 1rem;
+    margin-bottom: 0.55rem;
+    text-decoration: none; border-bottom: 1px solid var(--overlay);
+    transition: border-color 0.12s, background 0.12s, transform 0.08s;
+  }
+  a.card:hover {
+    border-color: var(--subtle);
+    background: rgba(42,39,63,0.55);
+    transform: translateX(2px);
+  }
+  a.card .n {
+    font-family: var(--mono); font-size: 0.72rem;
+    color: var(--gold); padding-top: 0.22rem; min-width: 1.5rem;
+  }
+  a.card .t { flex: 1; }
+  a.card .t b { display: block; color: #fff; font-weight: 600; font-size: 1rem; }
+  a.card .t span { display: block; color: var(--subtle); font-size: 0.87rem; margin-top: 0.1rem; }
+
+  .tick {
+    background: none; border: 1px solid var(--overlay);
+    border-radius: 50%;
+    width: 1.45rem; height: 1.45rem; flex: 0 0 auto;
+    margin-top: 0.18rem;
+    cursor: pointer; color: transparent;
+    font-size: 0.78rem; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.12s;
+  }
+  .tick:hover { border-color: var(--subtle); color: var(--muted); }
+  .tick.on { background: var(--foam); border-color: var(--foam); color: var(--base); }
+
+  .row { display: flex; align-items: flex-start; gap: 0.7rem; margin-bottom: 0.55rem; }
+  .row a.card { margin-bottom: 0; flex: 1; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem; margin-bottom: 1.6rem; }
+  @media (max-width: 560px) { .grid { grid-template-columns: 1fr; } }
+  .grid a.card { margin-bottom: 0; }
+
+  .cmd {
+    font-family: var(--mono); font-size: 0.78rem;
+    color: var(--muted); background: var(--surface);
+    padding: 0.1em 0.4em; border-radius: 3px; white-space: nowrap;
+  }
+  .reset {
+    background: none; border: none; color: var(--muted);
+    font-family: var(--mono); font-size: 0.68rem; cursor: pointer;
+    text-decoration: underline; padding: 0;
+  }
+  .reset:hover { color: var(--love); }
+</style>
+</head>
+<body class="hub">
+<div class="page">
+
+<p class="kicker">Sandeep &middot; terminal stack</p>
+<h1>Terminal mastery</h1>
+<p class="standfirst">Neovim, Herdr, Firstmate, and the machine underneath. Every lesson is a
+drill you run in a real terminal, not a page you read. Works offline.</p>
+
+<div class="bar">
+  <div class="track"><div class="fill" id="fill"></div></div>
+  <div class="pct" id="pct">0 / 7</div>
+</div>
+
+<h2>Every day</h2>
+<div class="grid">
+  <a class="card" href="review.html">
+    <span class="n">&#8635;</span>
+    <span class="t"><b>Daily review</b><span>2 min. Spaced recall across all 7 lessons.</span></span>
+  </a>
+  <a class="card" href="practice.html">
+    <span class="n">&#9095;</span>
+    <span class="t"><b>Motion trainer</b><span>10 min. Real keystrokes, scored against par.</span></span>
+  </a>
+</div>
+
+<h2>Start here if you are stuck</h2>
+<div class="grid">
+  <a class="card" href="reference/panic-card.html">
+    <span class="n">!</span>
+    <span class="t"><b>Panic card</b><span>Get out of anything. Print it.</span></span>
+  </a>
+  <a class="card" href="lessons/0001-survive-neovim.html">
+    <span class="n">&rarr;</span>
+    <span class="t"><b>Lesson 01</b><span>25 steps, 10 minutes. Never be trapped again.</span></span>
+  </a>
+</div>
+
+<h2>Lessons</h2>
+<div id="lessons"></div>
+
+<h2>Reference cards</h2>
+<p>Written to print cleanly in black and white. <kbd>Cmd</kbd>+<kbd>P</kbd>.</p>
+<div class="grid">
+  <a class="card" href="reference/panic-card.html">
+    <span class="n">&#9873;</span>
+    <span class="t"><b>Panic card</b><span>Stuck and cannot think</span></span>
+  </a>
+  <a class="card" href="reference/nvim-cheatsheet.html">
+    <span class="n">&#9873;</span>
+    <span class="t"><b>Neovim</b><span>Your keys, motions, git, Oil</span></span>
+  </a>
+  <a class="card" href="reference/herdr-cheatsheet.html">
+    <span class="n">&#9873;</span>
+    <span class="t"><b>Herdr</b><span>Every key and CLI command</span></span>
+  </a>
+  <a class="card" href="reference/firstmate-cheatsheet.html">
+    <span class="n">&#9873;</span>
+    <span class="t"><b>Firstmate</b><span>What to say as captain</span></span>
+  </a>
+</div>
+
+<h2>A week that actually works</h2>
+<p>Total under two hours. The spacing is the point - do not do it all in one sitting, and
+do not skip a day just because a lesson feels done.</p>
+<table>
+  <tr><th>Day</th><th>Do</th><th>Why</th></tr>
+  <tr><td><strong>1</strong></td><td>Lesson 01, then <code>vimtutor</code></td><td>Never trapped again, plus the best 25 minutes in Vim</td></tr>
+  <tr><td><strong>2</strong></td><td>Review &middot; Lesson 02</td><td>Herdr, so your agents survive a closed lid</td></tr>
+  <tr><td><strong>3</strong></td><td>Review &middot; Trainer &middot; Lesson 03</td><td>Motions. The trainer is what makes them stick</td></tr>
+  <tr><td><strong>4</strong></td><td>Review &middot; Trainer &middot; Lesson 04</td><td>Leader keys, so you can find anything</td></tr>
+  <tr><td><strong>5</strong></td><td>Review &middot; Trainer &middot; <strong>Lesson 05</strong></td><td>Reading diffs. The one that pays for the rest</td></tr>
+  <tr><td><strong>6</strong></td><td>Review &middot; Lesson 06</td><td>Firstmate. Run a fleet</td></tr>
+  <tr><td><strong>7</strong></td><td>Review &middot; Lesson 07</td><td>Own the machine. Break it, roll it back</td></tr>
+</table>
+<p>After that: two minutes of review each morning, and the trainer whenever motions feel
+slow. Nothing else.</p>
+
+<h2>The five things most likely to bite you</h2>
+<table>
+  <tr><td><kbd>Esc</kbd> saves</td><td>In Neovim's normal mode, Escape runs <code>:w</code>. Not a no-op. On a nameless buffer it errors <code>E32</code> - harmless.</td></tr>
+  <tr><td>mouse is off</td><td>Inside Neovim only. It still works in Herdr, where dragging auto-copies.</td></tr>
+  <tr><td>deletes cut</td><td><kbd>d</kbd> and <kbd>x</kbd> overwrite your macOS clipboard. <code>"_dd</code> deletes into the bin instead.</td></tr>
+  <tr><td><kbd>g</kbd><kbd>d</kbd> is dead</td><td>No LSP installed. Use <kbd>*</kbd> or <kbd>Space</kbd><kbd>s</kbd>.</td></tr>
+  <tr><td><code>preserve</code></td><td><code>./rebuild.sh</code> installs the shared baseline and leaves work-specific brews alone.</td></tr>
+</table>
+
+<h2>Answer your own question, fast</h2>
+<table>
+  <tr><td>What does this Vim key do?</td><td><code>:help &lt;key&gt;</code>, or <kbd>Space</kbd> and wait</td></tr>
+  <tr><td>Oil / diffview keys?</td><td><kbd>g</kbd><kbd>?</kbd> inside them</td></tr>
+  <tr><td>Neogit / picker keys?</td><td><kbd>?</kbd> inside them</td></tr>
+  <tr><td>Herdr key?</td><td><kbd>Ctrl</kbd>+<kbd>b</kbd> <kbd>?</kbd></td></tr>
+  <tr><td>All Herdr options?</td><td><code>herdr --default-config</code></td></tr>
+  <tr><td>Is my Herdr config valid?</td><td><code>herdr config check</code></td></tr>
+  <tr><td>What is Neovim complaining about?</td><td><code>:checkhealth</code></td></tr>
+  <tr><td>What does a firstmate script do?</td><td>read its header, or <code>--help</code></td></tr>
+</table>
+
+<h2>From the terminal</h2>
+<table>
+  <tr><td><span class="cmd">learn</span></td><td>open this page</td></tr>
+  <tr><td><span class="cmd">learn 3</span></td><td>lesson 3</td></tr>
+  <tr><td><span class="cmd">learn panic</span></td><td>the panic card</td></tr>
+  <tr><td><span class="cmd">learn vim</span> <span class="cmd">herdr</span> <span class="cmd">fm</span></td><td>the other cards</td></tr>
+  <tr><td><span class="cmd">learn all</span></td><td>every card at once</td></tr>
+  <tr><td><span class="cmd">learn review</span></td><td>today's spaced review</td></tr>
+  <tr><td><span class="cmd">learn practice</span></td><td>the motion trainer</td></tr>
+  <tr><td><span class="cmd">learn ls</span></td><td>the menu, in the terminal</td></tr>
+</table>
+
+<div class="footer">
+  <div class="nav">
+    <span>Notes to self: <a href="MISSION.md">mission</a> &middot;
+      <a href="GLOSSARY.md">glossary</a> &middot;
+      <a href="RESOURCES.md">resources</a> &middot; <a href="practice.html">trainer</a> &middot; <a href="review.html">review</a></span>
+    <button class="reset" id="reset">reset progress</button>
+  </div>
+  <p class="source">Ask me for the next thing whenever you want it: an LSP so
+  <kbd>g</kbd><kbd>d</kbd> works, real <code>]h</code>/<code>[h</code> hunk keys, macros and
+  registers, or a <code>lazygit</code> popup bound inside Herdr.</p>
+</div>
+
+</div>
+
+<script>
+const LESSONS = [
+  ['0001-survive-neovim',      'Survive Neovim',                 '10 min &middot; 25 steps &middot; quit, save, undo, the Escape trap'],
+  ['0002-herdr-your-terminal', 'Herdr',                          '12 min &middot; 30 steps &middot; panes, detach, the agent inbox'],
+  ['0003-move-without-a-mouse','Move without a mouse',           '15 min &middot; 38 steps &middot; motions, operators, text objects'],
+  ['0004-your-leader-keys',    'Your leader keys',               '10 min &middot; 36 steps &middot; the five Space keys, picker, Oil'],
+  ['0005-reading-ai-code',     'Reading code you did not write', '15 min &middot; 37 steps &middot; review a real branch, reject a hunk'],
+  ['0006-firstmate-captain',   'Being the captain',              '20 min &middot; 33 steps &middot; dispatch, review, merge, secondmates'],
+  ['0007-owning-the-machine',  'Owning the machine',             '12 min &middot; 32 steps &middot; declare, rebuild, roll back']
+];
+
+const KEY = 'learn-terminal-progress';
+const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } };
+const save = (s) => localStorage.setItem(KEY, JSON.stringify(s));
+
+function paint() {
+  const state = load();
+  const done = LESSONS.filter(l => state[l[0]]).length;
+  document.getElementById('fill').style.width = (done / LESSONS.length * 100) + '%';
+  document.getElementById('pct').textContent = done + ' / ' + LESSONS.length;
+  document.querySelectorAll('.tick').forEach(b => {
+    const on = !!state[b.dataset.slug];
+    b.classList.toggle('on', on);
+    b.textContent = on ? '✓' : '✓';
+    b.title = on ? 'Done. Click to unmark.' : 'Mark as done';
+  });
+}
+
+const mount = document.getElementById('lessons');
+LESSONS.forEach((l, i) => {
+  const [slug, title, blurb] = l;
+  const row = document.createElement('div');
+  row.className = 'row';
+
+  const tick = document.createElement('button');
+  tick.className = 'tick';
+  tick.dataset.slug = slug;
+  tick.addEventListener('click', () => {
+    const s = load();
+    if (s[slug]) delete s[slug]; else s[slug] = true;
+    save(s); paint();
+  });
+
+  const a = document.createElement('a');
+  a.className = 'card';
+  a.href = 'lessons/' + slug + '.html';
+  a.innerHTML = '<span class="n">' + String(i + 1).padStart(2, '0') + '</span>' +
+                '<span class="t"><b></b><span></span></span>';
+  a.querySelector('b').textContent = title;
+  a.querySelector('.t span').innerHTML = blurb;
+
+  row.appendChild(tick);
+  row.appendChild(a);
+  mount.appendChild(row);
+});
+
+document.getElementById('reset').addEventListener('click', () => {
+  localStorage.removeItem(KEY); paint();
+});
+
+paint();
+</script>
+</body>
+</html>

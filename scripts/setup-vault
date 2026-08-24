@@ -1,0 +1,122 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+SECRET_NAMES_FILE="${SECRET_NAMES_FILE:-$ROOT/vault/secret-names.txt}"
+HARDENERS_FILE="${HARDENERS_FILE:-$ROOT/vault/hardeners.txt}"
+SAVE_SECRETS=0
+HARDEN_TOOLS=0
+RUN_DOCTOR=0
+OPEN_APP=0
+
+usage() {
+	printf '%s\n' \
+		'Usage: setup-vault [--open] [--save-secrets] [--harden] [--doctor] [--all]' \
+		'' \
+		'Secret Values are entered directly into Automic Vault through /dev/tty.' \
+		'This script never reads, prints, exports, or stores them.'
+}
+
+note() {
+	printf 'setup-vault: %s\n' "$1"
+}
+
+while [ "$#" -gt 0 ]; do
+	case "$1" in
+	--open) OPEN_APP=1 ;;
+	--save-secrets) SAVE_SECRETS=1 ;;
+	--harden) HARDEN_TOOLS=1 ;;
+	--doctor) RUN_DOCTOR=1 ;;
+	--all)
+		OPEN_APP=1
+		SAVE_SECRETS=1
+		HARDEN_TOOLS=1
+		RUN_DOCTOR=1
+		;;
+	-h | --help)
+		usage
+		exit 0
+		;;
+	*)
+		usage >&2
+		exit 64
+		;;
+	esac
+	shift
+done
+
+command -v av >/dev/null 2>&1 ||
+	{
+		note 'Automic Vault is not installed yet; run bootstrap.sh first' >&2
+		exit 1
+	}
+
+if [ "$OPEN_APP" -eq 1 ]; then
+	open -a 'Automic Vault'
+fi
+
+if ! saved_names="$(av list 2>/dev/null)"; then
+	note 'finish the Automic Vault app setup, then rerun this command'
+	exit 1
+fi
+
+missing_count=0
+while IFS= read -r secret_name || [ -n "$secret_name" ]; do
+	case "$secret_name" in
+	'' | '#'*) continue ;;
+	esac
+	if ! printf '%s\n' "$saved_names" | grep -Fqx -- "$secret_name"; then
+		missing_count=$((missing_count + 1))
+	fi
+done <"$SECRET_NAMES_FILE"
+note "$missing_count declared Secret Names are not saved on this Mac"
+
+if [ "$SAVE_SECRETS" -eq 1 ]; then
+	while IFS= read -r secret_name || [ -n "$secret_name" ]; do
+		case "$secret_name" in
+		'' | '#'*) continue ;;
+		esac
+		if printf '%s\n' "$saved_names" | grep -Fqx -- "$secret_name"; then
+			note "$secret_name already exists"
+			continue
+		fi
+		note "saving $secret_name"
+		av save "$secret_name"
+		saved_names="${saved_names}${saved_names:+$'\n'}${secret_name}"
+	done <"$SECRET_NAMES_FILE"
+fi
+
+if [ "$HARDEN_TOOLS" -eq 1 ]; then
+	command -v jq >/dev/null 2>&1 ||
+		{
+			note 'jq is required to inspect hardener state' >&2
+			exit 1
+		}
+	hardener_catalog="$(av hardeners --json)"
+
+	while IFS= read -r hardener || [ -n "$hardener" ]; do
+		case "$hardener" in
+		'' | '#'*) continue ;;
+		esac
+		hardener_state="$(printf '%s' "$hardener_catalog" | jq -r \
+			--arg name "$hardener" \
+			'.hardeners[] | select(.name == $name) | [.applicable, .hardened] | @tsv')"
+		case "$hardener_state" in
+		$'true\ttrue') note "$hardener is already hardened" ;;
+		$'true\tfalse')
+			note "hardening $hardener"
+			av harden "$hardener"
+			;;
+		$'false\t'*) note "$hardener is not installed; skipping" ;;
+		'') note "$hardener is unavailable in this Vault release; skipping" ;;
+		esac
+	done <"$HARDENERS_FILE"
+fi
+
+if [ "$RUN_DOCTOR" -eq 1 ]; then
+	av doctor
+fi
+
+if [ "$SAVE_SECRETS" -eq 0 ] && [ "$HARDEN_TOOLS" -eq 0 ] && [ "$RUN_DOCTOR" -eq 0 ]; then
+	note "run \`./scripts/setup-vault --all\` when you are ready to enter Values and harden tools"
+fi

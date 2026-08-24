@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daily review</title>
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body>
+<div class="page">
+
+<p class="kicker">Review &middot; two minutes &middot; offline</p>
+<h1>Daily review</h1>
+<p class="standfirst">Every question from all seven lessons, shuffled together and
+scheduled. Two minutes a day beats an hour of rereading.</p>
+
+<div id="review"></div>
+
+<h2>Why this and not just rereading</h2>
+
+<p>Rereading builds <strong>fluency</strong>: it feels familiar, so you assume you know it.
+Fluency collapses the moment you are in a real terminal with a broken build. What you
+actually want is <strong>storage strength</strong>, and only three things build it:</p>
+
+<table>
+  <tr><td><strong>Retrieval</strong></td><td>Pulling the answer out of your head, not recognising it on a page. Every question here is recall.</td></tr>
+  <tr><td><strong>Spacing</strong></td><td>Answer right and the question comes back later, not sooner. The forgetting between attempts is what makes the next attempt work.</td></tr>
+  <tr><td><strong>Interleaving</strong></td><td>Herdr, then Vim, then Nix, then Vim again. Mixed practice is harder and sticks far better than doing one topic in a block.</td></tr>
+</table>
+
+<p>All three are deliberately uncomfortable. That is the signal it is working.</p>
+
+<h2>How the scheduling works</h2>
+
+<p>Leitner boxes. Get one right and it moves up a box; get it wrong and it drops straight
+back to box 1.</p>
+
+<table>
+  <tr><th>Box</th><th>Next appearance</th></tr>
+  <tr><td><span style="color:#eb6f92">1</span></td><td>tomorrow</td></tr>
+  <tr><td><span style="color:#ea9a97">2</span></td><td>in 2 days</td></tr>
+  <tr><td><span style="color:#f6c177">3</span></td><td>in 4 days</td></tr>
+  <tr><td><span style="color:#3e8fb0">4</span></td><td>in 8 days</td></tr>
+  <tr><td><span style="color:#9ccfd8">5</span></td><td>in 16 days</td></tr>
+  <tr><td><span style="color:#d7f3f7">6</span></td><td>in 32 days - effectively known</td></tr>
+</table>
+
+<p>The bar at the top is your whole bank, coloured by box. Grey is "not seen yet". When it
+is mostly pale blue you are done, and most days will show nothing due at all.</p>
+
+<div class="note">
+<span class="label">The honest limit</span>
+<p>Multiple choice tests recognition better than it tests production. It is the right tool
+for facts - which key, which flag, which mode - and the wrong tool for skill. For skill,
+use <a href="practice.html">the motion trainer</a>, which makes you produce real keystrokes,
+and the drills in each lesson, which make you produce real commands.</p>
+<p>Do both. Two minutes here, five minutes there.</p>
+</div>
+
+<div class="footer">
+  <div class="nav">
+    <span><a href="index.html">Back to the hub</a></span>
+    <span><a href="practice.html">Motion trainer</a> &middot;
+      <button id="reset" style="background:none;border:none;color:#6e6a86;font-family:inherit;font-size:inherit;text-decoration:underline;cursor:pointer;padding:0">reset schedule</button></span>
+  </div>
+  <p class="source">36 questions across 7 lessons, drawn from the same bank the lessons use,
+  so the wording can never drift. Schedule is stored in this browser only.</p>
+</div>
+
+</div>
+<script src="assets/questions.js"></script>
+<script src="assets/review.js"></script>
+<script>
+renderReview('review');
+document.getElementById('reset').addEventListener('click', function () {
+  if (confirm('Reset every question back to unseen?')) { resetReview(); location.reload(); }
+});
+</script>
+</body>
+</html>

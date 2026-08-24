@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Firstmate cheat sheet</title>
+<link rel="stylesheet" href="../assets/course.css">
+</head>
+<body class="card">
+<div class="page">
+
+<p class="kicker">Reference &middot; captain-facing surface only</p>
+<h1>Firstmate</h1>
+<p class="standfirst">You talk to one agent in plain English. This page is what to say,
+what it means, and how to check the work yourself.</p>
+
+<div class="cols">
+
+<section>
+<h2>Start it</h2>
+<pre><code>gh auth login
+git clone https://github.com/kunchenguid/firstmate
+cd firstmate
+cc              <span class="c"># your alias for claude --dangerously-skip-permissions</span></code></pre>
+<p>There is no binary. The clone <em>is</em> the product: launching an agent inside it makes
+that agent the first mate. Claude, Grok and Pi are the three recommended harnesses; Codex,
+OpenCode, Cursor and Kimi also work.</p>
+</section>
+
+<section>
+<h2>The five slash commands</h2>
+<table>
+  <tr><td><code>/bearings</code></td><td><strong>cold start.</strong> Live fleet digest.</td></tr>
+  <tr><td><code>/ahoy</code></td><td><strong>warm return.</strong> Recap this session + open decisions.</td></tr>
+  <tr><td><code>/afk</code></td><td>stepping away. Batches escalations.</td></tr>
+  <tr><td><code>/stow</code></td><td>save knowledge before a context reset.</td></tr>
+  <tr><td><code>/updatefirstmate</code></td><td>pull latest, fast-forward only.</td></tr>
+</table>
+<p>Bearings modes: <code>/bearings file</code> also writes a dated report,
+<code>/bearings lavish</code> also builds an interactive board, and
+<code>include PRs</code> composes with either.</p>
+<p>Codex uses <code>$</code> instead of <code>/</code>: <code>$afk</code>.</p>
+</section>
+
+<section>
+<h2>What to say</h2>
+<table>
+  <tr><td>"fix / add / implement X"</td><td>a <strong>ship</strong> task &rarr; PR or merged branch</td></tr>
+  <tr><td>"investigate / audit / plan X"</td><td>a <strong>scout</strong> task &rarr; a report, never a PR</td></tr>
+  <tr><td><strong>"merge it"</strong></td><td>the only thing that authorises a merge</td></tr>
+  <tr><td>"show me the diff for X"</td><td>it runs the review script for you</td></tr>
+  <tr><td>"put X on direct-PR with yolo on"</td><td>sets the standing posture for a project</td></tr>
+  <tr><td>"set up a secondmate that owns X"</td><td>creates a persistent second mate</td></tr>
+</table>
+<p>A report may recommend an implementation. It never authorises one - you still say "do it".</p>
+</section>
+
+<section>
+<h2>Roles</h2>
+<table>
+  <tr><td><strong>captain</strong></td><td>you. only human. only merge authority.</td></tr>
+  <tr><td><strong>first mate</strong></td><td>the one agent you talk to. never edits projects.</td></tr>
+  <tr><td><strong>crewmate</strong></td><td>disposable, one task, own worktree, own tab.</td></tr>
+  <tr><td><strong>secondmate</strong></td><td>persistent, own isolated home + charter, local or SSH.</td></tr>
+</table>
+<p>Neither crewmates nor secondmates ever speak to you directly.</p>
+</section>
+
+<section>
+<h2>Delivery modes</h2>
+<table>
+  <tr><td><code>no-mistakes</code></td><td>full pipeline: review, tests, lint, docs, PR, CI green. Default.</td></tr>
+  <tr><td><code>direct-PR</code></td><td>push and open a PR, no pipeline</td></tr>
+  <tr><td><code>local-only</code></td><td>clean local branch, no remote</td></tr>
+  <tr><td><code>+ yolo</code></td><td>merge authority only. Green and in-scope only. Never red.</td></tr>
+</table>
+<p>Mode and yolo are independent. An unregistered project defaults to
+<code>no-mistakes</code>, yolo off.</p>
+</section>
+
+<section>
+<h2>Check the work yourself</h2>
+<pre><code>bin/fm-review-diff.sh &lt;id&gt; --stat   <span class="c"># shape first</span>
+bin/fm-review-diff.sh &lt;id&gt;          <span class="c"># full diff vs base</span>
+bin/fm-peek.sh &lt;id&gt; [lines]         <span class="c"># tail a worker's terminal</span>
+bin/fm-crew-state.sh &lt;id&gt;           <span class="c"># one authoritative status line</span>
+bin/fm-fleet-view.sh                <span class="c"># whole fleet, readable</span>
+bin/fm-fleet-snapshot.sh            <span class="c"># same, as JSON</span></code></pre>
+<p><code>fm-review-diff.sh</code> fetches the live PR head when a PR exists, so you always
+see current code after fix rounds - never a stale snapshot.</p>
+</section>
+
+<section>
+<h2>The review loop</h2>
+<ol class="steps">
+<li>It reports a PR with the full URL.</li>
+<li><code>bin/fm-review-diff.sh &lt;id&gt; --stat</code> - is the shape sane?</li>
+<li><code>gh pr checkout 42</code>, then <code>nvim</code> and
+<code>:DiffviewOpen main...HEAD</code>.</li>
+<li><kbd>Tab</kbd> through every file. Chase symbols with <kbd>*</kbd>.</li>
+<li>"merge it", or say what is wrong in plain English.</li>
+</ol>
+</section>
+
+<section>
+<h2>Watch it live</h2>
+<p>Every crewmate is a real Herdr tab:</p>
+<table>
+  <tr><td><kbd>^b</kbd> <kbd>b</kbd></td><td>sidebar - who is working / blocked / done</td></tr>
+  <tr><td><kbd>^b</kbd> <kbd>g</kbd></td><td>fuzzy-jump to a worker's tab</td></tr>
+  <tr><td><kbd>^b</kbd> <kbd>z</kbd></td><td>zoom it full-screen to read</td></tr>
+</table>
+<p>You can type into a worker's tab. The first mate treats that as authoritative and
+reconciles it at its next check.</p>
+</section>
+
+<section>
+<h2>Hard rules that protect you</h2>
+<ol class="steps">
+<li>Never writes to a project. Crewmates do, in worktrees.</li>
+<li>Never merges without your explicit word (or standing yolo).</li>
+<li>Never tears down unlanded work. A refusal means stop and look.</li>
+<li>Crewmates never address you.</li>
+<li>Reports outcomes faithfully, including failures.</li>
+</ol>
+</section>
+
+<section>
+<h2>When it reaches you</h2>
+<p>Exactly six things:</p>
+<ul>
+<li>Work ready for review, with the full URL</li>
+<li>Finished investigation findings</li>
+<li>A decision it cannot make</li>
+<li>A real blocker or failure</li>
+<li>Anything destructive, irreversible, or security-sensitive</li>
+<li>A credential or login it needs</li>
+</ul>
+<p>Silence is healthy. Elapsed time and "still working" are deliberately not reported.</p>
+</section>
+
+<section>
+<h2>Translating what it says</h2>
+<table>
+  <tr><th>It means</th><th>It says</th></tr>
+  <tr><td>crewmate</td><td>worker</td></tr>
+  <tr><td>worktree / checkout</td><td>local copy, isolated copy</td></tr>
+  <tr><td>teardown</td><td>cleanup</td></tr>
+  <tr><td>brief</td><td>instructions</td></tr>
+  <tr><td>stale wake / watcher</td><td>stopped responding, monitoring</td></tr>
+  <tr><td>needs-decision / gate</td><td>the concrete decision or approval</td></tr>
+</table>
+<p>Its contract forbids internal vocabulary in chat, and requires it to address you as
+captain. Both are rules, not personality.</p>
+</section>
+
+<section>
+<h2>Layout</h2>
+<pre><code>firstmate/
+├── AGENTS.md    the contract. read 1, 7, 9.
+├── bin/         ~170 scripts; headers are the docs
+├── projects/    your clones. read-only to it.
+├── data/        backlog, captain prefs, reports
+├── state/       live runtime. do not touch.
+└── config/      your local choices</code></pre>
+</section>
+
+<section>
+<h2>Config you might set</h2>
+<pre><code>echo herdr &gt; config/backend
+echo codex &gt; config/crew-harness
+echo off   &gt; config/herdr-presentation-spaces</code></pre>
+<table>
+  <tr><td><code>backend</code></td><td>tmux (verified), herdr / cmux (auto-detectable), zellij / orca (explicit)</td></tr>
+  <tr><td><code>crew-harness</code></td><td>which agent crewmates run</td></tr>
+  <tr><td><code>secondmate-harness</code></td><td>which agent secondmates run</td></tr>
+  <tr><td><code>herdr-presentation-spaces</code></td><td><code>off</code> for a flat tab layout instead of one workspace per task</td></tr>
+</table>
+<p>All gitignored and local. Backend auto-detects: inside Herdr and not inside tmux means
+crewmates go to Herdr.</p>
+</section>
+
+<section>
+<h2>Secondmate - when</h2>
+<p><strong>Yes:</strong> a genuinely standing domain ("the mobile app", "everything on that
+box"), or work that must run on another machine.</p>
+<p><strong>No:</strong> a handful of tasks. Ordinary crewmates are free and disposable; a
+secondmate is a persistent home with state to keep converged.</p>
+<p>Remote secondmates always run on Herdr - no choice. Secondmates never spawn secondmates.
+Never hand-edit <code>data/secondmates.md</code>; ask the first mate.</p>
+</section>
+
+<section>
+<h2>Daily rhythm</h2>
+<table>
+  <tr><td>sit down cold</td><td><code>/bearings</code></td></tr>
+  <tr><td>return to a live session</td><td><code>/ahoy</code></td></tr>
+  <tr><td>walk away</td><td><code>/afk</code></td></tr>
+  <tr><td>before closing</td><td><code>/stow</code></td></tr>
+  <tr><td>weekly</td><td><code>/updatefirstmate</code></td></tr>
+</table>
+</section>
+
+</div>
+
+<div class="footer">
+  <p class="source">Source: <code>kunchenguid/firstmate</code> - <code>AGENTS.md</code>
+  (sections 1, 7, 9), <code>README.md</code>, <code>docs/scripts.md</code>, and the
+  <code>afk</code> / <code>ahoy</code> / <code>bearings</code> / <code>stow</code> /
+  <code>updatefirstmate</code> skills. Each <code>bin/</code> script's header is
+  authoritative over any doc - the project states this explicitly.</p>
+</div>
+
+</div>
+</body>
+</html>

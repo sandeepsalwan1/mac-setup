@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>07 - Owning the machine</title>
+<link rel="stylesheet" href="../assets/course.css">
+</head>
+<body>
+<div class="page">
+
+<p class="kicker">Lesson 07 &middot; Nix + dotfiles &middot; 12 min</p>
+<h1>Owning the machine</h1>
+<p class="standfirst">Declare the portable baseline, keep work-specific tools local, and
+know exactly which edits need a rebuild.</p>
+
+<div class="tldr">
+<span class="label">Know this before you start</span>
+<table>
+  <tr><td><strong>The inversion</strong></td><td>edit a <code>.nix</code> file &rarr; <code>./rebuild.sh</code> &rarr; the machine matches the file</td></tr>
+  <tr><td><code>configuration.nix</code></td><td>macOS defaults, Homebrew brews and casks</td></tr>
+  <tr><td><code>home.nix</code></td><td>your packages, zsh, aliases, every symlink</td></tr>
+  <tr><td><code>home/...</code></td><td>the real config files. <strong>Symlinked live - no rebuild needed.</strong></td></tr>
+  <tr><td><strong>The boundary</strong></td><td><code>cleanup = "none"</code>: rebuilds install the baseline and preserve local brews.</td></tr>
+</table>
+</div>
+
+<div id="drill"></div>
+
+<h2>Check yourself</h2>
+<div id="quiz"></div>
+
+<div class="footer">
+  <div class="nav">
+    <span>Prev: <a href="0006-firstmate-captain.html">06</a></span>
+    <span><a href="../index.html">Back to the hub</a></span>
+  </div>
+  <p class="source"><strong>Source:</strong> your own repo -
+  <code>README.md</code>, <code>home.nix</code>, and <code>configuration.nix</code>.
+  Offline: <code>darwin-rebuild --help</code>,
+  <code>nix flake --help</code>. The upstream walkthrough is
+  <code>youtu.be/5N-okeDdIuI</code> when reachable.</p>
+</div>
+
+</div>
+<script src="../assets/questions.js"></script>
+<script src="../assets/drill.js"></script>
+<script src="../assets/quiz.js"></script>
+<script>
+renderDrill('drill', [
+  { section: 'See what you are running' },
+  { do: 'cd ~/.dotfiles && pwd -P', cmd: true,
+    see: 'The real path of your private <code>mac-setup</code> checkout.' },
+  { do: 'darwin-rebuild --list-generations | tail -5', cmd: true,
+    see: 'Your switch history. Each one is still on disk and still bootable.' },
+  { do: 'git remote -v', cmd: true,
+    see: '<code>origin</code> points at <code>sandeepsalwan1/mac-setup</code>.' },
+  { do: 'ls -la ~/.config/nvim', cmd: true,
+    see: 'A symlink, not a copy. It points back into this repo.' },
+
+  { section: 'Prove: config files need no rebuild' },
+  { do: 'nvim ~/.dotfiles/home/.config/nvim/lua/vim_config.lua', cmd: true,
+    see: 'You are editing the live config. This file IS <code>~/.config/nvim/lua/vim_config.lua</code>.' },
+  { do: 'Change scrolloff = 16 to scrolloff = 3, then Esc, then :q', see: 'Saved.' },
+  { do: 'nvim ~/.dotfiles/home.nix', cmd: true, see: 'Move the cursor around near the top or bottom.' },
+  { do: 'Watch how close to the edge the cursor gets before scrolling', see: 'Three lines now, not sixteen. No rebuild was run.',
+    note: 'That is <code>mkOutOfStoreSymlink</code>. The repo file and the live config are the same file.' },
+  { do: 'Change it back to 16, Esc, :q', see: 'Restored.' },
+  { do: 'nvim ~/.dotfiles/home/.config/herdr/config.toml', cmd: true, see: 'Same deal for Herdr.' },
+  { do: '^b Shift+R', see: 'Reloads config.toml in the running server. Also no rebuild.' },
+
+  { section: 'Prove: package declarations need a rebuild' },
+  { do: 'nvim ~/.dotfiles/home.nix', cmd: true,
+    see: 'The <code>home.packages</code> list holds portable command-line tools.' },
+  { do: 'Add tree on its own line in home.packages, then Esc, then :q', see: 'The declaration is saved, but <code>tree</code> is not live yet.' },
+  { do: 'git diff home.nix', cmd: true, see: 'One added package declaration.' },
+  { do: 'nix flake check --no-build', cmd: true, see: 'Does it even build? Do this before every switch.' },
+  { do: './rebuild.sh', cmd: true, see: 'Asks for sudo, then applies. <code>tree</code> is now installed.',
+    note: 'The same rebuild also skips pinned agent tools that are already at the requested version.' },
+  { do: 'which tree && darwin-rebuild --list-generations | tail -1', cmd: true, see: 'Installed, and you have a new generation.' },
+
+  { section: 'Keep work-specific packages local' },
+  { do: 'grep -n "cleanup\|autoUpdate" ~/.dotfiles/configuration.nix', cmd: true,
+    see: '<code>cleanup = "none"</code> and <code>autoUpdate = false</code>.' },
+  { do: 'brew leaves --installed-on-request', cmd: true,
+    see: 'The Mac can have many tools beyond the small shared baseline.' },
+  { do: './rebuild.sh', cmd: true, see: 'The baseline is applied without uninstalling those local tools.',
+    note: 'A package belongs in Git only when every Mac using this setup should receive it.' },
+  { do: 'Read your own rule: grep -n "Global installs" ~/.dotfiles/home/AGENTS.md', cmd: true,
+    see: 'Portable baseline tools are declared; work-specific packages stay local and are never auto-recorded.',
+    note: 'That file is symlinked into <code>~/.claude/CLAUDE.md</code>, <code>~/.codex/AGENTS.md</code> and opencode, so every agent you run already obeys it. Write a rule once, all three follow.' },
+
+  { section: 'Undo a bad switch' },
+  { do: 'sudo darwin-rebuild switch --rollback', cmd: true,
+    see: 'Steps back to the previous generation immediately.',
+    note: 'This is the real safety net, and the reason declaring your machine is worth the ceremony.' },
+  { do: 'darwin-rebuild --list-generations | tail -3', cmd: true, see: 'Confirm which one you are on.' },
+  { do: './rebuild.sh', cmd: true, see: 'Forward again, back to your repo\'s current state.' },
+  { do: 'git restore home.nix && ./rebuild.sh', cmd: true, see: 'Drop the test <code>tree</code> declaration and return to the baseline.' },
+
+  { section: 'Stay current' },
+  { do: 'git pull --ff-only', cmd: true, see: 'Receives changes already reviewed and pushed to the private setup repo.' },
+  { do: 'nix flake update && nix flake check --no-build', cmd: true, see: 'Bumps pinned inputs, then verifies evaluation before applying.' },
+  { do: './rebuild.sh', cmd: true, see: 'Applies the reviewed lock-file update.' },
+  { do: 'nvim then :Lazy', see: 'Neovim plugins are pinned separately in <code>lazy-lock.json</code>. <kbd>U</kbd> update, <kbd>S</kbd> sync, <kbd>C</kbd> clean.',
+    note: 'Commit the changed lock file, or your next machine gets different plugin versions.' },
+
+  { section: 'Your shell, for reference' },
+  { do: 'grep -n "alias" ~/.dotfiles/home.nix', cmd: true,
+    see: '<code>cc</code>, <code>co</code>, <code>add</code>, <code>push</code>, <code>pull</code>, <code>m</code>, <code>..</code>' },
+  { do: 'Start typing a command you have run before, then press Ctrl+f', see: 'Accepts the grey autosuggestion.',
+    note: 'The key nobody discovers. <code>bindkey \'^f\' autosuggest-accept</code> in your <code>home.nix</code>.' },
+  { do: 'grep -n "home.sessionPath" ~/.dotfiles/home.nix', cmd: true,
+    see: 'Personal scripts, pinned npm tools, and local binaries are all declared on PATH.',
+    note: 'Aliases and PATH declarations live in <code>home.nix</code>, so changes to them need a rebuild.' }
+]);
+
+renderQuiz('quiz', QBANK.l7);
+</script>
+</body>
+</html>

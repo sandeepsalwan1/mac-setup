@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+# learn - open the terminal-mastery workspace at ~/learn-terminal
+#
+#   learn          the hub page (tick lessons off there)
+#   learn 1..7     that lesson
+#   learn review   today's spaced review, 2 minutes
+#   learn practice the vim motion trainer, real keystrokes
+#   learn panic    the panic card - get out of anything
+#   learn vim      neovim keys, motions, git
+#   learn herdr    every herdr key and CLI command
+#   learn fm       firstmate, as captain
+#   learn all      every reference card at once
+#   learn ls       print this menu in the terminal
+#   learn where    print the workspace path
+set -euo pipefail
+
+ROOT="${LEARN_DIR:-$HOME/learn-terminal}"
+[ -d "$ROOT" ] || {
+	echo "learn: no workspace at $ROOT" >&2
+	exit 1
+}
+
+LESSONS=(
+	"0001-survive-neovim|Survive Neovim|Quit, save, undo. The Escape trap in your config."
+	"0002-herdr-your-terminal|Herdr, your real terminal|Split, navigate, detach, agent panel."
+	"0003-move-without-a-mouse|Move without a mouse|Motions, operators, text objects."
+	"0004-your-leader-keys|Your leader keys|The five Space shortcuts, picker, Oil."
+	"0005-reading-ai-code|Reading code you did not write|Three ways to read a diff."
+	"0006-firstmate-captain|Being the captain|Ship vs scout, project modes, secondmates."
+	"0007-owning-the-machine|Owning the machine|Declare software. Rebuild and roll back."
+)
+
+field() { printf '%s' "$1" | cut -d'|' -f"$2"; }
+
+case "${1:-}" in
+'' | hub | index | open)
+	open "$ROOT/index.html"
+	;;
+
+[1-7])
+	entry="${LESSONS[$(($1 - 1))]}"
+	open "$ROOT/lessons/$(field "$entry" 1).html"
+	printf 'lesson %02d  %s\n' "$1" "$(field "$entry" 2)"
+	;;
+
+review | rev) open "$ROOT/review.html" ;;
+practice | drill | vimp) open "$ROOT/practice.html" ;;
+panic) open "$ROOT/reference/panic-card.html" ;;
+vim | nvim) open "$ROOT/reference/nvim-cheatsheet.html" ;;
+herdr) open "$ROOT/reference/herdr-cheatsheet.html" ;;
+fm | firstmate) open "$ROOT/reference/firstmate-cheatsheet.html" ;;
+cards | all) open "$ROOT"/reference/*.html ;;
+
+where) printf '%s\n' "$ROOT" ;;
+
+ls | list | menu)
+	printf '\n  \033[2mlessons\033[0m   \033[2m(tick them off in: learn)\033[0m\n'
+	for i in $(seq 1 ${#LESSONS[@]}); do
+		e="${LESSONS[$((i - 1))]}"
+		printf '    \033[33m%d\033[0m  \033[1m%-30s\033[0m \033[2m%s\033[0m\n' \
+			"$i" "$(field "$e" 2)" "$(field "$e" 3)"
+	done
+	printf '\n  \033[2mcards\033[0m\n'
+	printf '    \033[33m%-7s\033[0m \033[2m%s\033[0m\n' \
+		panic "get out of anything - print it" \
+		vim "neovim keys, motions, git" \
+		herdr "every herdr key and CLI command" \
+		fm "firstmate, as captain" \
+		all "open all four"
+	printf '\n  \033[2mevery day\033[0m\n'
+	printf '    \033[33m%-9s\033[0m \033[2m%s\033[0m\n' \
+		review "2 min - spaced recall across all 7 lessons" \
+		practice "10 min - vim motions, real keys, scored vs par"
+	printf '\n  \033[2mexample:  learn review   |   learn 1   |   learn panic\033[0m\n\n'
+	;;
+
+-h | --help | help)
+	sed -n '2,14p' "$0" | sed 's/^#\{1,\} \{0,1\}//'
+	;;
+
+*)
+	echo "learn: don't know '$1'. Try: learn ls" >&2
+	exit 1
+	;;
+esac

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>05 - Reading code you did not write</title>
+<link rel="stylesheet" href="../assets/course.css">
+</head>
+<body>
+<div class="page">
+
+<p class="kicker">Lesson 05 &middot; Neovim + Git &middot; 15 min</p>
+<h1>Reading code you did not write</h1>
+<p class="standfirst">If an agent writes the code, review <em>is</em> your job. Here you
+review a real branch and reject one bad hunk out of many good ones.</p>
+
+<div class="tldr">
+<span class="label">Three tools, three zoom levels</span>
+<table>
+  <tr><td><strong>gitsigns</strong></td><td>ambient. Gutter marks + who last touched this line. Always on.</td></tr>
+  <tr><td><strong>diffview</strong></td><td>review. Every changed file, side by side. <code>:DiffviewOpen main...HEAD</code></td></tr>
+  <tr><td><strong>neogit</strong></td><td>decide. Stage, discard, commit, push. <kbd>Space</kbd><kbd>g</kbd></td></tr>
+  <tr><td><strong>lazygit</strong></td><td>the same, outside the editor. Just run <code>lazygit</code>.</td></tr>
+</table>
+</div>
+
+<div id="drill"></div>
+
+<h2>Check yourself</h2>
+<div id="quiz"></div>
+
+<div class="footer">
+  <div class="nav">
+    <span>Prev: <a href="0004-your-leader-keys.html">04</a> &middot; Next: <a href="0006-firstmate-captain.html">06 - Being the captain</a></span>
+    <span><a href="../reference/nvim-cheatsheet.html">Full cheat sheet</a></span>
+  </div>
+  <p class="source"><strong>Offline manuals:</strong> <code>:help diffview</code>,
+  <code>:help gitsigns</code>, <code>:help neogit</code>. In-app,
+  <kbd>g</kbd><kbd>?</kbd> in diffview and <kbd>?</kbd> in neogit are always current.</p>
+  <p class="source">Want real <code>]h</code> / <code>[h</code> hunk keys instead of typing
+  <code>:Gitsigns</code>? Eight lines in <code>plugins/git.lua</code>. Ask me.</p>
+</div>
+
+</div>
+<script src="../assets/questions.js"></script>
+<script src="../assets/drill.js"></script>
+<script src="../assets/quiz.js"></script>
+<script>
+renderDrill('drill', [
+  { section: 'Build a branch to review' },
+  { do: 'bash ~/learn-terminal/assets/review-sandbox.sh', cmd: true,
+    see: 'Creates <code>/tmp/review-drill</code>: a repo on branch <code>agent-work</code>, base <code>main</code>.',
+    note: 'It simulates an agent that did mostly good work and left two things it should not have. Safe to re-run any time.' },
+  { do: 'cd /tmp/review-drill', cmd: true, see: 'You are in the repo.' },
+
+  { section: 'Step 1 - scope it before you read a line' },
+  { do: 'git diff main...HEAD --stat', cmd: true,
+    see: '<code>calc.py</code> +7 and <code>scratch.py</code> +1.',
+    note: 'Three dots means "everything on this branch that is not on main" - exactly what a PR contains. Always run this first.' },
+  { do: 'Notice scratch.py', see: 'You did not ask for that file. Already one finding, and you have read no code.',
+    note: 'If a "small fix" touches forty files, stop and ask why before reading anything.' },
+
+  { section: 'Step 2 - ambient signals' },
+  { do: 'nvim calc.py', cmd: true, see: 'The file opens.' },
+  { do: 'Look at the left gutter', see: 'Markers show which lines are added or changed versus the last commit.' },
+  { do: 'Move the cursor down a few lines', see: 'Grey text at the end of the line: author, date, commit message.',
+    note: 'That is <code>current_line_blame = true</code>. Fastest way to tell whether an odd line is new or has been there a year.' },
+  { do: ':Gitsigns blame', see: 'A full blame panel. Close it with <code>:q</code> in that window.' },
+
+  { section: 'Step 3 - read the whole branch' },
+  { do: ':DiffviewOpen main...HEAD', see: 'File panel on the left, old-vs-new side by side on the right.',
+    note: 'This is the single most useful command in the lesson. Learn this one if you learn nothing else.' },
+  { do: 'g?', see: 'Diffview\'s full keymap.' },
+  { do: 'q to close the help, then Tab', see: 'Jumps to the next changed file.' },
+  { do: 'Shift+Tab', see: 'Back to the previous one.' },
+  { do: ']c then [c', see: 'Next and previous change <em>within</em> the current file.' },
+  { do: 'Read calc.py properly', see: 'The empty-list guard is good. <code>biggest()</code> is fine. <code>DEBUG = True</code> should not be there.',
+    note: 'Do not skim the changes you expected. That is exactly where a plausible-looking wrong change hides.' },
+  { do: ':DiffviewClose', see: 'Back to the file.' },
+
+  { section: 'Step 4 - reject one hunk, keep the rest' },
+  { do: 'git switch main && git switch agent-work && nvim calc.py', cmd: true,
+    see: 'Open the file on the branch.' },
+  { do: 'Put the cursor on the DEBUG = True line', see: 'The line you want gone.' },
+  { do: ':Gitsigns preview_hunk', see: 'A float showing that hunk\'s before and after.',
+    note: 'Gitsigns sets no keymaps in your config, so use the commands. They tab-complete after <code>:Gits</code>.' },
+  { do: ':Gitsigns nav_hunk next', see: 'Walks to the next changed hunk.' },
+  { do: ':Gitsigns nav_hunk prev', see: 'And back.' },
+  { do: 'Back on the DEBUG line, run :Gitsigns reset_hunk', see: 'That hunk is reverted. Everything else survives.',
+    note: 'Ninety percent good is normal. You never have to accept or reject a whole branch.' },
+  { do: 'Esc', see: 'Saves the file.' },
+
+  { section: 'Step 5 - stage and commit' },
+  { do: 'Space g', see: 'Neogit: untracked, unstaged and staged sections.' },
+  { do: '?', see: 'The full keymap. Read it, then close it.' },
+  { do: 'Move to calc.py and press Tab', see: 'Expands the inline diff for that file. <strong>Read before you stage.</strong>' },
+  { do: 's', see: 'Stages it.' },
+  { do: 'u', see: 'Unstages it again. Now stage it back with s.' },
+  { do: 'Move to scratch.py', see: 'The file you never asked for.' },
+  { do: 'x', see: 'Discards it. Neogit asks first - confirm.' },
+  { do: 'c then c', see: 'Opens a commit message buffer.' },
+  { do: 'i, type a message, Esc, then :wq', see: 'Committed.',
+    warn: '<kbd>Esc</kbd> here saves the message buffer, it does not cancel. <code>:wq</code> commits, <code>:q!</code> abandons.' },
+  { do: 'q', see: 'Closes Neogit.' },
+
+  { section: 'Same job, outside the editor' },
+  { do: 'lazygit', cmd: true, see: 'A full terminal git UI. Installed by your <code>home.nix</code>.',
+    note: '<kbd>h</kbd><kbd>j</kbd><kbd>k</kbd><kbd>l</kbd> or arrows to move panels, <kbd>Space</kbd> to stage, <kbd>c</kbd> to commit, <kbd>?</kbd> for help, <kbd>q</kbd> to quit.' },
+  { do: 'q', see: 'Out.' },
+  { do: 'git diff main...HEAD --stat', cmd: true, see: 'Only <code>calc.py</code> now, and no DEBUG line. You reviewed a branch properly.' },
+
+  { section: 'The loop, from now on' },
+  { do: 'gh pr diff 42', cmd: true, see: 'A real PR\'s diff without leaving the terminal.' },
+  { do: 'gh pr checkout 42', cmd: true, see: 'Pull it down, then <code>nvim</code> and <code>:DiffviewOpen main...HEAD</code>.',
+    note: 'Scope with --stat, read with diffview, chase symbols with <kbd>*</kbd>, reject hunks with reset_hunk, decide in neogit. That is the whole job.' }
+]);
+
+renderQuiz('quiz', QBANK.l5);
+</script>
+</body>
+</html>

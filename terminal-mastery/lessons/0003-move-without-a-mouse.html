@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>03 - Move without a mouse</title>
+<link rel="stylesheet" href="../assets/course.css">
+</head>
+<body>
+<div class="page">
+
+<p class="kicker">Lesson 03 &middot; Neovim &middot; 15 min</p>
+<h1>Move without a mouse</h1>
+<p class="standfirst">Vim is a language, not a shortcut list. Learn the grammar in one
+file and you can express any edit you can describe.</p>
+
+<div class="tldr">
+<span class="label">Know this before you start</span>
+<table>
+  <tr><td><strong>The grammar</strong></td><td><code>[count] operator [count] motion-or-text-object</code></td></tr>
+  <tr><td><strong>So</strong></td><td><code>d2w</code> = delete two words. <code>ci"</code> = change inside quotes.</td></tr>
+  <tr><td><strong>Operators</strong></td><td><kbd>d</kbd> delete &middot; <kbd>c</kbd> change &middot; <kbd>y</kbd> yank. Doubled = whole line.</td></tr>
+  <tr><td><strong>Objects</strong></td><td><kbd>i</kbd> = inner (contents), <kbd>a</kbd> = a (contents + delimiters)</td></tr>
+</table>
+</div>
+
+<div id="drill"></div>
+
+<h2>Check yourself</h2>
+<div id="quiz"></div>
+
+<div class="footer">
+  <div class="nav">
+    <span>Prev: <a href="0002-herdr-your-terminal.html">02</a> &middot; Next: <a href="0004-your-leader-keys.html">04 - Your leader keys</a></span>
+    <span><a href="../reference/nvim-cheatsheet.html">Full cheat sheet</a></span>
+  </div>
+  <p class="source"><strong>Do next:</strong> <code>vimtutor</code>, 25 minutes, offline.
+  Then <code>:help motion.txt</code> and <code>:help text-objects</code> when you want the
+  complete set. <code>:help quickref</code> is a one-page index of everything.</p>
+  <p class="source"><strong>Do not use the arrow keys.</strong> They work, and they will
+  keep your hands off the home row for a month. Two weeks of forcing
+  <kbd>h</kbd><kbd>j</kbd><kbd>k</kbd><kbd>l</kbd> makes it permanent.</p>
+</div>
+
+</div>
+<script src="../assets/questions.js"></script>
+<script src="../assets/drill.js"></script>
+<script src="../assets/quiz.js"></script>
+<script>
+renderDrill('drill', [
+  { section: 'Set up a real file' },
+  { do: 'cp ~/.dotfiles/home/.config/nvim/lua/vim_config.lua /tmp/play.lua', cmd: true,
+    see: 'A copy of your own config to mangle safely.' },
+  { do: 'nvim /tmp/play.lua', cmd: true, see: 'Twelve lines of Lua, with line numbers in the gutter.' },
+
+  { section: 'Read the gutter as a keystroke' },
+  { do: 'Look at the numbers', see: 'Your line shows its real number. Every other line shows its <em>distance</em> from you.' },
+  { do: '5j', see: 'Down exactly five lines - because the gutter said 5.',
+    note: 'Stop counting lines by eye. Read the number, type it. That is the whole point of relativenumber.' },
+  { do: '3k', see: 'Up three.' },
+  { do: 'gg then G', see: 'Top of file, then bottom.' },
+  { do: ':7', see: 'Jumps to absolute line 7. Use this when a stack trace hands you a number.' },
+
+  { section: 'Move by structure, not by character' },
+  { do: 'w then w then w', see: 'Forward one word at a time.' },
+  { do: 'b then e', see: 'Back a word, then to the end of the current word.' },
+  { do: '^ then $', see: 'First real character of the line, then the end of the line.' },
+  { do: '{ then }', see: 'Jumps between blank lines. The fastest way through code.' },
+  { do: 'Put the cursor on a ( or { then press %', see: 'Jumps to its matching bracket. Invaluable for reading nested code.' },
+
+  { section: 'Search, which is really a motion' },
+  { do: 'Put the cursor on the word "true" then press *', see: 'Jumps to the next occurrence, and highlights them all.',
+    note: 'No typing. <kbd>*</kbd> searches for whatever word you are standing on. Use it constantly.' },
+  { do: 'n then n then N', see: 'Next match, next, previous.' },
+  { do: 'Ctrl+o', see: 'Jumps you back where you started. Your browser back button.',
+    note: '<kbd>*</kbd> to chase a symbol, read, <kbd>Ctrl</kbd>+<kbd>o</kbd> to come home. That pair is most of code review.' },
+  { do: '/mouse then Enter', see: 'Search forward for text you type.' },
+  { do: '/MOUSE then Enter', see: 'No match. A capital makes the search case-sensitive.',
+    note: '<code>ignorecase</code> + <code>smartcase</code>: lowercase is loose, add a capital to be precise.' },
+  { do: ':noh', see: 'Clears the leftover highlighting.' },
+
+  { section: 'Operator + motion' },
+  { do: 'Go to any line, then dw', see: 'Deletes one word forward.' },
+  { do: 'u', see: 'Undone.' },
+  { do: 'd2w', see: 'Deletes two words. The count multiplies.' },
+  { do: 'u then dd', see: 'Deletes the whole line. Doubled operator = whole line.' },
+  { do: 'u then yy then p', see: 'Yank the line, put it below. You now have a duplicate.' },
+  { do: 'u then D', see: 'Deletes from the cursor to end of line. Capitals mean "to end of line".' },
+  { do: 'u', see: 'Back to normal.' },
+
+  { section: 'Text objects - the good part' },
+  { do: 'Move to a line with a string in quotes, put the cursor anywhere on it, then ci"', see: 'The quote contents vanish and you are in Insert mode, ready to type.',
+    note: 'The cursor does not need to be inside the quotes. The object searches outward.' },
+  { do: 'Type something, then Esc', see: 'String replaced.' },
+  { do: 'Move to another quoted string and press .', see: 'The entire change repeats.',
+    note: '<kbd>.</kbd> is the most undersold key in Vim. Make a change once, then repeat it everywhere.' },
+  { do: 'u u then find a ( and press di(', see: 'Everything inside the parens is deleted, brackets kept.' },
+  { do: 'u then da(', see: 'This time the parens go too. That is the <code>i</code> vs <code>a</code> difference.' },
+  { do: 'u then daw', see: 'Deletes a word plus its trailing space, cleanly.' },
+  { do: 'u', see: 'Restored.' },
+
+  { section: 'The three clipboard rules that are yours, not Vim\'s' },
+  { do: 'Copy any text in Chrome, switch back, then press x', see: 'Your Chrome clipboard is gone, replaced by one character.',
+    warn: '<code>clipboard = unnamedplus</code> sends every yank <em>and every delete</em> to macOS. Deletes are cuts.' },
+  { do: 'Copy something in Chrome again, then press "_dd', see: 'The line is deleted and your clipboard survives.',
+    note: 'Read <code>"_</code> as "into the bin". Works with any operator: <code>"_diw</code>, <code>"_x</code>.' },
+  { do: 'yy then V then p then V then p', see: 'You can paste the same line over and over.',
+    note: 'Stock Vim would swap your clipboard on the first paste. The <code>xnoremap</code> in your <code>keys.lua</code> re-yanks the original so it survives.' },
+
+  { section: 'Scrolling, since the trackpad is dead' },
+  { do: 'Ctrl+d then Ctrl+u', see: 'Half a screen down, then up. The everyday pair.' },
+  { do: 'zz', see: 'Redraws with your line centred.',
+    note: 'You will need this less than most people: <code>scrolloff = 16</code> keeps 16 lines of context around you at all times.' },
+  { do: ':q!', see: 'Out. Drill complete.' }
+]);
+
+renderQuiz('quiz', QBANK.l3);
+</script>
+</body>
+</html>

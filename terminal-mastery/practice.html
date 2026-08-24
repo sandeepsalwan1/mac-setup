@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vim practice</title>
+<link rel="stylesheet" href="assets/course.css">
+</head>
+<body>
+<div class="page">
+
+<p class="kicker">Practice &middot; offline &middot; real keystrokes</p>
+<h1>Vim practice</h1>
+<p class="standfirst">Click into a buffer and press actual Vim keys. Par is computed by
+searching every possible route, so it is the true minimum, not my guess.</p>
+
+<div class="note">
+<span class="label">How to use it</span>
+<p>Click the code, then type. <span class="vpcur">Cyan</span> is your cursor,
+<span class="vptgt">pink</span> is the target. Get there in as few keys as you can.
+<kbd>Esc</kbd> clears a half-typed count. The gutter shows relative numbers, exactly like
+your real config.</p>
+<p>Do this once a day for a week and motions stop being something you think about.</p>
+</div>
+
+<h2>1 &middot; Left, right, up, down</h2>
+<p>Only <kbd>h</kbd> <kbd>j</kbd> <kbd>k</kbd> <kbd>l</kbd> and counts. Read the gutter -
+it is telling you the number to type.</p>
+<div id="t1"></div>
+
+<h2>2 &middot; Words</h2>
+<p><kbd>w</kbd> next word, <kbd>b</kbd> back, <kbd>e</kbd> end of word. Capitals ignore
+punctuation, so <kbd>W</kbd> treats <code>foo.bar()</code> as one blob.</p>
+<div id="t2"></div>
+
+<h2>3 &middot; Within a line</h2>
+<p><kbd>0</kbd> column zero, <kbd>^</kbd> first real character, <kbd>$</kbd> end of line.
+Then <kbd>f</kbd><em>x</em> jumps onto the next <em>x</em>, <kbd>t</kbd><em>x</em> stops
+just before it. <kbd>F</kbd> and <kbd>T</kbd> go backwards.</p>
+<div id="t3"></div>
+
+<h2>4 &middot; Across the file</h2>
+<p><kbd>gg</kbd> top, <kbd>G</kbd> bottom, <kbd>{</kbd> <kbd>}</kbd> jump by blank line,
+<kbd>%</kbd> hops to the matching bracket. <code>12G</code> goes to line 12.</p>
+<div id="t4"></div>
+
+<h2>5 &middot; Everything at once</h2>
+<p>Real code, no restrictions. Beating par here means you are actually fluent.</p>
+<div id="t5"></div>
+
+<h2>6 &middot; Compose an edit</h2>
+<p>Motions get you there; operators change things. Type the keys you would press. This is
+the grammar - <code>operator</code> + <code>text object</code> - and it is the thing that
+makes Vim worth learning.</p>
+<div id="c1"></div>
+
+<div class="warn">
+<span class="label">What this trainer does not cover</span>
+<p>Registers, macros, marks, and <code>:global</code>. All powerful, all wrong to learn
+before motions are automatic. Ask me when you are ready.</p>
+<p>It also simplifies two things: <kbd>w</kbd> and <kbd>b</kbd> cross line boundaries here
+exactly as in Vim, but <kbd>$</kbd> lands on the last character rather than past it, and
+there is no operator-pending mode. Neither difference will mislead your fingers.</p>
+</div>
+
+<div class="footer">
+  <div class="nav">
+    <span><a href="index.html">Back to the hub</a></span>
+    <span><a href="reference/nvim-cheatsheet.html">Cheat sheet</a> &middot; <a href="lessons/0003-move-without-a-mouse.html">Lesson 03</a></span>
+  </div>
+  <p class="source"><strong>On external trainers:</strong> Vim Hero, VimGolf and
+  <code>vimtutor</code> all teach <em>stock</em> Vim, which is right for motions and wrong
+  for three things in your config. See
+  <a href="RESOURCES.md">RESOURCES.md</a> for what to ignore.</p>
+</div>
+
+</div>
+<script src="assets/vim-practice.js"></script>
+<script>
+var SNIP = [
+  'def load_config(path):',
+  '    with open(path) as f:',
+  '        raw = f.read()',
+  '',
+  '    data = json.loads(raw)',
+  '    if not data.get("enabled"):',
+  '        return None',
+  '',
+  '    return Config(**data)'
+];
+
+var GRID = [
+  'alpha beta gamma',
+  'delta epsilon zeta',
+  'eta theta iota',
+  'kappa lambda mu',
+  'nu xi omicron'
+];
+
+var LINE = [
+  '    result = compute(alpha, beta) + offset  # tune later'
+];
+
+vimMotionTrainer('t1', [
+  { lines: GRID, from: [0, 0], to: [3, 0], task: 'Get to the start of "kappa".',
+    hint: 'h j k l, and counts like 3j' },
+  { lines: GRID, from: [4, 2], to: [0, 2], task: 'Back up to the top row, same column.',
+    hint: 'the gutter is the number you need' },
+  { lines: GRID, from: [2, 0], to: [2, 8], task: 'Move right along the line.',
+    hint: 'counts work sideways too: 8l' }
+]);
+
+vimMotionTrainer('t2', [
+  { lines: GRID, from: [0, 0], to: [0, 11], task: 'Reach the start of "gamma".',
+    hint: 'w moves a word at a time' },
+  { lines: GRID, from: [1, 15], to: [1, 6], task: 'Back to the start of "epsilon".',
+    hint: 'b goes backwards by word' },
+  { lines: SNIP, from: [0, 0], to: [0, 14], task: 'Land on the last character of "config".',
+    hint: 'e stops at the end of a word' },
+  { lines: SNIP, from: [4, 4], to: [4, 11], task: 'Reach "json". Note the dot in json.loads.',
+    hint: 'w stops at punctuation, W does not' }
+]);
+
+vimMotionTrainer('t3', [
+  { lines: LINE, from: [0, 30], to: [0, 4], task: 'Jump to the first real character.',
+    hint: '^ beats 0 when the line is indented' },
+  { lines: LINE, from: [0, 4], to: [0, 55], task: 'Get to the very end of the line.',
+    hint: '$' },
+  { lines: LINE, from: [0, 4], to: [0, 20], task: 'Land on the opening bracket.',
+    hint: 'f( is two keys and exact' },
+  { lines: LINE, from: [0, 4], to: [0, 26], task: 'Land on the comma.',
+    hint: 'f then the character' },
+  { lines: LINE, from: [0, 55], to: [0, 34], task: 'Back to the plus sign.',
+    hint: 'F searches backwards' }
+]);
+
+vimMotionTrainer('t4', [
+  { lines: SNIP, from: [0, 0], to: [8, 4], task: 'Get to the last line.',
+    hint: 'G' },
+  { lines: SNIP, from: [8, 4], to: [0, 0], task: 'Back to the very top.',
+    hint: 'gg' },
+  { lines: SNIP, from: [0, 0], to: [3, 0], task: 'Jump to the first blank line.',
+    hint: '} moves by paragraph' },
+  { lines: SNIP, from: [1, 13], to: [1, 18], task: 'Hop to the matching close bracket.',
+    hint: '% from an open bracket' },
+  { lines: SNIP, from: [0, 0], to: [5, 4], task: 'Reach the "if" on line 6.',
+    hint: '6G, or } then j' }
+]);
+
+vimMotionTrainer('t5', [
+  { lines: SNIP, from: [0, 4], to: [5, 21], task: 'Reach the "enabled" string on the if line.' },
+  { lines: SNIP, from: [8, 11], to: [2, 8], task: 'Get back to "raw" on line 3.' },
+  { lines: SNIP, from: [4, 4], to: [6, 8], task: 'Reach the return on line 7.' },
+  { lines: SNIP, from: [0, 0], to: [8, 24], task: 'Land on the last bracket in the file.' }
+]);
+
+vimComposeTrainer('c1', [
+  { task: 'Replace the whole string, keeping the quotes.',
+    code: 'name = "old value"',
+    answers: ['ci"'],
+    why: 'change inside quotes. Cursor can be anywhere on the line.' },
+
+  { task: 'Delete the arguments, keeping the parentheses.',
+    code: 'compute(alpha, beta)',
+    answers: ['di(', 'di)', 'dib'],
+    why: 'inner parens. da( would take the brackets too.' },
+
+  { task: 'Delete one word cleanly, including its trailing space.',
+    code: 'the quick brown fox',
+    answers: ['daw'],
+    why: 'a word. dw leaves the spacing untidy when you are mid-word.' },
+
+  { task: 'Delete from the cursor to the end of the line.',
+    code: 'keep_this = drop_all_of_this()',
+    answers: ['D', 'd$'],
+    why: 'capitals are the to-end-of-line shortcuts. C works the same for change.' },
+
+  { task: 'Yank three whole lines.',
+    code: 'line one\nline two\nline three',
+    answers: ['3yy', 'y3y', '3Y'],
+    why: 'count then doubled operator. Same shape as 3dd.' },
+
+  { task: 'Change the whole body of the block, keeping the braces.',
+    code: 'if (ok) {\n    doThing();\n}',
+    answers: ['ci{', 'ci}', 'ciB'],
+    why: 'inner braces. Works from anywhere inside the block.' },
+
+  { task: 'Delete this line without touching your clipboard.',
+    code: 'DEBUG = True',
+    answers: ['"_dd'],
+    why: 'the black hole register. Your config sends normal deletes to the macOS clipboard.' },
+
+  { task: 'Delete up to, but not including, the comma.',
+    code: 'compute(alpha, beta)',
+    answers: ['dt,'],
+    why: 't is till: stop just before. df, would eat the comma too.' },
+
+  { task: 'Indent the next five lines.',
+    code: 'a\nb\nc\nd\ne',
+    answers: ['5>>', '>5j', '>4j'],
+    why: 'operator plus count, or operator plus a counted motion.' },
+
+  { task: 'Repeat the change you just made, somewhere else.',
+    code: '(cursor moved to a new spot)',
+    answers: ['.'],
+    why: 'the most undersold key in Vim. ci" once, then dot on every other string.' }
+]);
+</script>
+</body>
+</html>

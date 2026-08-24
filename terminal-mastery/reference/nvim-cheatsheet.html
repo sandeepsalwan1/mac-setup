@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Neovim cheat sheet</title>
+<link rel="stylesheet" href="../assets/course.css">
+</head>
+<body class="card">
+<div class="page">
+
+<p class="kicker">Reference &middot; your config, not generic Vim</p>
+<h1>Neovim</h1>
+<p class="standfirst">Read from <code>~/.dotfiles/home/.config/nvim/</code>. Where this
+differs from a tutorial you found online, this is right and the tutorial is generic.</p>
+
+<div class="cols">
+
+<section>
+<h2>Your mappings - the whole set</h2>
+<table>
+  <tr><td><kbd>Space</kbd></td><td>leader. Press and wait for the menu.</td></tr>
+  <tr><td><kbd>Space</kbd><kbd>f</kbd></td><td>find files by name</td></tr>
+  <tr><td><kbd>Space</kbd><kbd>s</kbd></td><td>search text in project (ripgrep)</td></tr>
+  <tr><td><kbd>Space</kbd><kbd>b</kbd></td><td>switch buffer</td></tr>
+  <tr><td><kbd>Space</kbd><kbd>e</kbd></td><td>file browser (Oil)</td></tr>
+  <tr><td><kbd>Space</kbd><kbd>g</kbd></td><td>git (Neogit)</td></tr>
+  <tr><td><kbd>g</kbd><kbd>d</kbd></td><td>goto definition <em>(needs an LSP - none installed)</em></td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>a</kbd></td><td>select all (<code>ggVG</code>)</td></tr>
+  <tr><td><kbd>Esc</kbd></td><td><strong>save</strong> (normal mode only)</td></tr>
+  <tr><td><kbd>p</kbd> in visual</td><td>paste without losing your clipboard</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Options that change behaviour</h2>
+<table>
+  <tr><td><code>mouse = ''</code></td><td>mouse fully off</td></tr>
+  <tr><td><code>clipboard = unnamedplus</code></td><td>yanks <em>and deletes</em> hit the macOS clipboard</td></tr>
+  <tr><td><code>number</code> + <code>relativenumber</code></td><td>gutter shows the jump distance</td></tr>
+  <tr><td><code>ignorecase</code> + <code>smartcase</code></td><td>lowercase search is loose, capital is exact</td></tr>
+  <tr><td><code>scrolloff = 16</code></td><td>16 lines of context always visible</td></tr>
+  <tr><td><code>undofile</code></td><td>undo survives quitting</td></tr>
+  <tr><td><code>expandtab</code>, <code>shiftwidth = 2</code></td><td>2 spaces, never tabs</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Quit and save</h2>
+<table>
+  <tr><td><code>:w</code></td><td>save</td></tr>
+  <tr><td><code>:q</code></td><td>quit</td></tr>
+  <tr><td><code>:wq</code> <kbd>ZZ</kbd></td><td>save and quit</td></tr>
+  <tr><td><code>:q!</code> <kbd>ZQ</kbd></td><td>quit, discard</td></tr>
+  <tr><td><code>:qa!</code></td><td>quit everything</td></tr>
+  <tr><td><code>:w name</code></td><td>save under a new name</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Modes</h2>
+<table>
+  <tr><td><kbd>i</kbd> <kbd>a</kbd></td><td>insert before / after cursor</td></tr>
+  <tr><td><kbd>I</kbd> <kbd>A</kbd></td><td>insert at start / end of line</td></tr>
+  <tr><td><kbd>o</kbd> <kbd>O</kbd></td><td>open a line below / above</td></tr>
+  <tr><td><kbd>v</kbd> <kbd>V</kbd></td><td>visual char / line</td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>v</kbd></td><td>visual block (column)</td></tr>
+  <tr><td><kbd>gv</kbd></td><td>reselect last selection</td></tr>
+  <tr><td><kbd>Esc</kbd></td><td>back toward Normal</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Motion</h2>
+<table>
+  <tr><td><kbd>h</kbd><kbd>j</kbd><kbd>k</kbd><kbd>l</kbd></td><td>left down up right</td></tr>
+  <tr><td><kbd>w</kbd> <kbd>b</kbd> <kbd>e</kbd></td><td>next word / back / end of word</td></tr>
+  <tr><td><kbd>W</kbd> <kbd>B</kbd> <kbd>E</kbd></td><td>same, ignoring punctuation</td></tr>
+  <tr><td><kbd>0</kbd> <kbd>^</kbd> <kbd>$</kbd></td><td>line start / first text / line end</td></tr>
+  <tr><td><kbd>{</kbd> <kbd>}</kbd></td><td>previous / next blank line</td></tr>
+  <tr><td><kbd>gg</kbd> <kbd>G</kbd></td><td>top / bottom of file</td></tr>
+  <tr><td><code>42G</code> <code>:42</code></td><td>go to line 42</td></tr>
+  <tr><td><kbd>%</kbd></td><td>matching bracket</td></tr>
+  <tr><td><kbd>H</kbd> <kbd>M</kbd> <kbd>L</kbd></td><td>top / middle / bottom of screen</td></tr>
+  <tr><td><code>f</code>x <code>t</code>x</td><td>jump to / just before next x on the line</td></tr>
+  <tr><td><kbd>;</kbd> <kbd>,</kbd></td><td>repeat that jump forward / back</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Search and jump</h2>
+<table>
+  <tr><td><code>/</code>text <code>?</code>text</td><td>search forward / back</td></tr>
+  <tr><td><kbd>n</kbd> <kbd>N</kbd></td><td>next / previous match</td></tr>
+  <tr><td><kbd>*</kbd> <kbd>#</kbd></td><td><strong>search word under cursor</strong> fwd / back</td></tr>
+  <tr><td><code>:noh</code></td><td>clear highlighting</td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>o</kbd></td><td><strong>jump back</strong></td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>i</kbd></td><td>jump forward</td></tr>
+  <tr><td><code>:%s/a/b/g</code></td><td>replace a with b everywhere</td></tr>
+  <tr><td><code>:%s/a/b/gc</code></td><td>same, confirm each</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Scroll</h2>
+<table>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>d</kbd> <kbd>Ctrl</kbd>+<kbd>u</kbd></td><td>half screen down / up</td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>f</kbd> <kbd>Ctrl</kbd>+<kbd>b</kbd></td><td>full screen fwd / back</td></tr>
+  <tr><td><kbd>zz</kbd> <kbd>zt</kbd> <kbd>zb</kbd></td><td>centre / top / bottom this line</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Operators</h2>
+<table>
+  <tr><td><kbd>d</kbd> <kbd>c</kbd> <kbd>y</kbd></td><td>delete / change / yank</td></tr>
+  <tr><td><kbd>dd</kbd> <kbd>cc</kbd> <kbd>yy</kbd></td><td>whole line</td></tr>
+  <tr><td><kbd>D</kbd> <kbd>C</kbd></td><td>to end of line</td></tr>
+  <tr><td><kbd>&gt;&gt;</kbd> <kbd>&lt;&lt;</kbd> <kbd>==</kbd></td><td>indent / outdent / auto-indent</td></tr>
+  <tr><td><kbd>x</kbd> <kbd>r</kbd>c</td><td>delete char / replace char</td></tr>
+  <tr><td><kbd>p</kbd> <kbd>P</kbd></td><td>put after / before</td></tr>
+  <tr><td><kbd>J</kbd></td><td>join with next line</td></tr>
+  <tr><td><kbd>.</kbd></td><td><strong>repeat last change</strong></td></tr>
+  <tr><td><code>"_d</code></td><td>delete into the bin, keep clipboard</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Text objects</h2>
+<p><code>i</code> = inner (contents), <code>a</code> = a (contents plus delimiters).</p>
+<table>
+  <tr><td><code>iw</code> <code>aw</code></td><td>word</td></tr>
+  <tr><td><code>i"</code> <code>a"</code></td><td>double quotes</td></tr>
+  <tr><td><code>i'</code> <code>a'</code></td><td>single quotes</td></tr>
+  <tr><td><code>i(</code> <code>a(</code></td><td>parentheses</td></tr>
+  <tr><td><code>i{</code> <code>a{</code></td><td>braces</td></tr>
+  <tr><td><code>i[</code> <code>a[</code></td><td>brackets</td></tr>
+  <tr><td><code>ip</code> <code>ap</code></td><td>paragraph</td></tr>
+  <tr><td><code>it</code> <code>at</code></td><td>html tag</td></tr>
+</table>
+<p>Learn <code>ci"</code>, <code>ci(</code>, <code>ci{</code>, <code>daw</code> first.</p>
+</section>
+
+<section>
+<h2>Buffers, windows, tabs</h2>
+<table>
+  <tr><td><kbd>Space</kbd><kbd>b</kbd></td><td>pick a buffer</td></tr>
+  <tr><td><code>:bn</code> <code>:bp</code> <code>:bd</code></td><td>next / prev / delete buffer</td></tr>
+  <tr><td><code>:vs</code> <code>:sp</code></td><td>split vertical / horizontal</td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>w</kbd> <kbd>hjkl</kbd></td><td>move between windows</td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>w</kbd> <kbd>q</kbd></td><td>close this window</td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>w</kbd> <kbd>o</kbd></td><td>close every other window</td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>w</kbd> <kbd>=</kbd></td><td>equalise sizes</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Oil - file browser (<kbd>Space</kbd><kbd>e</kbd>)</h2>
+<p>The listing is an editable buffer.</p>
+<table>
+  <tr><td><kbd>Enter</kbd></td><td>open file or enter directory</td></tr>
+  <tr><td><kbd>-</kbd></td><td>go up a directory</td></tr>
+  <tr><td><kbd>_</kbd></td><td>jump to cwd</td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>p</kbd></td><td>preview</td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>s</kbd> <kbd>Ctrl</kbd>+<kbd>h</kbd></td><td>open in vsplit / split</td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>c</kbd></td><td>close</td></tr>
+  <tr><td><kbd>g</kbd><kbd>?</kbd></td><td><strong>full keymap</strong></td></tr>
+  <tr><td><kbd>o</kbd> <code>name</code></td><td>create a file</td></tr>
+  <tr><td><kbd>o</kbd> <code>name/</code></td><td>create a directory</td></tr>
+  <tr><td><code>cw</code></td><td>rename</td></tr>
+  <tr><td><kbd>dd</kbd> then <kbd>p</kbd></td><td>move a file</td></tr>
+  <tr><td><code>:w</code></td><td><strong>apply</strong> (confirms first)</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Picker (<kbd>Space</kbd><kbd>f</kbd> <kbd>s</kbd> <kbd>b</kbd>)</h2>
+<table>
+  <tr><td>type</td><td>fuzzy filter</td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>n</kbd> <kbd>Ctrl</kbd>+<kbd>p</kbd></td><td>next / previous</td></tr>
+  <tr><td><kbd>Enter</kbd></td><td>open</td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>v</kbd> <kbd>Ctrl</kbd>+<kbd>s</kbd></td><td>open in vsplit / split</td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>t</kbd></td><td>open in new tab</td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>q</kbd></td><td>send all to quickfix</td></tr>
+  <tr><td><kbd>?</kbd></td><td>this picker's keymap</td></tr>
+  <tr><td><kbd>Esc</kbd></td><td>close</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Git - see a diff</h2>
+<table>
+  <tr><td><code>:DiffviewOpen</code></td><td>working tree vs HEAD</td></tr>
+  <tr><td><code>:DiffviewOpen main...HEAD</code></td><td><strong>the whole branch, like a PR</strong></td></tr>
+  <tr><td><code>:DiffviewOpen HEAD~1</code></td><td>since one commit ago</td></tr>
+  <tr><td><code>:DiffviewFileHistory %</code></td><td>history of this file</td></tr>
+  <tr><td><code>:DiffviewClose</code></td><td>close</td></tr>
+  <tr><td><kbd>Tab</kbd> <kbd>Shift</kbd>+<kbd>Tab</kbd></td><td>next / prev changed file</td></tr>
+  <tr><td><kbd>]</kbd><kbd>c</kbd> <kbd>[</kbd><kbd>c</kbd></td><td>next / prev change in file</td></tr>
+  <tr><td><kbd>g</kbd><kbd>?</kbd></td><td>full keymap</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Git - hunks (gitsigns)</h2>
+<p>No keymaps set; use commands, they tab-complete.</p>
+<table>
+  <tr><td><code>:Gitsigns preview_hunk</code></td><td>see this hunk</td></tr>
+  <tr><td><code>:Gitsigns nav_hunk next</code></td><td>next hunk</td></tr>
+  <tr><td><code>:Gitsigns nav_hunk prev</code></td><td>previous hunk</td></tr>
+  <tr><td><code>:Gitsigns stage_hunk</code></td><td>stage it</td></tr>
+  <tr><td><code>:Gitsigns undo_stage_hunk</code></td><td>unstage it</td></tr>
+  <tr><td><code>:Gitsigns reset_hunk</code></td><td><strong>reject it</strong></td></tr>
+  <tr><td><code>:Gitsigns diffthis</code></td><td>diff this file vs HEAD</td></tr>
+  <tr><td><code>:Gitsigns blame</code></td><td>full blame panel</td></tr>
+  <tr><td><code>:Gitsigns toggle_current_line_blame</code></td><td>silence inline blame</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Git - commit (Neogit, <kbd>Space</kbd><kbd>g</kbd>)</h2>
+<table>
+  <tr><td><kbd>Tab</kbd></td><td>expand diff for this item</td></tr>
+  <tr><td><kbd>s</kbd> <kbd>S</kbd></td><td>stage item / stage all</td></tr>
+  <tr><td><kbd>u</kbd> <kbd>U</kbd></td><td>unstage item / all</td></tr>
+  <tr><td><kbd>x</kbd></td><td>discard (asks first)</td></tr>
+  <tr><td><kbd>c</kbd><kbd>c</kbd></td><td>commit, then <code>:wq</code></td></tr>
+  <tr><td><kbd>c</kbd><kbd>a</kbd></td><td>amend</td></tr>
+  <tr><td><kbd>P</kbd><kbd>p</kbd></td><td>push</td></tr>
+  <tr><td><kbd>p</kbd><kbd>p</kbd></td><td>pull</td></tr>
+  <tr><td><kbd>b</kbd> <kbd>l</kbd> <kbd>Z</kbd> <kbd>d</kbd></td><td>branch / log / stash / diff menu</td></tr>
+  <tr><td><kbd>$</kbd></td><td>raw git output</td></tr>
+  <tr><td><kbd>?</kbd> <kbd>q</kbd></td><td>help / close</td></tr>
+</table>
+</section>
+
+<section>
+<h2>Help and diagnosis</h2>
+<table>
+  <tr><td><code>:help X</code></td><td>the manual, offline</td></tr>
+  <tr><td><code>:help quickref</code></td><td>one-page command index</td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>]</kbd> / <kbd>Ctrl</kbd>+<kbd>o</kbd></td><td>follow / return from a help link</td></tr>
+  <tr><td><code>:Tutor</code></td><td>interactive tutorial</td></tr>
+  <tr><td><code>:checkhealth</code></td><td>what is broken</td></tr>
+  <tr><td><code>:Lazy</code></td><td>plugin manager</td></tr>
+  <tr><td><code>:map</code></td><td>every mapping</td></tr>
+  <tr><td><code>:verbose map &lt;Esc&gt;</code></td><td>where a mapping came from</td></tr>
+</table>
+</section>
+
+</div>
+
+<div class="footer">
+  <p class="source">Source of truth: <code>~/.dotfiles/home/.config/nvim/lua/</code> and
+  <code>:help</code>. In-app help (<kbd>g</kbd><kbd>?</kbd>, <kbd>?</kbd>,
+  <kbd>Space</kbd>-and-wait) always beats this page.</p>
+</div>
+
+</div>
+</body>
+</html>
