@@ -27,7 +27,7 @@ stop_default_chrome_bridge() {
 }
 
 install_npm_tools() {
-	local npm_bin spec package_name wanted_version installed_version install_status
+	local npm_bin spec package_name wanted_version installed_version install_status recycle_pending
 	local chrome_bridge_changed=0
 
 	if [ "${MAC_SETUP_SKIP_NPM:-0}" = "1" ]; then
@@ -42,6 +42,7 @@ install_npm_tools() {
 	mkdir -p "$NPM_PREFIX"
 	export NPM_CONFIG_PREFIX="$NPM_PREFIX"
 	export PATH="$NPM_PREFIX/bin:$PATH"
+	recycle_pending="$NPM_PREFIX/.chrome-devtools-axi-recycle-pending"
 
 	while IFS= read -r spec || [ -n "$spec" ]; do
 		case "$spec" in
@@ -63,7 +64,12 @@ install_npm_tools() {
 		fi
 	done <"$NPM_GLOBALS_FILE"
 
+	if [ -e "$recycle_pending" ]; then
+		chrome_bridge_changed=1
+	fi
+
 	if [ "$chrome_bridge_changed" = "1" ]; then
+		: >"$recycle_pending"
 		note 'recycling the default Chrome DevTools AXI bridge before tool changes'
 		stop_default_chrome_bridge
 	fi
@@ -98,6 +104,7 @@ install_npm_tools() {
 	if [ "$chrome_bridge_changed" = "1" ]; then
 		note 'ensuring the default Chrome DevTools AXI bridge remains stopped after tool changes'
 		stop_default_chrome_bridge
+		rm -f "$recycle_pending"
 	fi
 	[ "$install_status" -eq 0 ] || return "$install_status"
 }

@@ -60,6 +60,9 @@ chmod +x "$NPM_PREFIX/bin/$package_name"
 if [ "${NPM_FAIL_AFTER_CHROME_INSTALL:-0}" = 1 ] && [ "$package_name" = chrome-devtools-mcp ]; then
 	exit 42
 fi
+if [ "${NPM_INTERRUPT_AFTER_CHROME_INSTALL:-0}" = 1 ] && [ "$package_name" = chrome-devtools-mcp ]; then
+	kill -TERM "$PPID"
+fi
 SH
 chmod +x "$TEST_BIN/npm"
 
@@ -117,6 +120,7 @@ run_installer() {
 		INSTALL_LOG="$INSTALL_LOG" \
 		BRIDGE_LOG="$BRIDGE_LOG" \
 		NPM_FAIL_AFTER_CHROME_INSTALL="${NPM_FAIL_AFTER_CHROME_INSTALL:-0}" \
+		NPM_INTERRUPT_AFTER_CHROME_INSTALL="${NPM_INTERRUPT_AFTER_CHROME_INSTALL:-0}" \
 		CHROME_DEVTOOLS_AXI_SESSION=worker \
 		CHROME_DEVTOOLS_AXI_PORT=9999 \
 		MAC_SETUP_SKIP_NO_MISTAKES=1 \
@@ -173,5 +177,23 @@ fi
 run_installer >/dev/null
 [ "$(wc -l <"$BRIDGE_LOG" | tr -d ' ')" = 4 ] ||
 	fail 'rerunning an interrupted Chrome upgrade recycled the bridge again'
+
+cat >"$TEST_MANIFEST" <<'EOF'
+present-tool@1.2.3
+missing-tool@2.0.0
+chrome-devtools-axi@0.1.30
+chrome-devtools-mcp@1.7.2
+EOF
+if NPM_INTERRUPT_AFTER_CHROME_INSTALL=1 run_installer >/dev/null 2>&1; then
+	fail 'terminated Chrome package installation unexpectedly succeeded'
+fi
+[ "$(wc -l <"$BRIDGE_LOG" | tr -d ' ')" = 5 ] ||
+	fail 'terminated Chrome upgrade unexpectedly reached its final bridge stop'
+
+run_installer >/dev/null
+[ "$(wc -l <"$BRIDGE_LOG" | tr -d ' ')" = 7 ] ||
+	fail 'rerunning a terminated Chrome upgrade did not complete bridge recycling'
+[ ! -e "$TEST_PREFIX/.chrome-devtools-axi-recycle-pending" ] ||
+	fail 'completed Chrome bridge recycling left pending state behind'
 
 pass 'install-tools migrates Chrome state and remains idempotent'
