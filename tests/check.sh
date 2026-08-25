@@ -10,6 +10,7 @@ shellcheck -x \
 	"$ROOT/scripts/install-agent-tools" \
 	"$ROOT/scripts/install-tools" \
 	"$ROOT/scripts/link-official-codex-skills" \
+	"$ROOT/scripts/apply-herdr-prefix" \
 	"$ROOT/scripts/check-herdr-prefix" \
 	"$ROOT/scripts/add-vault-secret" \
 	"$ROOT/scripts/setup-macos-permissions" \
@@ -35,6 +36,7 @@ shfmt -d \
 	"$ROOT/scripts/install-agent-tools" \
 	"$ROOT/scripts/install-tools" \
 	"$ROOT/scripts/link-official-codex-skills" \
+	"$ROOT/scripts/apply-herdr-prefix" \
 	"$ROOT/scripts/check-herdr-prefix" \
 	"$ROOT/scripts/add-vault-secret" \
 	"$ROOT/scripts/setup-macos-permissions" \

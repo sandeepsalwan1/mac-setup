@@ -1,7 +1,7 @@
 [keys]
-# Thumb plus left pinky, with no binding in this Neovim, WezTerm, or Rectangle setup.
-# Plain Tab is intentionally avoided because shells and Neovim need it directly.
-prefix = "ctrl+space"
+# Home Manager maps the physical Caps Lock key to unused F13 at login.
+# Plain Tab remains available to shells and Neovim.
+prefix = "f13"
 focus_pane_left  = "prefix+h"
 focus_pane_down  = "prefix+j"
 focus_pane_up    = "prefix+k"

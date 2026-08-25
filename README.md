@@ -27,7 +27,7 @@ It performs these steps:
 2. Gives the checkout the stable `~/.dotfiles` path used by Home Manager.
 3. Checks the configured macOS username.
 4. Applies nix-darwin and Home Manager.
-5. Validates the Herdr Ctrl+Space prefix against macOS, Rectangle, Neovim, and WezTerm conflicts.
+5. Maps Caps Lock to F13 and validates the one-key Herdr prefix against macOS, Rectangle, Neovim, and WezTerm conflicts.
 6. Installs Claude Code or Codex only when that command and its Homebrew receipt are both absent.
 7. Installs only the pinned agent tools that are missing or outdated.
 8. Links locally installed official Codex Browser and Computer Use skills when available.
@@ -166,12 +166,17 @@ learn panic
 
 Progress remains in the browser's local storage, not in Git.
 
-Herdr uses <kbd>Ctrl</kbd>+<kbd>Space</kbd> as its prefix, followed by the action
-key. This is easier to reach than its default <kbd>Ctrl</kbd>+<kbd>b</kbd> and does
-not collide with the tracked Neovim and WezTerm bindings, the current Rectangle
-shortcuts, or the current macOS input-source shortcut. Bootstrap refuses to
-continue if one of those later claims the chord. Plain <kbd>Tab</kbd> remains
-available for shell completion and Neovim.
+Herdr uses the physical <kbd>Caps Lock</kbd> key as its one-key prefix, followed
+by the action key. Home Manager maps Caps Lock to the otherwise-unused F13 event
+at activation and login, while preserving unrelated HID key remaps. Reapplying
+at login is necessary because [Apple documents that `hidutil` mappings
+reset](https://developer.apple.com/library/archive/technotes/tn2450/_index.html)
+after restart or removal of the last keyboard service. This is easier to reach
+than Herdr's default <kbd>Ctrl</kbd>+<kbd>b</kbd> and does not
+collide with the tracked Neovim and WezTerm bindings or the current Rectangle
+and macOS shortcuts. Bootstrap refuses to continue if one of those later claims
+F13. Plain <kbd>Tab</kbd> remains available for shell completion and Neovim.
+Caps Lock no longer toggles capitalization by design.
 
 ## Daily use
 

@@ -68,7 +68,7 @@ sudo "$NIX_BIN" run github:nix-darwin/nix-darwin/nix-darwin-26.05#darwin-rebuild
 
 export PATH="/etc/profiles/per-user/$REAL_USER/bin:$HOME/.local/bin:$HOME/.local/share/npm/bin:$PATH"
 
-note 'step 5/10: Herdr Ctrl+Space prefix'
+note 'step 5/10: one-key Herdr prefix'
 if [ "${MAC_SETUP_SKIP_HERDR_PREFIX_CHECK:-0}" = 1 ]; then
 	note 'Herdr prefix check skipped by MAC_SETUP_SKIP_HERDR_PREFIX_CHECK'
 else

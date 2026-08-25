@@ -85,6 +85,18 @@ in
       RunAtLoad = true;
     };
   };
+  launchd.agents.herdr-prefix-key = {
+    enable = true;
+    config = {
+      ProgramArguments = [ "${dotfiles}/scripts/apply-herdr-prefix" ];
+      EnvironmentVariables.JQ_BIN = "${pkgs.jq}/bin/jq";
+      RunAtLoad = true;
+    };
+  };
+
+  home.activation.herdrPrefixKey = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    JQ_BIN=${pkgs.jq}/bin/jq ${dotfiles}/scripts/apply-herdr-prefix >/dev/null
+  '';
   launchd.agents.chrome-devtools-axi-mcp-path = {
     enable = true;
     config = {

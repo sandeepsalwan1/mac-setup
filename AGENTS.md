@@ -9,5 +9,5 @@ Deliberate decisions in this repo:
 - Before an agent performs macOS or Vault onboarding, use the repository launchers so setup runs under verified direct WezTerm; never infer permission from `TERM_PROGRAM` or assume an unopened TCC category is granted.
 - The Browser and Computer Use implementations are proprietary Codex plugins. Do not vendor their code. `scripts/link-official-codex-skills` exposes locally installed official skill files without publishing them.
 - Managed authored skills are exact snapshots under `skills/`. Home Manager replaces only those named skill directories and preserves every unrelated installed skill.
-- Herdr's prefix is Ctrl+Space. Keep its terminal course and conflict regression synchronized with any future binding change.
+- Herdr's prefix is the physical Caps Lock key mapped to F13. Keep its Home Manager mapping, terminal course, and conflict regression synchronized with any future binding change.
 - Never commit `.no-mistakes/` validation evidence. The directory is gitignored.

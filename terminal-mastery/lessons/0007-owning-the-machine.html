@@ -67,7 +67,7 @@ renderDrill('drill', [
     note: 'That is <code>mkOutOfStoreSymlink</code>. The repo file and the live config are the same file.' },
   { do: 'Change it back to 16, Esc, :q', see: 'Restored.' },
   { do: 'nvim ~/.dotfiles/home/.config/herdr/config.toml', cmd: true, see: 'Same deal for Herdr.' },
-  { do: '^Space Shift+R', see: 'Reloads config.toml in the running server. Also no rebuild.' },
+  { do: 'Caps Shift+R', see: 'Reloads config.toml in the running server. Also no rebuild.' },
 
   { section: 'Prove: package declarations need a rebuild' },
   { do: 'nvim ~/.dotfiles/home.nix', cmd: true,
