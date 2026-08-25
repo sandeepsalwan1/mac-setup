@@ -15,8 +15,20 @@ die() {
 	exit 1
 }
 
+stop_default_chrome_bridge() {
+	local bridge_axi
+
+	bridge_axi="$(command -v chrome-devtools-axi 2>/dev/null || true)"
+	[ -n "$bridge_axi" ] || return 0
+	(
+		unset CHROME_DEVTOOLS_AXI_PORT CHROME_DEVTOOLS_AXI_SESSION
+		"$bridge_axi" stop
+	)
+}
+
 install_npm_tools() {
-	local npm_bin spec package_name wanted_version installed_version
+	local npm_bin spec package_name wanted_version installed_version install_status recycle_pending
+	local chrome_bridge_changed=0
 
 	if [ "${MAC_SETUP_SKIP_NPM:-0}" = "1" ]; then
 		note 'npm tool installation skipped by environment'
@@ -30,7 +42,39 @@ install_npm_tools() {
 	mkdir -p "$NPM_PREFIX"
 	export NPM_CONFIG_PREFIX="$NPM_PREFIX"
 	export PATH="$NPM_PREFIX/bin:$PATH"
+	recycle_pending="$NPM_PREFIX/.chrome-devtools-axi-recycle-pending"
 
+	while IFS= read -r spec || [ -n "$spec" ]; do
+		case "$spec" in
+		'' | '#'*) continue ;;
+		esac
+
+		package_name="${spec%@*}"
+		case "$package_name" in
+		chrome-devtools-axi | chrome-devtools-mcp) ;;
+		*) continue ;;
+		esac
+		wanted_version="${spec##*@}"
+		installed_version=''
+		if command -v "$package_name" >/dev/null 2>&1; then
+			installed_version="$("$package_name" --version 2>/dev/null | head -n 1 || true)"
+		fi
+		if [ "$installed_version" != "$wanted_version" ]; then
+			chrome_bridge_changed=1
+		fi
+	done <"$NPM_GLOBALS_FILE"
+
+	if [ -e "$recycle_pending" ]; then
+		chrome_bridge_changed=1
+	fi
+
+	if [ "$chrome_bridge_changed" = "1" ]; then
+		: >"$recycle_pending"
+		note 'recycling the default Chrome DevTools AXI bridge before tool changes'
+		stop_default_chrome_bridge
+	fi
+
+	install_status=0
 	while IFS= read -r spec || [ -n "$spec" ]; do
 		case "$spec" in
 		'' | '#'*) continue ;;
@@ -49,8 +93,65 @@ install_npm_tools() {
 		fi
 
 		note "installing $spec"
-		"$npm_bin" install --global --prefix "$NPM_PREFIX" "$spec"
+		if "$npm_bin" install --global --prefix "$NPM_PREFIX" "$spec"; then
+			continue
+		else
+			install_status=$?
+			break
+		fi
 	done <"$NPM_GLOBALS_FILE"
+
+	if [ "$chrome_bridge_changed" = "1" ]; then
+		note 'ensuring the default Chrome DevTools AXI bridge remains stopped after tool changes'
+		stop_default_chrome_bridge
+		rm -f "$recycle_pending"
+	fi
+	[ "$install_status" -eq 0 ] || return "$install_status"
+}
+
+cleanup_chrome_devtools_hooks() {
+	local settings temp plugin marker
+	marker='chrome-devtools-axi'
+
+	for settings in "$HOME/.claude/settings.json" "$HOME/.codex/hooks.json"; do
+		[ -f "$settings" ] || continue
+		temp="$(mktemp "${settings}.tmp.XXXXXX")"
+		if ! jq --arg marker "$marker" '
+			def managed:
+				type == "object"
+				and (.command? | type == "string" and contains($marker));
+			if (.hooks | type) == "object" then
+				.hooks |= (
+					if (.SessionStart | type) == "array" then
+						.SessionStart |= map(
+							if (.hooks | type) == "array" then
+								.hooks |= map(select(managed | not))
+							else . end
+						)
+						| .SessionStart |= map(select((.hooks | type) != "array" or (.hooks | length) > 0))
+					else . end
+					| if (.session_start | type) == "array" then
+						.session_start |= map(select(managed | not))
+					else . end
+				)
+			else . end
+		' "$settings" >"$temp"; then
+			rm -f "$temp"
+			die "could not clean managed Chrome hooks from $settings"
+		fi
+		if cmp -s "$settings" "$temp"; then
+			rm -f "$temp"
+		else
+			mv "$temp" "$settings"
+			note "removed managed Chrome hooks from $settings"
+		fi
+	done
+
+	plugin="$HOME/.config/opencode/plugins/axi-chrome-devtools-axi.js"
+	if [ -f "$plugin" ] && grep -Fq 'axi-sdk-js managed opencode plugin: chrome-devtools-axi' "$plugin"; then
+		rm -f "$plugin"
+		note "removed managed Chrome hook from $plugin"
+	fi
 }
 
 install_no_mistakes() {
@@ -116,4 +217,5 @@ install_no_mistakes() {
 }
 
 install_npm_tools
+cleanup_chrome_devtools_hooks
 install_no_mistakes

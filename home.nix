@@ -67,6 +67,7 @@ in
     EDITOR = "nvim";
     CHROME_DEVTOOLS_AXI_AUTO_CONNECT = "1";
     CHROME_DEVTOOLS_AXI_CHANNEL = "stable";
+    CHROME_DEVTOOLS_AXI_MCP_PATH = "${config.home.homeDirectory}/.local/share/npm/lib/node_modules/chrome-devtools-mcp/build/src/bin/chrome-devtools-mcp.js";
     NPM_CONFIG_PREFIX = "${config.home.homeDirectory}/.local/share/npm";
   };
 
@@ -81,6 +82,13 @@ in
     enable = true;
     config = {
       ProgramArguments = [ "/bin/launchctl" "setenv" "CHROME_DEVTOOLS_AXI_CHANNEL" "stable" ];
+      RunAtLoad = true;
+    };
+  };
+  launchd.agents.chrome-devtools-axi-mcp-path = {
+    enable = true;
+    config = {
+      ProgramArguments = [ "/bin/launchctl" "setenv" "CHROME_DEVTOOLS_AXI_MCP_PATH" "${config.home.homeDirectory}/.local/share/npm/lib/node_modules/chrome-devtools-mcp/build/src/bin/chrome-devtools-mcp.js" ];
       RunAtLoad = true;
     };
   };
