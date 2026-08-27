@@ -141,8 +141,12 @@ version pins, currently `pi-web-access` and
 editing that version. Do not declare packages from a Git URL: a commit pin
 fetches unreviewed source at Pi startup, and any such package belongs in local
 state until it ships a released npm version. `tests/pi-calm.test.sh` enforces
-this by requiring every entry to be `npm:name@major.minor.patch`, rejecting Git
-pins as well as ranges and tags such as `@^1.2.3` or `@latest`.
+this. The accepted form is exactly `npm:name@major.minor.patch`, optionally
+carrying semver prerelease then build metadata as in
+`npm:pkg@1.2.3-rc.1+build.5`. Git pins are rejected, and so is range and tag
+syntax including `=`, `^`, `~`, `>=`, `x`, and `latest`: `@=1.2.3` is a range
+expression that happens to resolve to one version, not the pin form this
+repository declares.
 
 The `rose-pine-moon` theme was authored clean-room from the public
 [Rosé Pine Moon palette](https://rosepinetheme.com/palette) and Pi's public

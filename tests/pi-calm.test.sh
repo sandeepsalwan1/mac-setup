@@ -92,10 +92,14 @@ have_pi_package() {
   [ -f "$PI_PACKAGE_DIR/package.json" ]
 }
 
-# True only for an npm spec pinned to one exact version, as in
-# npm:pkg@1.2.3 or npm:@scope/pkg@1.2.3. The version is taken from after the
-# final '@' so a scope cannot be mistaken for it, and any range, tag, or
-# non-npm scheme is rejected. Requires $1 = the declared package spec.
+# True only for the exact pin form npm:name@major.minor.patch, optionally with
+# semver prerelease then build metadata, as in npm:pkg@1.2.3,
+# npm:@scope/pkg@1.2.3, or npm:pkg@1.2.3-rc.1+build.5. The version is taken from
+# after the final '@' so a scope cannot be mistaken for it. Range and tag
+# syntax is rejected by design, including '=', '^', '~', '>=', 'x', and
+# 'latest': '=1.2.3' is a range expression that happens to resolve to one
+# version, not the pin form this repository declares. Non-npm schemes are
+# rejected too. Requires $1 = the declared package spec.
 is_exact_npm_pin() {
   local spec=$1 name version bare
   case $spec in
@@ -114,7 +118,9 @@ is_exact_npm_pin() {
   case $bare in
     '' | *[@:/]*) return 1 ;;
   esac
-  [[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$ ]]
+  # Prerelease and build metadata are separate optional groups, in semver
+  # order, so a version may legitimately carry both.
+  [[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]
 }
 
 test_zero_coupling_and_state_file() {
@@ -190,11 +196,15 @@ test_static_typescript_and_repo_wiring() {
   local settings="$ROOT/home/.pi/agent/settings.json" declared_package spec
 
   # Prove the rule before trusting it: exact pins pass, everything else fails.
-  for spec in npm:pi-web-access@0.14.0 npm:@scope/pkg@1.2.3 npm:pkg@1.2.3-rc.1; do
+  for spec in npm:pi-web-access@0.14.0 npm:@scope/pkg@1.2.3 npm:pkg@1.2.3-rc.1 \
+    npm:pkg@1.2.3+build.5 npm:pkg@1.2.3-rc.1+build.5; do
     is_exact_npm_pin "$spec" || fail "the pin rule rejected a valid exact pin: $spec"
   done
+  # Range and tag syntax is rejected by design, including the '=' exact form,
+  # which is a range expression rather than the declared pin form.
   for spec in npm:pkg@1 npm:pkg@1.2 'npm:pkg@^1.2.3' 'npm:pkg@~1.2.3' \
-    npm:pkg@latest npm:pkg npm:@scope/pkg 'npm:' \
+    'npm:pkg@=1.2.3' 'npm:pkg@>=1.2.3' npm:pkg@1.x npm:pkg@latest \
+    npm:pkg npm:@scope/pkg 'npm:' npm:pkg@1.2.3- 'npm:pkg@1.2.3+' \
     git:github.com/owner/repo@1.2.3 npm:git:github.com/owner/repo@1.2.3; do
     if is_exact_npm_pin "$spec"; then
       fail "the pin rule accepted a spec that is not an exact npm pin: $spec"
