@@ -136,10 +136,13 @@ repository-authored extensions only; third-party package code never belongs
 there. Run `/reload` in Pi after editing a local extension.
 
 `home/.pi/agent/settings.json` declares third-party Pi packages as exact npm
-version pins, currently `pi-web-access` and `pi-extension-codex-fast-mode`.
-Upgrade a pin deliberately by editing that version. Do not declare packages from
-a Git URL: a commit pin fetches unreviewed source at Pi startup, and any such
-package belongs in local state until it ships a released npm version.
+version pins, currently `pi-web-access` and
+`@ryan_nookpi/pi-extension-codex-fast-mode`. Upgrade a pin deliberately by
+editing that version. Do not declare packages from a Git URL: a commit pin
+fetches unreviewed source at Pi startup, and any such package belongs in local
+state until it ships a released npm version. `tests/pi-calm.test.sh` enforces
+this by requiring every entry to be `npm:name@major.minor.patch`, rejecting Git
+pins as well as ranges and tags such as `@^1.2.3` or `@latest`.
 
 The `rose-pine-moon` theme was authored clean-room from the public
 [Rosé Pine Moon palette](https://rosepinetheme.com/palette) and Pi's public

@@ -92,6 +92,31 @@ have_pi_package() {
   [ -f "$PI_PACKAGE_DIR/package.json" ]
 }
 
+# True only for an npm spec pinned to one exact version, as in
+# npm:pkg@1.2.3 or npm:@scope/pkg@1.2.3. The version is taken from after the
+# final '@' so a scope cannot be mistaken for it, and any range, tag, or
+# non-npm scheme is rejected. Requires $1 = the declared package spec.
+is_exact_npm_pin() {
+  local spec=$1 name version bare
+  case $spec in
+    npm:?*) ;;
+    *) return 1 ;;
+  esac
+  version=${spec##*@}
+  name=${spec%@"$version"}
+  # No '@version' segment at all leaves the spec unchanged.
+  [ "$name" != "$spec" ] || return 1
+  bare=${name#npm:}
+  # A single leading @scope/ is the only permitted '@' or '/' in the name.
+  case $bare in
+    @*/*) bare=${bare#@*/} ;;
+  esac
+  case $bare in
+    '' | *[@:/]*) return 1 ;;
+  esac
+  [[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$ ]]
+}
+
 test_zero_coupling_and_state_file() {
   local source_files license_hits file separator
   source_files=$(find "$CALM_DIR" -type f | sort)
@@ -160,14 +185,26 @@ test_static_typescript_and_repo_wiring() {
   [ -f "$CALM_DIR/LICENSE" ] || fail "calm license file missing"
 
   # Managed Pi packages stay exact npm version pins. A Git commit pin would
-  # fetch unreviewed third-party source at Pi startup.
-  local settings="$ROOT/home/.pi/agent/settings.json" declared_package
+  # fetch unreviewed third-party source at Pi startup, and a range or tag would
+  # let a declared version drift.
+  local settings="$ROOT/home/.pi/agent/settings.json" declared_package spec
+
+  # Prove the rule before trusting it: exact pins pass, everything else fails.
+  for spec in npm:pi-web-access@0.14.0 npm:@scope/pkg@1.2.3 npm:pkg@1.2.3-rc.1; do
+    is_exact_npm_pin "$spec" || fail "the pin rule rejected a valid exact pin: $spec"
+  done
+  for spec in npm:pkg@1 npm:pkg@1.2 'npm:pkg@^1.2.3' 'npm:pkg@~1.2.3' \
+    npm:pkg@latest npm:pkg npm:@scope/pkg 'npm:' \
+    git:github.com/owner/repo@1.2.3 npm:git:github.com/owner/repo@1.2.3; do
+    if is_exact_npm_pin "$spec"; then
+      fail "the pin rule accepted a spec that is not an exact npm pin: $spec"
+    fi
+  done
+
   jq -e . "$settings" >/dev/null 2>&1 || fail "managed Pi settings.json is not valid JSON"
   while IFS= read -r declared_package; do
-    case "$declared_package" in
-      npm:*@[0-9]*) ;;
-      *) fail "managed Pi package is not an exact npm version pin: $declared_package" ;;
-    esac
+    is_exact_npm_pin "$declared_package" \
+      || fail "managed Pi package is not an exact npm version pin: $declared_package"
   done < <(jq -r '.packages[]? // empty' "$settings")
 
   # JavaScript syntax of the pre-existing extension stays valid.
