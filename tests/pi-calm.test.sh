@@ -159,6 +159,17 @@ test_static_typescript_and_repo_wiring() {
   [ -f "$CALM_DIR/index.ts" ] || fail "calm extension entry point missing"
   [ -f "$CALM_DIR/LICENSE" ] || fail "calm license file missing"
 
+  # Managed Pi packages stay exact npm version pins. A Git commit pin would
+  # fetch unreviewed third-party source at Pi startup.
+  local settings="$ROOT/home/.pi/agent/settings.json" declared_package
+  jq -e . "$settings" >/dev/null 2>&1 || fail "managed Pi settings.json is not valid JSON"
+  while IFS= read -r declared_package; do
+    case "$declared_package" in
+      npm:*@[0-9]*) ;;
+      *) fail "managed Pi package is not an exact npm version pin: $declared_package" ;;
+    esac
+  done < <(jq -r '.packages[]? // empty' "$settings")
+
   # JavaScript syntax of the pre-existing extension stays valid.
   node --check "$ROOT/home/.pi/agent/extensions/terminal-status-title.js" \
     || fail "terminal-status-title.js has a JavaScript syntax error"

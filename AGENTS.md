@@ -11,3 +11,4 @@ Deliberate decisions in this repo:
 - Managed authored skills are exact snapshots under `skills/`. Home Manager replaces only those named skill directories and preserves every unrelated installed skill.
 - Herdr's prefix is the physical Caps Lock key mapped to F13. Keep its Home Manager mapping, terminal course, and conflict regression synchronized with any future binding change.
 - Never commit `.no-mistakes/` validation evidence. The directory is gitignored.
+- Managed Pi packages in `home/.pi/agent/settings.json` are exact npm version pins. Never declare a Pi package from a Git URL; `tests/pi-calm.test.sh` enforces this.
