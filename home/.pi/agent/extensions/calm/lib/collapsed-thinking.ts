@@ -3,7 +3,7 @@
 // Adapted from the Firstmate project's Calm implementation.
 // Copyright (c) 2026 Kun Chen. MIT License - see the LICENSE file in this directory.
 //
-// Verified against Pi 0.82.0, which exports AssistantMessageComponent with an
+// Verified against Pi 0.84.3, which exports AssistantMessageComponent with an
 // updateContent method. installCalmCollapsedThinkingLayout() probes that exact
 // public seam and throws if it is missing; index.ts catches that and skips only
 // this adapter with one clear diagnostic instead of blocking Calm or Pi.

@@ -97,6 +97,12 @@ in
   home.activation.herdrPrefixKey = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     JQ_BIN=${pkgs.jq}/bin/jq ${dotfiles}/scripts/apply-herdr-prefix >/dev/null
   '';
+  home.activation.piRuntime = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
+    PI_DECLARATIVE_AGENT_DIR=${./home/.pi/agent} \
+      PI_WRAPPER_SOURCE=${./scripts/pi-firstmate} \
+      JQ_BIN=${pkgs.jq}/bin/jq \
+      ${./scripts/setup-pi-runtime} >/dev/null
+  '';
   launchd.agents.chrome-devtools-axi-mcp-path = {
     enable = true;
     config = {
@@ -179,8 +185,6 @@ in
       config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.pi/agent/extensions";
     ".pi/agent/models.json".source =
       config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.pi/agent/models.json";
-    ".pi/agent/settings.json".source =
-      config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.pi/agent/settings.json";
     ".pi/agent/AGENTS.md" = {
       source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
       force = true;

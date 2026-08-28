@@ -1,0 +1,221 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+SOURCE_AGENT_DIR="${PI_DECLARATIVE_AGENT_DIR:-$ROOT/home/.pi/agent}"
+AGENT_DIR="${PI_AGENT_DIR:-$HOME/.pi/agent}"
+FIRSTMATE_AGENT_DIR="${PI_FIRSTMATE_AGENT_DIR:-$HOME/.local/state/pi-firstmate/agent}"
+WRAPPER_SOURCE="${PI_WRAPPER_SOURCE:-$ROOT/scripts/pi-firstmate}"
+WRAPPER_TARGET="${PI_WRAPPER_TARGET:-$HOME/.local/bin/pi}"
+BACKUP_ROOT="${PI_RUNTIME_BACKUP_ROOT:-$HOME/.local/state/mac-setup/pi-runtime-backups}"
+JQ_BIN="${JQ_BIN:-jq}"
+
+note() {
+	printf 'setup-pi-runtime: %s\n' "$1"
+}
+
+die() {
+	printf 'setup-pi-runtime: %s\n' "$1" >&2
+	exit 1
+}
+
+[ -f "$SOURCE_AGENT_DIR/settings.json" ] ||
+	die "missing declarative settings: $SOURCE_AGENT_DIR/settings.json"
+[ -x "$WRAPPER_SOURCE" ] ||
+	die "missing executable Pi wrapper: $WRAPPER_SOURCE"
+command -v "$JQ_BIN" >/dev/null 2>&1 ||
+	die "jq is required to separate declarative and runtime Pi settings"
+
+STAMP=$(date -u +%Y%m%dT%H%M%SZ)
+BACKUP_DIR="$BACKUP_ROOT/$STAMP.$$"
+BACKUP_CREATED=0
+
+ensure_backup_dir() {
+	if [ "$BACKUP_CREATED" -eq 0 ]; then
+		mkdir -p "$BACKUP_DIR"
+		chmod 700 "$BACKUP_DIR"
+		BACKUP_CREATED=1
+	fi
+}
+
+backup_path() {
+	local path=$1 label=$2
+	[ -e "$path" ] || [ -L "$path" ] || return 0
+	ensure_backup_dir
+	if [ -L "$path" ]; then
+		readlink "$path" >"$BACKUP_DIR/$label.symlink-target"
+	fi
+	if [ -f "$path" ]; then
+		cp -pL "$path" "$BACKUP_DIR/$label.content"
+	elif [ -d "$path" ]; then
+		cp -pRL "$path" "$BACKUP_DIR/$label.directory"
+	fi
+}
+
+remove_directory_target() {
+	local path=$1
+	[ -d "$path" ] || return 0
+	rm -rf "$path"
+}
+
+json_without_bookkeeping() {
+	"$JQ_BIN" -S 'del(.lastChangelogVersion)' "$1"
+}
+
+settings_match_declaration() {
+	local source=$1 target=$2 source_normalized target_normalized
+	[ -f "$target" ] || return 1
+	source_normalized=$(mktemp "${TMPDIR:-/tmp}/pi-settings-source.XXXXXX")
+	target_normalized=$(mktemp "${TMPDIR:-/tmp}/pi-settings-target.XXXXXX")
+	json_without_bookkeeping "$source" >"$source_normalized" || {
+		rm -f "$source_normalized" "$target_normalized"
+		return 1
+	}
+	json_without_bookkeeping "$target" >"$target_normalized" || {
+		rm -f "$source_normalized" "$target_normalized"
+		return 1
+	}
+	local status
+	if cmp -s "$source_normalized" "$target_normalized"; then
+		status=0
+	else
+		status=$?
+	fi
+	rm -f "$source_normalized" "$target_normalized"
+	return "$status"
+}
+
+materialize_settings() {
+	local source=$1 target=$2 label=$3 tmp changelog
+	mkdir -p "$(dirname "$target")"
+
+	if [ ! -L "$target" ] && settings_match_declaration "$source" "$target"; then
+		chmod u+rw "$target"
+		return
+	fi
+
+	backup_path "$target" "$label"
+	tmp=$(mktemp "$(dirname "$target")/.settings.json.XXXXXX")
+	chmod 600 "$tmp"
+
+	changelog=
+	if [ -f "$target" ]; then
+		changelog=$("$JQ_BIN" -r '.lastChangelogVersion // empty' "$target" 2>/dev/null || true)
+	fi
+	if [ -n "$changelog" ] &&
+		[ "$("$JQ_BIN" -r '.lastChangelogVersion // empty' "$source" 2>/dev/null || true)" = "" ]; then
+		# shellcheck disable=SC2016 # $version is a jq variable.
+		"$JQ_BIN" --arg version "$changelog" \
+			'. + {lastChangelogVersion: $version}' "$source" >"$tmp"
+	else
+		cp "$source" "$tmp"
+	fi
+	chmod 600 "$tmp"
+	remove_directory_target "$target"
+	mv -f "$tmp" "$target"
+	note "materialized $target"
+}
+
+link_runtime_asset() {
+	local name=$1
+	local source="$AGENT_DIR/$name" target="$FIRSTMATE_AGENT_DIR/$name"
+	local tmp
+	[ -e "$source" ] || [ -L "$source" ] || return 0
+	if [ -L "$target" ] && [ "$(readlink "$target")" = "$source" ]; then
+		return
+	fi
+	backup_path "$target" "firstmate-${name//\//-}"
+	rm -rf "$target"
+	tmp="$target.tmp.$$"
+	rm -f "$tmp"
+	ln -s "$source" "$tmp"
+	mv -f "$tmp" "$target"
+}
+
+install_runtime_file() {
+	local source=$1 target=$2 label=$3 tmp
+	[ -f "$source" ] || die "missing runtime source file: $source"
+	if [ ! -L "$target" ] && [ -f "$target" ] && cmp -s "$source" "$target"; then
+		return
+	fi
+	backup_path "$target" "$label"
+	mkdir -p "$(dirname "$target")"
+	tmp=$(mktemp "$(dirname "$target")/.$(basename "$target").XXXXXX")
+	cp "$source" "$tmp"
+	chmod 600 "$tmp"
+	remove_directory_target "$target"
+	mv -f "$tmp" "$target"
+}
+
+is_scoped_pi_wrapper() {
+	local path=$1
+	[ -f "$path" ] || return 1
+	cmp -s "$WRAPPER_SOURCE" "$path" ||
+		grep -Fqx '# mac-setup-pi-firstmate-wrapper' "$path" ||
+		grep -Fq 'pi-firstmate: regular pi executable not found on PATH' "$path"
+}
+
+install_wrapper() {
+	local adjacent_real="${WRAPPER_TARGET}.real" tmp
+	mkdir -p "$(dirname "$WRAPPER_TARGET")"
+	if [ ! -L "$WRAPPER_TARGET" ] && [ -f "$WRAPPER_TARGET" ] &&
+		[ -x "$WRAPPER_TARGET" ] &&
+		cmp -s "$WRAPPER_SOURCE" "$WRAPPER_TARGET"; then
+		return
+	fi
+
+	if [ -f "$WRAPPER_TARGET" ] && [ -x "$WRAPPER_TARGET" ] &&
+		! is_scoped_pi_wrapper "$WRAPPER_TARGET"; then
+		backup_path "$WRAPPER_TARGET" "pi-wrapper"
+		backup_path "$adjacent_real" "pi-wrapper-real"
+		remove_directory_target "$adjacent_real"
+		mv -f "$WRAPPER_TARGET" "$adjacent_real"
+		note "preserved regular Pi at $adjacent_real"
+	fi
+
+	backup_path "$WRAPPER_TARGET" "pi-wrapper"
+	tmp=$(mktemp "$(dirname "$WRAPPER_TARGET")/.pi.XXXXXX")
+	cp "$WRAPPER_SOURCE" "$tmp"
+	chmod 700 "$tmp"
+	remove_directory_target "$WRAPPER_TARGET"
+	mv -f "$tmp" "$WRAPPER_TARGET"
+	note "installed scoped regular-pi wrapper at $WRAPPER_TARGET"
+}
+
+materialize_settings \
+	"$SOURCE_AGENT_DIR/settings.json" \
+	"$AGENT_DIR/settings.json" \
+	"agent-settings"
+
+mkdir -p "$FIRSTMATE_AGENT_DIR/extensions"
+chmod 700 "$FIRSTMATE_AGENT_DIR" "$FIRSTMATE_AGENT_DIR/extensions"
+materialize_settings \
+	"$AGENT_DIR/settings.json" \
+	"$FIRSTMATE_AGENT_DIR/settings.json" \
+	"firstmate-settings"
+
+for asset in models.json themes AGENTS.md skills; do
+	link_runtime_asset "$asset"
+done
+
+# Firstmate's project extension owns /calm. A stale global Calm entry in this
+# dedicated agent directory would make Pi expose only /calm:1 and /calm:2.
+if [ -e "$FIRSTMATE_AGENT_DIR/extensions/calm" ] ||
+	[ -L "$FIRSTMATE_AGENT_DIR/extensions/calm" ]; then
+	backup_path "$FIRSTMATE_AGENT_DIR/extensions/calm" "firstmate-calm-extension"
+	rm -rf "$FIRSTMATE_AGENT_DIR/extensions/calm"
+	note "removed duplicate global Calm from the Firstmate Pi runtime"
+fi
+
+# Firstmate's project command still redraws existing rows through
+# setToolsExpanded(). This command-free helper clears Pi 0.83+'s resulting status.
+install_runtime_file \
+	"$SOURCE_AGENT_DIR/extensions/firstmate-calm-status.ts" \
+	"$FIRSTMATE_AGENT_DIR/extensions/firstmate-calm-status.ts" \
+	"firstmate-calm-status-extension"
+
+install_wrapper
+
+if [ "$BACKUP_CREATED" -eq 1 ]; then
+	note "backups: $BACKUP_DIR"
+fi
