@@ -47,6 +47,7 @@
     ];
     casks = [
       "automic-vault/isotopes/automic-vault"
+      "obsidian"
       "wezterm"
     ];
   };

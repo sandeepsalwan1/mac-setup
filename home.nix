@@ -149,6 +149,11 @@ in
   };
 
   home.file = managedSkillFiles // {
+    ".local/bin/obsidian" = {
+      source = config.lib.file.mkOutOfStoreSymlink "/Applications/Obsidian.app/Contents/MacOS/obsidian-cli";
+      force = true;
+    };
+
     ".config/wezterm".source =
       config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/wezterm";
     ".config/nvim".source =

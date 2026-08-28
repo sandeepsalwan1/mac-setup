@@ -8,6 +8,7 @@ TMP_ROOT="$(dotfiles_test_tmproot bootstrap)"
 TEST_HOME="$TMP_ROOT/home"
 TEST_BIN="$TMP_ROOT/bin"
 SUDO_LOG="$TMP_ROOT/sudo.log"
+CONFIGURED_USER="$(sed -nE 's/^[[:space:]]*user = "([^"]+)";.*/\1/p' "$ROOT/flake.nix" | head -n 1)"
 mkdir -p "$TEST_HOME" "$TEST_BIN"
 
 cat >"$TEST_BIN/uname" <<'SH'
@@ -16,6 +17,13 @@ case "${1:-}" in
   -s) printf '%s\n' Darwin ;;
   -m) printf '%s\n' arm64 ;;
   *) printf '%s\n' Darwin ;;
+esac
+SH
+cat >"$TEST_BIN/id" <<'SH'
+#!/usr/bin/env bash
+case "${1:-}" in
+  -un) printf '%s\n' "$CONFIGURED_USER" ;;
+  *) exec /usr/bin/id "$@" ;;
 esac
 SH
 cat >"$TEST_BIN/nix" <<'SH'
@@ -33,11 +41,12 @@ case "${1:-}" in
   *) exit 64 ;;
 esac
 SH
-chmod +x "$TEST_BIN/uname" "$TEST_BIN/nix" "$TEST_BIN/sudo" "$TEST_BIN/av"
+chmod +x "$TEST_BIN/uname" "$TEST_BIN/id" "$TEST_BIN/nix" "$TEST_BIN/sudo" "$TEST_BIN/av"
 
 run_bootstrap() {
 	HOME="$TEST_HOME" \
 		PATH="$TEST_BIN:/usr/bin:/bin" \
+		CONFIGURED_USER="$CONFIGURED_USER" \
 		SUDO_LOG="$SUDO_LOG" \
 		MAC_SETUP_SKIP_AGENT_CASKS=1 \
 		MAC_SETUP_SKIP_NPM=1 \

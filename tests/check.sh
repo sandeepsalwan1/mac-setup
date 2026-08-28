@@ -24,6 +24,7 @@ shellcheck -x \
 	"$ROOT/tests/install-agent-tools.test.sh" \
 	"$ROOT/tests/install-tools.test.sh" \
 	"$ROOT/tests/macos-permissions.test.sh" \
+	"$ROOT/tests/obsidian-knowledge-workflow.test.sh" \
 	"$ROOT/tests/official-codex-skills.test.sh" \
 	"$ROOT/tests/setup-vault.test.sh" \
 	"$ROOT/tests/terminal-mastery.test.sh" \
@@ -50,6 +51,7 @@ shfmt -d \
 	"$ROOT/tests/install-agent-tools.test.sh" \
 	"$ROOT/tests/install-tools.test.sh" \
 	"$ROOT/tests/macos-permissions.test.sh" \
+	"$ROOT/tests/obsidian-knowledge-workflow.test.sh" \
 	"$ROOT/tests/official-codex-skills.test.sh" \
 	"$ROOT/tests/setup-vault.test.sh" \
 	"$ROOT/tests/terminal-mastery.test.sh" \
@@ -62,6 +64,7 @@ shfmt -d \
 "$ROOT/tests/install-agent-tools.test.sh"
 "$ROOT/tests/install-tools.test.sh"
 "$ROOT/tests/macos-permissions.test.sh"
+"$ROOT/tests/obsidian-knowledge-workflow.test.sh"
 "$ROOT/tests/official-codex-skills.test.sh"
 "$ROOT/tests/setup-vault.test.sh"
 "$ROOT/tests/terminal-mastery.test.sh"
