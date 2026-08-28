@@ -96,10 +96,15 @@ The repository snapshots these selected authored skills exactly as installed:
 - autoreview
 - chrome-devtools-axi
 - create-project-level-agents-md-file
+- defuddle
 - grill-me
 - improve-codebase-architecture
+- json-canvas
 - lavish
 - no-mistakes
+- obsidian-bases
+- obsidian-cli
+- obsidian-markdown
 - shadcn
 
 Home Manager exposes each one through `~/.skills`, `~/.agents/skills`,
@@ -113,6 +118,24 @@ wrapper: only launches marked `FM_PI_HARNESS=pi` receive the named Bedrock profi
 region, and dedicated agent directory. That directory omits the global Calm
 command because Firstmate's project extension owns `/calm`, while retaining a
 command-free status helper that suppresses Pi 0.83+ toggle noise.
+
+The public [Obsidian skills](https://github.com/kepano/obsidian-skills) snapshots
+cover clean web extraction, JSON Canvas, Bases, the Obsidian CLI, and Obsidian
+Flavored Markdown. `bootstrap.sh` installs their links on a new Mac and
+`rebuild.sh` restores them after any repository update. The skills themselves
+do not install Obsidian or Defuddle. Open a current Obsidian release before
+using its CLI; the Defuddle skill gives the optional npm installation command
+when needed.
+
+To roll this addition back without touching unrelated skill directories:
+
+```sh
+cd ~/.dotfiles
+git revert "$(git log -n 1 --format=%H -- home.nix skills/obsidian-cli)"
+./rebuild.sh
+```
+
+This removes only the managed links added by that repository revision.
 
 Browser and Computer Use are proprietary plugins distributed with Codex, so
 their implementations are not copied into Git. The Homebrew `codex` cask

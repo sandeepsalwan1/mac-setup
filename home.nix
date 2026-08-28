@@ -6,12 +6,27 @@ let
     "autoreview"
     "chrome-devtools-axi"
     "create-project-level-agents-md-file"
+    "defuddle"
     "grill-me"
     "improve-codebase-architecture"
+    "json-canvas"
     "lavish"
     "no-mistakes"
+    "obsidian-bases"
+    "obsidian-cli"
+    "obsidian-markdown"
     "shadcn"
   ];
+  validatedManagedSkills = map
+    (skill:
+      assert lib.assertMsg
+        (builtins.match "[a-z0-9][a-z0-9-]*" skill != null)
+        "managed skill names must contain only lowercase letters, digits, and hyphens: ${skill}";
+      assert lib.assertMsg
+        (builtins.pathExists (./. + "/skills/${skill}/SKILL.md"))
+        "managed skill is missing its declared SKILL.md: skills/${skill}/SKILL.md";
+      skill)
+    managedSkills;
   skillRoots = [
     ".skills"
     ".agents/skills"
@@ -30,7 +45,7 @@ let
             };
           })
           skillRoots)
-      managedSkills
+      validatedManagedSkills
   );
 in
 
