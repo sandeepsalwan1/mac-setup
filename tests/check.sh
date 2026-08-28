@@ -9,6 +9,7 @@ shellcheck -x \
 	"$ROOT/home/bin/learn" \
 	"$ROOT/scripts/install-agent-tools" \
 	"$ROOT/scripts/install-tools" \
+	"$ROOT/scripts/git-fleet-status" \
 	"$ROOT/scripts/link-official-codex-skills" \
 	"$ROOT/scripts/apply-herdr-prefix" \
 	"$ROOT/scripts/check-herdr-prefix" \
@@ -18,6 +19,7 @@ shellcheck -x \
 	"$ROOT/scripts/setup-vault-access" \
 	"$ROOT/tests/security-scan.sh" \
 	"$ROOT/tests/bootstrap.test.sh" \
+	"$ROOT/tests/git-fleet.test.sh" \
 	"$ROOT/tests/global-agents.test.sh" \
 	"$ROOT/tests/homebrew-config.test.sh" \
 	"$ROOT/tests/herdr-prefix.test.sh" \
@@ -35,6 +37,7 @@ shfmt -d \
 	"$ROOT/home/bin/learn" \
 	"$ROOT/scripts/install-agent-tools" \
 	"$ROOT/scripts/install-tools" \
+	"$ROOT/scripts/git-fleet-status" \
 	"$ROOT/scripts/link-official-codex-skills" \
 	"$ROOT/scripts/apply-herdr-prefix" \
 	"$ROOT/scripts/check-herdr-prefix" \
@@ -44,6 +47,7 @@ shfmt -d \
 	"$ROOT/scripts/setup-vault-access" \
 	"$ROOT/tests/security-scan.sh" \
 	"$ROOT/tests/bootstrap.test.sh" \
+	"$ROOT/tests/git-fleet.test.sh" \
 	"$ROOT/tests/global-agents.test.sh" \
 	"$ROOT/tests/homebrew-config.test.sh" \
 	"$ROOT/tests/herdr-prefix.test.sh" \
@@ -56,6 +60,7 @@ shfmt -d \
 	"$ROOT/tests/vault-access.test.sh"
 
 "$ROOT/tests/bootstrap.test.sh"
+"$ROOT/tests/git-fleet.test.sh"
 "$ROOT/tests/global-agents.test.sh"
 "$ROOT/tests/homebrew-config.test.sh"
 "$ROOT/tests/herdr-prefix.test.sh"
