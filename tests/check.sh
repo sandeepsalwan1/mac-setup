@@ -26,6 +26,7 @@ shellcheck -x \
 	"$ROOT/tests/herdr-prefix.test.sh" \
 	"$ROOT/tests/install-agent-tools.test.sh" \
 	"$ROOT/tests/install-tools.test.sh" \
+	"$ROOT/tests/managed-skills.test.sh" \
 	"$ROOT/tests/macos-permissions.test.sh" \
 	"$ROOT/tests/official-codex-skills.test.sh" \
 	"$ROOT/tests/security-scan.test.sh" \
@@ -57,6 +58,7 @@ shfmt -d \
 	"$ROOT/tests/herdr-prefix.test.sh" \
 	"$ROOT/tests/install-agent-tools.test.sh" \
 	"$ROOT/tests/install-tools.test.sh" \
+	"$ROOT/tests/managed-skills.test.sh" \
 	"$ROOT/tests/macos-permissions.test.sh" \
 	"$ROOT/tests/official-codex-skills.test.sh" \
 	"$ROOT/tests/security-scan.test.sh" \
@@ -71,6 +73,7 @@ shfmt -d \
 "$ROOT/tests/herdr-prefix.test.sh"
 "$ROOT/tests/install-agent-tools.test.sh"
 "$ROOT/tests/install-tools.test.sh"
+"$ROOT/tests/managed-skills.test.sh"
 "$ROOT/tests/macos-permissions.test.sh"
 "$ROOT/tests/official-codex-skills.test.sh"
 "$ROOT/tests/security-scan.test.sh"

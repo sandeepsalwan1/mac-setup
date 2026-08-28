@@ -120,7 +120,7 @@ HOME="$TEST_HOME" \
 	fail 'wrapper upgrade replaced the preserved regular Pi sidecar'
 
 HOME="$TEST_HOME" PI_TEST_LOG="$LOG" PATH="$TEST_HOME/.local/bin:/usr/bin:/bin" \
-	env -u AWS_PROFILE -u AWS_REGION -u PI_CODING_AGENT_DIR \
+	env -u AWS_PROFILE -u AWS_REGION -u PI_CODING_AGENT_DIR -u FM_PI_HARNESS \
 	"$TEST_HOME/.local/bin/pi" --version
 HOME="$TEST_HOME" PI_TEST_LOG="$LOG" PI_FIRSTMATE_REAL_PI="$REAL_PI" \
 	FM_PI_HARNESS=pi AWS_PROFILE=unrelated AWS_REGION=elsewhere \

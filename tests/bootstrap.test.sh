@@ -12,6 +12,13 @@ CONFIGURED_USER="$("$ROOT/scripts/read-flake-user" "$ROOT/flake.nix")"
 [ -n "$CONFIGURED_USER" ] || fail 'could not read the configured user'
 mkdir -p "$TEST_HOME" "$TEST_BIN"
 
+cat >"$TEST_BIN/id" <<'SH'
+#!/usr/bin/env bash
+case "${1:-}" in
+  -un) printf '%s\n' sandeep ;;
+  *) /usr/bin/id "$@" ;;
+esac
+SH
 cat >"$TEST_BIN/uname" <<'SH'
 #!/usr/bin/env bash
 case "${1:-}" in
