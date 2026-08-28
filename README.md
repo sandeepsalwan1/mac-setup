@@ -119,6 +119,39 @@ That links the locally installed official skill files into the same four skill
 locations. Their runtime tools remain Codex-only. Claude uses
 `chrome-devtools-axi` for functional browser control.
 
+## Pi
+
+Pi is optional and this repository never installs or vendors it. Install the CLI
+from its owner with the [official Pi instructions](https://pi.dev), for example:
+
+```sh
+npm install -g --ignore-scripts @earendil-works/pi-coding-agent
+```
+
+Home Manager owns only the authored Pi resources: the `~/.pi/agent/themes` and
+`~/.pi/agent/extensions` directories, plus the individual `models.json` and
+`settings.json` files. Pi's credentials, session history, and other runtime state
+stay local and untracked. The local extensions directory is for public
+repository-authored extensions only; third-party package code never belongs
+there. Run `/reload` in Pi after editing a local extension.
+
+`home/.pi/agent/settings.json` declares third-party Pi packages as exact npm
+version pins, currently `pi-web-access` and
+`@ryan_nookpi/pi-extension-codex-fast-mode`. Upgrade a pin deliberately by
+editing that version. Do not declare packages from a Git URL: a commit pin
+fetches unreviewed source at Pi startup, and any such package belongs in local
+state until it ships a released npm version. `tests/pi-calm.test.sh` enforces
+this. The accepted form is exactly `npm:name@major.minor.patch`, optionally
+carrying semver prerelease then build metadata as in
+`npm:pkg@1.2.3-rc.1+build.5`. Git pins are rejected, and so is range and tag
+syntax including `=`, `^`, `~`, `>=`, `x`, and `latest`: `@=1.2.3` is a range
+expression that happens to resolve to one version, not the pin form this
+repository declares.
+
+The `rose-pine-moon` theme was authored clean-room from the public
+[Rosé Pine Moon palette](https://rosepinetheme.com/palette) and Pi's public
+theme schema, not from a private or live theme file.
+
 ## Automic Vault
 
 The bootstrap installs Automic Vault from its official Homebrew tap. Git stores
