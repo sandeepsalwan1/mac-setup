@@ -12,3 +12,10 @@ Deliberate decisions in this repo:
 - Herdr's prefix is the physical Caps Lock key mapped to F13. Keep its Home Manager mapping, terminal course, and conflict regression synchronized with any future binding change.
 - Never commit `.no-mistakes/` validation evidence. The directory is gitignored.
 - Managed Pi packages in `home/.pi/agent/settings.json` are exact npm version pins. Never declare a Pi package from a Git URL; `tests/pi-calm.test.sh` enforces this.
+
+## Maintaining this file
+
+Keep this file for knowledge useful to almost every future agent session in this project.
+Do not repeat what the codebase already shows; point to the authoritative file or command instead.
+Prefer rewriting or pruning existing entries over appending new ones.
+When updating this file, preserve this bar for all agents and keep entries concise.
