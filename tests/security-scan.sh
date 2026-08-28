@@ -9,8 +9,44 @@ umask 077
 
 gitleaks detect --source "$ROOT" --no-git --redact --exit-code 1
 
-trufflehog filesystem \
-	--no-update \
+resolve_symlink_path() {
+	local path=$1 directory target links=0
+	while [ -L "$path" ]; do
+		links=$((links + 1))
+		if [ "$links" -gt 40 ]; then
+			printf 'security scan could not resolve trufflehog after 40 symlinks\n' >&2
+			return 1
+		fi
+		directory="$(cd "$(dirname "$path")" && pwd -P)"
+		target="$(readlink "$path")"
+		case "$target" in
+		/*) path=$target ;;
+		*) path="$directory/$target" ;;
+		esac
+	done
+	directory="$(cd "$(dirname "$path")" && pwd -P)"
+	printf '%s/%s\n' "$directory" "$(basename "$path")"
+}
+
+TRUFFLEHOG_COMMAND="$(command -v trufflehog)" || {
+	printf '%s\n' 'security scan requires trufflehog on PATH' >&2
+	exit 1
+}
+TRUFFLEHOG_BIN="$(resolve_symlink_path "$TRUFFLEHOG_COMMAND")"
+TRUFFLEHOG_WRAPPER_TARGET="$(dirname "$TRUFFLEHOG_BIN")/.$(basename "$TRUFFLEHOG_BIN")-wrapped"
+
+if [ -x "$TRUFFLEHOG_WRAPPER_TARGET" ] &&
+	grep -Eq -- '(^|[[:space:]])--no-update([[:space:]]|$)' "$TRUFFLEHOG_BIN"; then
+	run_trufflehog_offline() {
+		"$TRUFFLEHOG_BIN" "$@"
+	}
+else
+	run_trufflehog_offline() {
+		"$TRUFFLEHOG_BIN" --no-update "$@"
+	}
+fi
+
+run_trufflehog_offline filesystem \
 	--json \
 	--results=verified,unknown \
 	--fail-on-scan-errors \

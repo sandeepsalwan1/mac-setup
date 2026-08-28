@@ -10,6 +10,7 @@ shellcheck -x \
 	"$ROOT/scripts/install-agent-tools" \
 	"$ROOT/scripts/install-tools" \
 	"$ROOT/scripts/link-official-codex-skills" \
+	"$ROOT/scripts/read-flake-user" \
 	"$ROOT/scripts/apply-herdr-prefix" \
 	"$ROOT/scripts/check-herdr-prefix" \
 	"$ROOT/scripts/add-vault-secret" \
@@ -25,6 +26,7 @@ shellcheck -x \
 	"$ROOT/tests/install-tools.test.sh" \
 	"$ROOT/tests/macos-permissions.test.sh" \
 	"$ROOT/tests/official-codex-skills.test.sh" \
+	"$ROOT/tests/security-scan.test.sh" \
 	"$ROOT/tests/setup-vault.test.sh" \
 	"$ROOT/tests/terminal-mastery.test.sh" \
 	"$ROOT/tests/vault-access.test.sh"
@@ -36,6 +38,7 @@ shfmt -d \
 	"$ROOT/scripts/install-agent-tools" \
 	"$ROOT/scripts/install-tools" \
 	"$ROOT/scripts/link-official-codex-skills" \
+	"$ROOT/scripts/read-flake-user" \
 	"$ROOT/scripts/apply-herdr-prefix" \
 	"$ROOT/scripts/check-herdr-prefix" \
 	"$ROOT/scripts/add-vault-secret" \
@@ -51,6 +54,7 @@ shfmt -d \
 	"$ROOT/tests/install-tools.test.sh" \
 	"$ROOT/tests/macos-permissions.test.sh" \
 	"$ROOT/tests/official-codex-skills.test.sh" \
+	"$ROOT/tests/security-scan.test.sh" \
 	"$ROOT/tests/setup-vault.test.sh" \
 	"$ROOT/tests/terminal-mastery.test.sh" \
 	"$ROOT/tests/vault-access.test.sh"
@@ -63,6 +67,7 @@ shfmt -d \
 "$ROOT/tests/install-tools.test.sh"
 "$ROOT/tests/macos-permissions.test.sh"
 "$ROOT/tests/official-codex-skills.test.sh"
+"$ROOT/tests/security-scan.test.sh"
 "$ROOT/tests/setup-vault.test.sh"
 "$ROOT/tests/terminal-mastery.test.sh"
 "$ROOT/tests/vault-access.test.sh"

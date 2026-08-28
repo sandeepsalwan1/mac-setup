@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+[ "$#" -eq 1 ] || {
+	printf 'usage: %s FLAKE_FILE\n' "$(basename "$0")" >&2
+	exit 64
+}
+
+sed -nE 's/^[[:space:]]*user = "([^"]+)";.*/\1/p' "$1" | head -n 1

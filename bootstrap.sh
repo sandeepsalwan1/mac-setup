@@ -39,7 +39,7 @@ fi
 
 note 'step 3/10: configured macOS user'
 REAL_USER="$(id -un)"
-FLAKE_USER="$(sed -nE 's/^[[:space:]]*user = "([^"]+)";.*/\1/p' "$DIR/flake.nix" | head -n 1)"
+FLAKE_USER="$("$DIR/scripts/read-flake-user" "$DIR/flake.nix")"
 [ -n "$FLAKE_USER" ] || die 'could not read the user setting from flake.nix'
 if [ "$FLAKE_USER" != "$REAL_USER" ]; then
 	if [ "${MAC_SETUP_ACCEPT_USER:-0}" = "1" ]; then
