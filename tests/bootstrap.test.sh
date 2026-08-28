@@ -8,6 +8,8 @@ TMP_ROOT="$(dotfiles_test_tmproot bootstrap)"
 TEST_HOME="$TMP_ROOT/home"
 TEST_BIN="$TMP_ROOT/bin"
 SUDO_LOG="$TMP_ROOT/sudo.log"
+CONFIGURED_USER="$("$ROOT/scripts/read-flake-user" "$ROOT/flake.nix")"
+[ -n "$CONFIGURED_USER" ] || fail 'could not read the configured user'
 mkdir -p "$TEST_HOME" "$TEST_BIN"
 
 cat >"$TEST_BIN/uname" <<'SH'
@@ -17,6 +19,14 @@ case "${1:-}" in
   -m) printf '%s\n' arm64 ;;
   *) printf '%s\n' Darwin ;;
 esac
+SH
+cat >"$TEST_BIN/id" <<'SH'
+#!/usr/bin/env bash
+if [ "${1:-}" = -un ]; then
+  printf '%s\n' "$CONFIGURED_USER"
+else
+  exec /usr/bin/id "$@"
+fi
 SH
 cat >"$TEST_BIN/nix" <<'SH'
 #!/usr/bin/env bash
@@ -33,12 +43,13 @@ case "${1:-}" in
   *) exit 64 ;;
 esac
 SH
-chmod +x "$TEST_BIN/uname" "$TEST_BIN/nix" "$TEST_BIN/sudo" "$TEST_BIN/av"
+chmod +x "$TEST_BIN/uname" "$TEST_BIN/id" "$TEST_BIN/nix" "$TEST_BIN/sudo" "$TEST_BIN/av"
 
 run_bootstrap() {
 	HOME="$TEST_HOME" \
 		PATH="$TEST_BIN:/usr/bin:/bin" \
 		SUDO_LOG="$SUDO_LOG" \
+		CONFIGURED_USER="$CONFIGURED_USER" \
 		MAC_SETUP_SKIP_AGENT_CASKS=1 \
 		MAC_SETUP_SKIP_NPM=1 \
 		MAC_SETUP_SKIP_NO_MISTAKES=1 \
@@ -53,6 +64,8 @@ run_bootstrap >"$TMP_ROOT/first.out"
 	fail 'bootstrap linked the wrong repository'
 grep -Fq 'switch --flake' "$SUDO_LOG" ||
 	fail 'bootstrap did not invoke the nix-darwin switch'
+grep -Fq "flake.nix already matches $CONFIGURED_USER" "$TMP_ROOT/first.out" ||
+	fail 'bootstrap did not use the user configured by flake.nix'
 
 run_bootstrap >"$TMP_ROOT/second.out"
 [ "$(wc -l <"$SUDO_LOG" | tr -d ' ')" = 2 ] ||
