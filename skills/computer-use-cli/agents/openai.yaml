@@ -1,0 +1,4 @@
+interface:
+  display_name: "CUA CLI"
+  short_description: "Control native Mac apps from the shell"
+  default_prompt: "Use $computer-use-cli to inspect and operate a native macOS app."

@@ -1,0 +1,821 @@
+#!/usr/bin/env bash
+# Fleet-wide git change summary.
+#
+# Neogit and every other single-repository tool resolve exactly one repository
+# from the current buffer or cwd. This script answers the other question: across
+# every checkout, clone and linked worktree on this machine, what is changed?
+#
+# It is strictly read-only. GIT_OPTIONAL_LOCKS=0 keeps git from refreshing an
+# index or taking a lock, so scanning a checkout that another session owns
+# cannot disturb it.
+#
+# The default path is fully offline. PR state and validation touch the network
+# or run commands, so they are opt-in and degrade to "?" rather than hanging.
+
+set -uo pipefail
+
+export GIT_OPTIONAL_LOCKS=0
+export GIT_TERMINAL_PROMPT=0
+export GH_NO_UPDATE_NOTIFIER=1
+
+PROG=${0##*/}
+
+# Directory names that never contain a checkout we care about but do contain
+# enormous file counts. Pruning them is what keeps discovery under a second.
+# GIT_FLEET_PRUNE adds machine-local names, which is where anything specific to
+# one workplace belongs: this repository is public.
+PRUNE_NAMES=(
+	node_modules .cache Library .venv venv env .npm .Trash
+	.terraform .gradle .m2 .cargo .rustup .pyenv .nvm .bundle .tox
+	build dist target out coverage .next .nuxt .pytest_cache __pycache__
+	.nix-defexpr .nix-profile .local .terraform.d .vscode-server .cursor-server
+)
+# Space-separated on purpose: each word is one more directory name to prune.
+read -r -a extra_prune <<<"${GIT_FLEET_PRUNE:-}"
+PRUNE_NAMES+=("${extra_prune[@]}")
+
+DEPTH=7
+SHOW_ALL=0
+WANT_PR=0
+WANT_VALIDATE=0
+FORMAT=table
+ROOTS=()
+NET_TIMEOUT=6
+
+usage() {
+	cat <<'EOF'
+Usage: git-fleet-status [options]
+
+Shows what changed since the previous scan first, followed by one dense row per
+current changed repository: path, branch, ahead / unique commits, staged /
+unstaged / untracked file counts, +/- lines, validation and PR state.
+
+Options:
+  -a, --all           include repositories with no changes (hidden by default)
+  -r, --root DIR      search root; repeatable (default: $HOME)
+  -d, --depth N       maximum search depth below each root (default: 7)
+      --pr            look up PR state (network; cached ~15min; "?" on failure)
+      --validate      run each dirty repository's tests/check.sh ("?" without)
+      --json          JSON Lines for the Neovim picker and scripts
+      --paths         print only the changed repository paths
+  -h, --help          this message
+
+Default output is offline and read-only. Snapshots are stored below
+$XDG_STATE_HOME (default: ~/.local/state); repositories are never written.
+
+Environment:
+  GIT_FLEET_EXCLUDE   colon-separated path prefixes to skip entirely, for backup
+                      and migration snapshots that contain copies of checkouts
+  GIT_FLEET_JOBS      scan window size (default: twice the core count)
+  GIT_FLEET_STATE_DIR where the since-last-run snapshot is kept
+EOF
+}
+
+while [ $# -gt 0 ]; do
+	case $1 in
+	-a | --all) SHOW_ALL=1 ;;
+	-r | --root)
+		shift
+		[ $# -gt 0 ] || {
+			echo "$PROG: --root needs a directory" >&2
+			exit 2
+		}
+		ROOTS+=("$1")
+		;;
+	-d | --depth)
+		shift
+		[ $# -gt 0 ] || {
+			echo "$PROG: --depth needs a number" >&2
+			exit 2
+		}
+		DEPTH=$1
+		;;
+	--pr) WANT_PR=1 ;;
+	--validate) WANT_VALIDATE=1 ;;
+	--json) FORMAT=json ;;
+	--paths) FORMAT=paths ;;
+	-h | --help)
+		usage
+		exit 0
+		;;
+	*)
+		echo "$PROG: unknown option: $1" >&2
+		usage >&2
+		exit 2
+		;;
+	esac
+	shift
+done
+
+case $DEPTH in
+'' | *[!0-9]*)
+	echo "$PROG: --depth must be a number" >&2
+	exit 2
+	;;
+esac
+
+[ ${#ROOTS[@]} -gt 0 ] || ROOTS=("$HOME")
+
+# Bound anything that touches the network. macOS has no timeout(1); perl is on
+# both hosts and its alarm is enough to guarantee we never hang.
+net_timeout() {
+	if command -v perl >/dev/null 2>&1; then
+		perl -e 'alarm shift; exec @ARGV or exit 127' "$NET_TIMEOUT" "$@"
+	else
+		"$@"
+	fi
+}
+
+# ---------------------------------------------------------------- discovery
+
+# Emit every candidate working-tree directory found below the roots.
+#
+# Roots are resolved to their physical path first: on a dev desk $HOME is often
+# a symlink (/home/x -> /local/home/x) and find would not descend it otherwise.
+#
+# A linked worktree has .git as a file rather than a directory; stripping the
+# /.git suffix gives its own working tree either way, so five worktrees of one
+# repository yield five candidates. Canonicalising each one costs a git call, so
+# that happens later inside the parallel scan and is deduped on the result --
+# doing it here would serialise one process per candidate.
+discover() {
+	local root physical
+	local -a expr=()
+	local n
+	for n in "${PRUNE_NAMES[@]}"; do
+		[ ${#expr[@]} -eq 0 ] && expr=(-name "$n") || expr+=(-o -name "$n")
+	done
+
+	# fd, when the dotfiles baseline has supplied it, walks the tree on several
+	# threads and is several times faster than find here. It is a pure speedup:
+	# both branches return the same set, and find remains the fallback because the
+	# remote dev desk has no fd.
+	local -a fdexpr=()
+	if command -v fd >/dev/null 2>&1; then
+		for n in "${PRUNE_NAMES[@]}"; do fdexpr+=(-E "$n"); done
+	fi
+
+	for root in "${ROOTS[@]}"; do
+		physical=$(cd -- "$root" 2>/dev/null && pwd -P) || continue
+		if [ ${#fdexpr[@]} -gt 0 ]; then
+			fd -H -u --type d --type f --type l --max-depth "$DEPTH" \
+				"${fdexpr[@]}" '^\.git$' "$physical" 2>/dev/null
+		else
+			# -print -prune stops find descending into .git's own object store.
+			find -H "$physical" -maxdepth "$DEPTH" \
+				\( "${expr[@]}" \) -prune -o -name .git -print -prune 2>/dev/null
+		fi
+	done | sed -e 's:/*\.git/*$::' | LC_ALL=C sort -u | drop_excluded
+}
+
+# Drop candidates under any prefix in $GIT_FLEET_EXCLUDE, colon separated.
+#
+# Pruning by directory name cannot express this: a backup or migration snapshot
+# of $HOME contains real checkouts under ordinary names, so discovery finds them
+# and each one costs a full scan. Worse, they then appear as fleet rows, and
+# opening Neogit on a copy of a repository is always the wrong answer. Only the
+# absolute location distinguishes the copy from the original.
+drop_excluded() {
+	if [ -z "${GIT_FLEET_EXCLUDE:-}" ]; then
+		cat
+		return 0
+	fi
+	# Resolve every prefix the way discover() resolves its roots. Discovery emits
+	# physical paths, so a prefix containing a symlink - which on macOS includes
+	# anything under $TMPDIR or /tmp, and any path through a linked home - would
+	# otherwise be compared against text it can never equal, and would silently
+	# exclude nothing at all.
+	local resolved='' entry physical
+	local IFS=:
+	# shellcheck disable=SC2086 # colon-splitting the list is the point
+	for entry in $GIT_FLEET_EXCLUDE; do
+		[ -n "$entry" ] || continue
+		physical=$(cd -- "$entry" 2>/dev/null && pwd -P) || physical=$entry
+		resolved=${resolved:+$resolved:}$physical
+	done
+
+	GIT_FLEET_EXCLUDE_RESOLVED=$resolved awk '
+    BEGIN {
+      n = split(ENVIRON["GIT_FLEET_EXCLUDE_RESOLVED"], raw, ":")
+      for (i = 1; i <= n; i++) {
+        sub(/\/+$/, "", raw[i])
+        if (length(raw[i])) prefix[++count] = raw[i] "/"
+      }
+    }
+    {
+      for (i = 1; i <= count; i++) if (index($0 "/", prefix[i]) == 1) next
+      print
+    }
+  '
+}
+
+# ------------------------------------------------------------- per-repo data
+
+# Best local base to measure unique commits against, without any network call.
+# One for-each-ref rather than a probe per candidate: process spawns dominate
+# the runtime once the fleet is dozens of repositories deep.
+base_ref() {
+	git for-each-ref --format='%(refname)' \
+		refs/remotes/origin/HEAD refs/remotes/origin/main refs/remotes/origin/master \
+		refs/heads/main refs/heads/master 2>/dev/null |
+		awk '
+    { seen[$0] = 1 }
+    END {
+      n = split("refs/remotes/origin/HEAD refs/remotes/origin/main " \
+                "refs/remotes/origin/master refs/heads/main refs/heads/master", p, " ")
+      for (i = 1; i <= n; i++) if (p[i] in seen) { print p[i]; exit }
+    }
+  '
+}
+
+pr_state() {
+	local top=$1 branch=$2 head=$3 gh cache key out
+	[ -n "$branch" ] || {
+		echo '?'
+		return
+	}
+	gh=$(command -v gh-axi || command -v gh) || {
+		echo '?'
+		return
+	}
+
+	cache="${XDG_CACHE_HOME:-$HOME/.cache}/git-fleet-status"
+	key="$cache/$(printf '%s@%s@%s' "$top" "$branch" "$head" | cksum | tr -d ' ')"
+	mkdir -p "$cache" 2>/dev/null
+	# 15 minute TTL: a PR's state does not change often enough to pay for a
+	# round trip per repository on every scan.
+	if [ -f "$key" ] && [ -z "$(find "$key" -mmin +15 2>/dev/null)" ]; then
+		cat "$key"
+		return
+	fi
+
+	out=$(net_timeout "$gh" pr view "$branch" --repo "$(git -C "$top" remote get-url origin 2>/dev/null)" \
+		--json state,number,isDraft 2>/dev/null) || out=
+
+	if [ -z "$out" ]; then
+		echo none >"$key" 2>/dev/null
+		echo none
+		return
+	fi
+
+	printf '%s' "$out" | awk '
+    { n = ""; s = ""; d = "" }
+    match($0, /"number":[0-9]+/)  { n = substr($0, RSTART + 9, RLENGTH - 9) }
+    match($0, /"state":"[A-Z]+"/) { s = substr($0, RSTART + 9, RLENGTH - 10) }
+    /"isDraft":true/              { d = "draft " }
+    { if (n == "") print "none"; else printf "%s#%s %s\n", d, n, tolower(s) }
+  ' | head -1 | tee "$key" 2>/dev/null
+}
+
+validation() {
+	local top=$1
+	if [ -x "$top/tests/check.sh" ]; then
+		if (cd "$top" && ./tests/check.sh >/dev/null 2>&1); then echo ok; else echo FAIL; fi
+	else
+		echo none
+	fi
+}
+
+# Print one tab-separated record for a candidate directory, or nothing if it is
+# not a working tree. The record's first field is the canonical toplevel, which
+# is what the caller dedupes on.
+inspect() {
+	local dir=$1 slot=$2 top
+	cd -- "$dir" 2>/dev/null || return 0
+	# Canonical toplevel: collapses the several paths one checkout is reachable by,
+	# and rejects a .git that belongs to no working tree (bare repo, stray file).
+	top=$(git rev-parse --show-toplevel 2>/dev/null) || return 0
+	[ -n "$top" ] || return 0
+
+	local branch head full_head ahead uniq base upstream
+	branch=$(git symbolic-ref -q --short HEAD 2>/dev/null)
+	head=$(git rev-parse -q --short HEAD 2>/dev/null)
+	full_head=$(git rev-parse -q HEAD 2>/dev/null)
+	if [ -z "$branch" ]; then
+		branch=${head:+"($head)"}
+		branch=${branch:-"(no commits)"}
+	fi
+
+	ahead='-'
+	upstream=$(git rev-parse -q --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null)
+	if [ -n "$upstream" ]; then
+		ahead=$(git rev-list --count "$upstream"..HEAD 2>/dev/null) || ahead='-'
+	fi
+
+	uniq='-'
+	base=$(base_ref)
+	if [ -n "$base" ] && [ -n "$head" ]; then
+		uniq=$(git rev-list --count "$base"..HEAD 2>/dev/null) || uniq='-'
+	fi
+
+	# git status collapses untracked directories into one entry; ls-files names
+	# every file, which is the honest count. The list is captured once because the
+	# count and the line total both need it and the tree walk is the expensive part.
+	local list="$WORKDIR/tmp/untracked.$slot"
+	git ls-files -o --exclude-standard -z 2>/dev/null >"$list"
+
+	# All four change sets in one subshell and one awk. Every git call here is
+	# unavoidable, but process spawn is most of the cost of a fleet scan, so the
+	# sections are marked inline and summed together rather than separately.
+	#
+	# Lines are totalled by streaming the files through cat, never by letting awk
+	# open them: ls-files also names symlinks to directories, and macOS awk makes
+	# getline on a directory a fatal I/O error, which would abort the whole count
+	# and silently report a dirty repository as clean.
+	local sf sa sd uf ua ud nf na
+	read -r sf sa sd uf ua ud nf na < <(
+		{
+			printf '\034S\n'
+			if [ -n "$head" ]; then
+				git diff --cached --numstat 2>/dev/null
+			else
+				# No commits yet: the index is measured against the empty tree.
+				git diff --cached --numstat "$(git hash-object -t tree /dev/null)" 2>/dev/null
+			fi
+			printf '\034U\n'
+			git diff --numstat 2>/dev/null
+			printf '\034N\n'
+			tr '\0' '\n' <"$list"
+			printf '\034L\n'
+			xargs -0 cat <"$list" 2>/dev/null
+		} | awk '
+      index($0, "\034") == 1 { sec = substr($0, 2, 1); next }
+      sec == "N" { if (length($0)) nf++; next }
+      sec == "L" { na++; next }
+      { f[sec]++; if ($1 != "-") a[sec] += $1; if ($2 != "-") d[sec] += $2 }
+      END {
+        printf "%d %d %d %d %d %d %d %d\n",
+          f["S"] + 0, a["S"] + 0, d["S"] + 0,
+          f["U"] + 0, a["U"] + 0, d["U"] + 0, nf + 0, na + 0
+      }
+    '
+	)
+	sf=${sf:-0}
+	sa=${sa:-0}
+	sd=${sd:-0}
+	uf=${uf:-0}
+	ua=${ua:-0}
+	ud=${ud:-0}
+	nf=${nf:-0}
+	na=${na:-0}
+
+	# A working tree counts as changed when it has uncommitted work, or commits its
+	# base branch and upstream have not seen. A feature branch whose work is
+	# already committed is still work in flight, and across a pool of branch
+	# worktrees that is the usual state, so counting only dirty files would hide
+	# most of the fleet.
+	local changed=$((sf + uf + nf))
+	case $uniq in '' | *[!0-9]*) : ;; *) changed=$((changed + uniq)) ;; esac
+	case $ahead in '' | *[!0-9]*) : ;; *) changed=$((changed + ahead)) ;; esac
+	if [ "$changed" -eq 0 ] && [ "$SHOW_ALL" -eq 0 ]; then
+		rm -f "$list"
+		# Still carries the toplevel so the caller can dedupe it like any other row.
+		printf 'CLEAN\t%s\n' "$top"
+		return 0
+	fi
+
+	# Counts alone miss an edit that replaces one line with another. Fingerprint
+	# the actual staged, unstaged and untracked content so "since last run" stays
+	# honest even when every displayed number is unchanged. git hash-object hashes
+	# stdin without -w, so it remains read-only and adds no repository objects.
+	#
+	# Deliberately below the clean early return: the fingerprint costs two more
+	# full binary diffs and a second read of every untracked file, and only the
+	# snapshot of reported repositories ever consumes it. On a fleet that is mostly
+	# clean, computing it above the return threw most of that work away.
+	local fingerprint
+	fingerprint=$(
+		{
+			printf 'HEAD\0%s\0BASE\0%s\0STAGED\0' "$full_head" "$base"
+			git diff --cached --no-ext-diff --binary 2>/dev/null
+			printf '\0UNSTAGED\0'
+			git diff --no-ext-diff --binary 2>/dev/null
+			printf '\0UNTRACKED-PATHS\0'
+			cat "$list"
+			printf '\0UNTRACKED-CONTENTS\0'
+			xargs -0 cat <"$list" 2>/dev/null
+		} | git hash-object --stdin 2>/dev/null
+	)
+	rm -f "$list"
+
+	local add=$((sa + ua + na)) del=$((sd + ud))
+	local val='?' pr='?'
+	[ "$WANT_VALIDATE" -eq 1 ] && val=$(validation "$top")
+	[ "$WANT_PR" -eq 1 ] && pr=$(pr_state "$top" "${upstream#*/}" "${head:-none}")
+	[ -n "$val" ] || val='?'
+	[ -n "$pr" ] || pr='?'
+
+	printf 'REPO\t%s\t%s\t%s\t%s\t%d\t%d\t%d\t%d\t%d\t%s\t%s\t%s\t%s\t%s\n' \
+		"$top" "$branch" "$ahead" "$uniq" "$sf" "$uf" "$nf" "$add" "$del" "$val" "$pr" \
+		"$full_head" "$base" "$fingerprint"
+}
+
+# ------------------------------------------------------------------ rendering
+
+json_escape() {
+	printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g'
+}
+
+# Repository paths are canonical, so on a dev desk they come back under the
+# physical home (/local/home/x) while $HOME is the symlink (/home/x). Both
+# prefixes have to abbreviate or those rows render full-length and ragged.
+HOME_PHYS=$(cd -- "$HOME" 2>/dev/null && pwd -P) || HOME_PHYS=$HOME
+
+# A literal "~/" prefix keeps rows short; it is display text, not a path to expand.
+# shellcheck disable=SC2088
+abbrev() {
+	case $1 in
+	"$HOME"/*) printf '~/%s\n' "${1#"$HOME"/}" ;;
+	"$HOME_PHYS"/*) printf '~/%s\n' "${1#"$HOME_PHYS"/}" ;;
+	*) printf '%s\n' "$1" ;;
+	esac
+}
+
+# ------------------------------------------------------------------- scanning
+
+# Repositories are independent and per-repository cost is mostly process spawn,
+# so the scan runs a sliding window of them. A window rather than fixed batches
+# matters because worktree sizes are wildly uneven: one huge checkout in a batch
+# would otherwise hold up every small one waiting alongside it.
+#
+# The window defaults to well above the core count. Each slot spends most of its
+# life waiting on fork/exec and small reads rather than burning a core, so sizing
+# it to the core count leaves the machine idle; a flat 8 left it idle on every
+# host this runs on.
+cpu_count() {
+	local n
+	n=$(getconf _NPROCESSORS_ONLN 2>/dev/null) ||
+		n=$(sysctl -n hw.logicalcpu 2>/dev/null) ||
+		n=$(nproc 2>/dev/null) || n=
+	case ${n:-} in '' | *[!0-9]*) printf '4\n' ;; *) printf '%s\n' "$n" ;; esac
+}
+JOBS=${GIT_FLEET_JOBS:-$(($(cpu_count) * 2))}
+case $JOBS in '' | *[!0-9]*) JOBS=8 ;; esac
+[ "$JOBS" -lt 1 ] && JOBS=1
+
+# `wait -n` is bash 4.3+. Older bash falls back to draining the whole batch,
+# which is slower but correct.
+HAVE_WAIT_N=0
+if [ "${BASH_VERSINFO[0]:-0}" -gt 4 ] ||
+	{ [ "${BASH_VERSINFO[0]:-0}" -eq 4 ] && [ "${BASH_VERSINFO[1]:-0}" -ge 3 ]; }; then
+	HAVE_WAIT_N=1
+fi
+
+WORKDIR=$(mktemp -d "${TMPDIR:-/tmp}/git-fleet-status.XXXXXX") || {
+	echo "$PROG: cannot create a temporary directory" >&2
+	exit 1
+}
+trap 'rm -rf "$WORKDIR"' EXIT INT TERM
+# Records and scratch lists live in separate subdirectories so the glob that
+# collects records can never pick up a scratch file left by a killed scan.
+mkdir -p "$WORKDIR/rec" "$WORKDIR/tmp" || exit 1
+
+TOTAL_REPOS=0
+CLEAN_REPOS=0
+RECORDS=()
+CANDIDATES=0
+
+RUNNING=0
+while IFS= read -r dir; do
+	[ -n "$dir" ] || continue
+	CANDIDATES=$((CANDIDATES + 1))
+	# Zero-padded names preserve the sorted discovery order under the glob below.
+	inspect "$dir" "$CANDIDATES" >"$WORKDIR/rec/$(printf '%06d' "$CANDIDATES")" 2>/dev/null &
+	RUNNING=$((RUNNING + 1))
+	if [ "$RUNNING" -ge "$JOBS" ]; then
+		if [ "$HAVE_WAIT_N" -eq 1 ]; then
+			wait -n 2>/dev/null
+			RUNNING=$((RUNNING - 1))
+		else
+			wait
+			RUNNING=0
+		fi
+	fi
+done < <(discover)
+wait
+
+# Dedupe on the canonical toplevel in field 2, keeping discovery order. One
+# repository with five worktrees stays five rows, because each worktree has its
+# own toplevel; the several paths that reach a single checkout collapse to one.
+# A process substitution, not a pipe, so RECORDS is built in this shell.
+while IFS= read -r rec; do
+	TOTAL_REPOS=$((TOTAL_REPOS + 1))
+	case $rec in
+	CLEAN*) CLEAN_REPOS=$((CLEAN_REPOS + 1)) ;;
+	REPO*) RECORDS+=("${rec#REPO$'\t'}") ;;
+	esac
+done < <(cat "$WORKDIR"/rec/* 2>/dev/null | LC_ALL=C sort -t "$(printf '\t')" -u -k2,2)
+
+if [ "$FORMAT" = paths ]; then
+	for rec in ${RECORDS[@]+"${RECORDS[@]}"}; do
+		printf '%s\n' "${rec%%$'\t'*}"
+	done
+	exit 0
+fi
+
+# ---------------------------------------------------------- previous snapshot
+
+# Each scan scope gets its own history. A fixture root, a shallow focused scan
+# and the default whole-home scan must never overwrite one another's baseline.
+STATE_SCOPE=$(
+	{
+		printf 'depth=%s\nall=%s\n' "$DEPTH" "$SHOW_ALL"
+		for root in "${ROOTS[@]}"; do
+			physical=$(cd -- "$root" 2>/dev/null && pwd -P) || physical=$root
+			printf 'root=%s\n' "$physical"
+		done
+	} | cksum | awk '{ print $1 "-" $2 }'
+)
+STATE_DIR=${GIT_FLEET_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/git-fleet-status}
+STATE_FILE="$STATE_DIR/$STATE_SCOPE.tsv"
+STATE_VERSION='# git-fleet-status-v1'
+PREVIOUS_AT=
+CURRENT_AT=$(date '+%Y-%m-%d %H:%M:%S %Z')
+HAS_PREVIOUS=0
+PREVIOUS_RECORDS=()
+
+if [ -r "$STATE_FILE" ]; then
+	first=1
+	while IFS= read -r line || [ -n "$line" ]; do
+		if [ "$first" -eq 1 ]; then
+			first=0
+			IFS=$'\t' read -r version previous_at <<<"$line"
+			if [ "$version" = "$STATE_VERSION" ]; then
+				HAS_PREVIOUS=1
+				PREVIOUS_AT=$previous_at
+			else
+				break
+			fi
+		elif [ "$HAS_PREVIOUS" -eq 1 ] && [ -n "$line" ]; then
+			PREVIOUS_RECORDS+=("$line")
+		fi
+	done <"$STATE_FILE"
+fi
+
+previous_for_path() {
+	local wanted=$1 old
+	for old in ${PREVIOUS_RECORDS[@]+"${PREVIOUS_RECORDS[@]}"}; do
+		if [ "${old%%$'\t'*}" = "$wanted" ]; then
+			printf '%s\n' "$old"
+			return 0
+		fi
+	done
+	return 1
+}
+
+current_has_path() {
+	local wanted=$1 current
+	for current in ${RECORDS[@]+"${RECORDS[@]}"}; do
+		if [ "${current%%$'\t'*}" = "$wanted" ]; then
+			return 0
+		fi
+	done
+	return 1
+}
+
+state_record() {
+	local current=$1
+	local top branch ahead uniq sf uf nf add del val pr full_head base fingerprint
+	IFS=$'\t' read -r top branch ahead uniq sf uf nf add del val pr full_head base fingerprint <<<"$current"
+	printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+		"$top" "$branch" "$full_head" "$base" "$ahead" "$uniq" \
+		"$sf" "$uf" "$nf" "$add" "$del" "$fingerprint"
+}
+
+updated_detail() {
+	local old=$1 current=$2
+	local obranch ofull_head obase oahead ouniq osf ouf onf oadd odel ofingerprint
+	local top branch ahead uniq sf uf nf add del val pr full_head base fingerprint
+	local -a parts=()
+
+	IFS=$'\t' read -r _ obranch ofull_head obase oahead ouniq osf ouf onf oadd odel ofingerprint <<<"$old"
+	IFS=$'\t' read -r top branch ahead uniq sf uf nf add del val pr full_head base fingerprint <<<"$current"
+
+	[ "$obranch" = "$branch" ] || parts+=("branch $obranch -> $branch")
+	if [ "$ofull_head" != "$full_head" ]; then
+		parts+=("HEAD ${ofull_head:0:7} -> ${full_head:0:7}")
+	fi
+	[ "$oahead" = "$ahead" ] || parts+=("ahead $oahead -> $ahead")
+	[ "$ouniq" = "$uniq" ] || parts+=("unique $ouniq -> $uniq")
+	[ "$osf" = "$sf" ] || parts+=("staged $osf -> $sf")
+	[ "$ouf" = "$uf" ] || parts+=("unstaged $ouf -> $uf")
+	[ "$onf" = "$nf" ] || parts+=("untracked $onf -> $nf")
+	if [ "$oadd" != "$add" ] || [ "$odel" != "$del" ]; then
+		parts+=("lines +$oadd/-$odel -> +$add/-$del")
+	fi
+	if [ ${#parts[@]} -eq 0 ] && [ "$ofingerprint" != "$fingerprint" ]; then
+		parts+=("diff content changed")
+	fi
+	if [ ${#parts[@]} -eq 0 ] && [ "$obase" != "$base" ]; then
+		parts+=("comparison base changed")
+	fi
+
+	local detail='' part
+	for part in "${parts[@]}"; do
+		[ -z "$detail" ] || detail="$detail; "
+		detail="$detail$part"
+	done
+	printf '%s\n' "${detail:-state changed}"
+}
+
+new_detail() {
+	local current=$1
+	local top branch ahead uniq sf uf nf add del val pr full_head base fingerprint
+	IFS=$'\t' read -r top branch ahead uniq sf uf nf add del val pr full_head base fingerprint <<<"$current"
+	printf 'new work in flight: %s staged, %s unstaged, %s untracked, +%s/-%s lines, %s unique commits\n' \
+		"$sf" "$uf" "$nf" "$add" "$del" "$uniq"
+}
+
+ACTIVITY=()
+ACTIVITY_DETAILS=()
+ACTIVITY_ROWS=()
+ACTIVITY_COUNT=0
+
+for rec in ${RECORDS[@]+"${RECORDS[@]}"}; do
+	IFS=$'\t' read -r top _ <<<"$rec"
+	activity=baseline
+	detail=
+	activity_row=
+	if [ "$HAS_PREVIOUS" -eq 1 ]; then
+		old=$(previous_for_path "$top") || old=
+		if [ -z "$old" ]; then
+			activity=new
+			detail=$(new_detail "$rec")
+		else
+			current_state=$(state_record "$rec")
+			if [ "$old" = "$current_state" ]; then
+				activity=unchanged
+			else
+				activity=updated
+				detail=$(updated_detail "$old" "$rec")
+			fi
+		fi
+		if [ "$activity" = new ] || [ "$activity" = updated ]; then
+			activity_row=$(printf '%-8s %s  %s' "$(printf '%s' "$activity" | tr '[:lower:]' '[:upper:]')" \
+				"$(abbrev "$top")" "$detail")
+			ACTIVITY_COUNT=$((ACTIVITY_COUNT + 1))
+		fi
+	fi
+	ACTIVITY+=("$activity")
+	ACTIVITY_DETAILS+=("$detail")
+	ACTIVITY_ROWS+=("$activity_row")
+done
+
+CLEARED_RECORDS=()
+CLEARED_DETAILS=()
+CLEARED_ROWS=()
+if [ "$HAS_PREVIOUS" -eq 1 ]; then
+	for old in ${PREVIOUS_RECORDS[@]+"${PREVIOUS_RECORDS[@]}"}; do
+		IFS=$'\t' read -r old_top old_branch _ <<<"$old"
+		current_has_path "$old_top" && continue
+		if git -C "$old_top" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+			detail="no work remains (was $old_branch)"
+		else
+			detail="checkout no longer found (was $old_branch)"
+		fi
+		CLEARED_RECORDS+=("$old")
+		CLEARED_DETAILS+=("$detail")
+		CLEARED_ROWS+=("$(printf '%-8s %s  %s' CLEARED "$(abbrev "$old_top")" "$detail")")
+		ACTIVITY_COUNT=$((ACTIVITY_COUNT + 1))
+	done
+fi
+
+# Save only after a successful complete scan. The rename is atomic, so two
+# editor/terminal scans can race without ever leaving a partial snapshot.
+if mkdir -p "$STATE_DIR" 2>/dev/null; then
+	state_tmp="$STATE_DIR/.$STATE_SCOPE.$$.tmp"
+	if (
+		umask 077
+		{
+			printf '%s\t%s\n' "$STATE_VERSION" "$CURRENT_AT"
+			for rec in ${RECORDS[@]+"${RECORDS[@]}"}; do
+				state_record "$rec"
+			done
+		} >"$state_tmp" &&
+			mv -f "$state_tmp" "$STATE_FILE"
+	); then
+		:
+	else
+		rm -f "$state_tmp"
+		printf '%s: could not save snapshot at %s\n' "$PROG" "$STATE_FILE" >&2
+	fi
+else
+	printf '%s: could not create snapshot directory %s\n' "$PROG" "$STATE_DIR" >&2
+fi
+
+# Path column is sized to the actual result set so every row stays aligned.
+WIDTH=4
+for rec in ${RECORDS[@]+"${RECORDS[@]}"}; do
+	label=$(abbrev "${rec%%$'\t'*}")
+	[ ${#label} -gt "$WIDTH" ] && WIDTH=${#label}
+done
+[ "$WIDTH" -gt 64 ] && WIDTH=64
+
+ROW="%-${WIDTH}s  %-22s %5s %5s  %3s %3s %3s  %14s  %-5s %s"
+
+# Rows are rendered exactly once, here, and then either printed as the table or
+# carried verbatim in the JSON "row" field. The Neovim picker displays that field
+# rather than formatting its own, which is what keeps the two surfaces identical
+# instead of merely similar.
+ROWS=()
+T_S=0
+T_U=0
+T_N=0
+T_A=0
+T_D=0
+for rec in ${RECORDS[@]+"${RECORDS[@]}"}; do
+	IFS=$'\t' read -r top branch ahead uniq sf uf nf add del val pr full_head base fingerprint <<<"$rec"
+	label=$(abbrev "$top")
+	[ ${#label} -gt "$WIDTH" ] && label="…${label: -$((WIDTH - 1))}"
+	[ ${#branch} -gt 22 ] && branch="${branch:0:21}…"
+	# shellcheck disable=SC2059
+	ROWS+=("$(printf "$ROW" "$label" "$branch" "$ahead" "$uniq" "$sf" "$uf" "$nf" \
+		"+$add/-$del" "$val" "$pr")")
+	T_S=$((T_S + sf))
+	T_U=$((T_U + uf))
+	T_N=$((T_N + nf))
+	T_A=$((T_A + add))
+	T_D=$((T_D + del))
+done
+
+if [ "$FORMAT" = json ]; then
+	[ "$HAS_PREVIOUS" -eq 1 ] && has_previous=true || has_previous=false
+	printf '{"type":"meta","hasPrevious":%s,"previousAt":"%s","currentAt":"%s",' \
+		"$has_previous" "$(json_escape "$PREVIOUS_AT")" "$(json_escape "$CURRENT_AT")"
+	printf '"activityCount":%d,"currentCount":%d}\n' "$ACTIVITY_COUNT" "${#RECORDS[@]}"
+
+	i=0
+	for rec in ${RECORDS[@]+"${RECORDS[@]}"}; do
+		IFS=$'\t' read -r top branch ahead uniq sf uf nf add del val pr full_head base fingerprint <<<"$rec"
+		printf '{"type":"repo","path":"%s","label":"%s","branch":"%s","head":"%s",' \
+			"$(json_escape "$top")" "$(json_escape "$(abbrev "$top")")" \
+			"$(json_escape "$branch")" "$(json_escape "$full_head")"
+		printf '"base":"%s","ahead":"%s","unique":"%s",' \
+			"$(json_escape "$base")" "$ahead" "$uniq"
+		printf '"staged":%d,"unstaged":%d,"untracked":%d,"added":%d,"deleted":%d,' \
+			"$sf" "$uf" "$nf" "$add" "$del"
+		printf '"validation":"%s","pr":"%s","activity":"%s",' \
+			"$(json_escape "$val")" "$(json_escape "$pr")" "${ACTIVITY[$i]}"
+		printf '"activityDetail":"%s","activityRow":"%s","row":"%s"}\n' \
+			"$(json_escape "${ACTIVITY_DETAILS[$i]}")" "$(json_escape "${ACTIVITY_ROWS[$i]}")" \
+			"$(json_escape "${ROWS[$i]}")"
+		i=$((i + 1))
+	done
+	i=0
+	for old in ${CLEARED_RECORDS[@]+"${CLEARED_RECORDS[@]}"}; do
+		IFS=$'\t' read -r old_top old_branch old_head old_base _ <<<"$old"
+		printf '{"type":"cleared","path":"%s","label":"%s","branch":"%s","head":"%s",' \
+			"$(json_escape "$old_top")" "$(json_escape "$(abbrev "$old_top")")" \
+			"$(json_escape "$old_branch")" "$(json_escape "$old_head")"
+		printf '"base":"%s","activity":"cleared","activityDetail":"%s","activityRow":"%s"}\n' \
+			"$(json_escape "$old_base")" "$(json_escape "${CLEARED_DETAILS[$i]}")" \
+			"$(json_escape "${CLEARED_ROWS[$i]}")"
+		i=$((i + 1))
+	done
+	exit 0
+fi
+
+printf 'SINCE LAST RUN'
+if [ "$HAS_PREVIOUS" -eq 1 ]; then
+	printf ' (%s)\n' "$PREVIOUS_AT"
+	if [ "$ACTIVITY_COUNT" -eq 0 ]; then
+		printf '%s\n' "No fleet changes since the previous scan."
+	else
+		for activity_row in ${ACTIVITY_ROWS[@]+"${ACTIVITY_ROWS[@]}"}; do
+			[ -n "$activity_row" ] && printf '%s\n' "$activity_row"
+		done
+		for activity_row in ${CLEARED_ROWS[@]+"${CLEARED_ROWS[@]}"}; do
+			printf '%s\n' "$activity_row"
+		done
+	fi
+else
+	printf '\n%s\n' "Baseline saved. The next run will show what changed since this scan."
+fi
+
+printf '\nALL CURRENT CHANGES (%d)\n' "${#RECORDS[@]}"
+if [ ${#RECORDS[@]} -eq 0 ]; then
+	printf '%s\n' "No current changes."
+fi
+
+# shellcheck disable=SC2059
+if [ ${#RECORDS[@]} -gt 0 ]; then
+	printf "$ROW\n" REPO BRANCH AHEAD UNIQ STG UNS UNT LINES VALID PR
+fi
+for row in ${ROWS[@]+"${ROWS[@]}"}; do
+	printf '%s\n' "$row"
+done
+
+# shellcheck disable=SC2059
+if [ ${#RECORDS[@]} -gt 0 ]; then
+	printf "$ROW\n" "TOTAL ${#RECORDS[@]} changed" "" "" "" "$T_S" "$T_U" "$T_N" \
+		"+$T_A/-$T_D" "" "" | sed -e 's/[[:space:]]*$//'
+fi
+
+if [ "$CLEAN_REPOS" -gt 0 ]; then
+	printf '%s\n' "$CLEAN_REPOS of $TOTAL_REPOS repositories are clean and hidden; --all shows them."
+elif [ ${#RECORDS[@]} -eq 0 ]; then
+	printf '%s\n' "No repositories found below: ${ROOTS[*]}"
+fi
+if [ "$WANT_PR" -eq 0 ] || [ "$WANT_VALIDATE" -eq 0 ]; then
+	printf '%s\n' "? means not looked up: --pr adds PR state, --validate runs tests/check.sh."
+fi

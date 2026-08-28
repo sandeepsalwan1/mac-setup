@@ -15,9 +15,11 @@
 - Before using "dynamic workflows", "ultra code" or any harness feature that immediately spawns a large swarm of subagents, always explain the tradeoffs and ask the user for explicit approval.
 - Project memory and AGENTS.md: when the user corrects recurring behavior, store one terse durable rule so it does not repeat; token-sensitive.
 - Ask the user only when progress requires information, authority, or an action only the user can provide.
-- Plan deviations: while implementing an explicitly discussed plan, if a material deviation is necessary, create local-only `decisions-HH-MM.md` recording the requested plan, the deviation, and the reason.
+- Plan deviations: while implementing an explicitly discussed plan (e.g. lavish, PRD), if a material deviation is necessary, create local-only `decisions-HH-MM.md` recording the requested plan, the deviation, and the reason.
 - Follow YAGNI principles.
-- Unrecognized changes: assume another agent; keep going and focus on your changes.
+- Always work on mainline.
 - Global installs: declare portable baseline tools in dotfiles. Keep work-specific packages local and never auto-record them.
 - Backpass is periodic memory maintenance, not a per-task step. Suggest it after recurring cross-session friction or when a project AGENTS.md is stale or overgrown. Run its model-backed analysis only with user approval, and run `backpass apply` only with explicit approval after reviewing the evidence.
-- Secret keys are in Automic Vault
+- Unrecognized changes: assume another agent; keep going and focus on your changes.
+- Push what you make. As soon as a change is committed and tested, push it to its own remote - do not leave finished work sitting on one machine. Exception: if the remote is public and the change carries material that cannot be published, stop and say so instead of pushing.
+- Read `~/AGENTS.local.md` first when it exists: it carries this machine's workplace-specific rules, which stay out of this public repository.

@@ -1,0 +1,85 @@
+#!/usr/bin/env python3
+"""ob - one command to capture into and read the Obsidian vault, from anywhere.
+
+    ob ws sync clobbers the local Config edit, always re-apply
+    npm test 2>&1 | tail -20 | ob
+    ob                          read the Inbox back
+    ob -- search query="ws sync" limit=10
+
+On this Mac it execs Obsidian's own CLI, which launches Obsidian if it is closed.
+On an ssh host it speaks to ~/.obsidian-remote.sock, which `ob-link <host>` on the
+Mac reverse-forwards to the Mac's obsidian-broker. The broker, not the raw Obsidian
+socket, is what is forwarded: see home/bin/obsidian-broker for why.
+"""
+
+import json
+import os
+import socket
+import subprocess
+import sys
+import time
+
+VAULT = "Obsidian Vault"
+INBOX = "Knowledge/Inbox.md"
+SOCK = os.path.expanduser("~/.obsidian-remote.sock")
+NATIVE = "/Applications/Obsidian.app/Contents/MacOS/obsidian-cli"
+
+MISSING_SOCKET = """ob: %s is missing.
+  On a dev desktop: this shell is not inside an `ob-link` session. From the Mac run
+    ob-link <this host>
+  and use `ob` in the shell it opens. If that says the forward failed, clear a stale
+  socket first: ssh <host> 'rm -f ~/.obsidian-remote.sock' && ssh -O exit <host>.
+  On this Mac: Obsidian is not installed at the expected path."""
+
+
+def call(args):
+    args = ["vault=" + VAULT] + args
+    if os.path.exists(NATIVE):
+        done = subprocess.run([NATIVE] + args, capture_output=True, text=True)
+        return (done.stdout + done.stderr).rstrip("\n")
+    if not os.path.exists(SOCK):
+        sys.exit(MISSING_SOCKET % SOCK)
+    conn = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    conn.settimeout(60)
+    conn.connect(SOCK)
+    conn.sendall((json.dumps({"argv": args}) + "\n").encode())
+    out = b""
+    while True:
+        chunk = conn.recv(65536)
+        if not chunk:
+            break
+        out += chunk
+    conn.close()
+    return out.decode("utf-8", "replace").rstrip("\n")
+
+
+def escape(text):
+    r"""The Obsidian CLI expands \n and \t inside a content= value."""
+    return text.replace("\\", "\\\\").replace("\n", "\\n").replace("\t", "\\t")
+
+
+def main(argv):
+    if argv[:1] == ["--"]:
+        print(call(argv[1:]))
+        return
+    said = " ".join(argv).strip()
+    piped = "" if sys.stdin.isatty() else sys.stdin.read().rstrip("\n")
+    if not said and not piped:
+        print(call(["read", "path=" + INBOX]))
+        return
+    stamp = time.strftime("%Y-%m-%dT%H:%MZ", time.gmtime())
+    # This Mac's nodename is a DHCP hex blob, which tells a reader nothing. The
+    # point of the tag is only "here or elsewhere", and being here is exactly the
+    # condition for the native CLI existing.
+    host = "mac" if os.path.exists(NATIVE) else os.uname().nodename.split(".")[0]
+    # The free text is escaped; the \n separators below are literal two-character
+    # sequences on purpose, because the CLI is what expands them into newlines.
+    content = "- %s `%s` %s" % (stamp, host, escape(said) or "captured output")
+    if piped:
+        content += "\\n\\n```text\\n" + escape(piped) + "\\n```"
+    call(["append", "path=" + INBOX, "content=" + content])
+    print("ob: -> %s/%s" % (VAULT, INBOX))
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

@@ -25,3 +25,14 @@ decisions-??-??.md
 .direnv/
 .env
 .env.*
+
+# Python bytecode from home/bin helpers
+__pycache__/
+
+# Workplace-specific material: present on the machine, deliberately never tracked,
+# because this repository is public. Back these up somewhere private, not here.
+# Paths whose names are themselves workplace-specific live in .git/info/exclude.
+/home/AGENTS.local.md
+/home/*.local.env
+/home/*.local.txt
+/scripts/link-local-extras

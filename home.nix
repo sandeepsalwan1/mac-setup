@@ -2,14 +2,25 @@
 
 let
   dotfiles = "${config.home.homeDirectory}/.dotfiles";
+  # Every portable skill, named here so the dotfiles are the single source of
+  # truth and every skill lands in all four roots. Only the tracked ones can be
+  # listed: a flake evaluates in pure mode, so it cannot discover the untracked
+  # workplace-specific skills that also live under skills/. Those are linked at
+  # activation time by scripts/link-portable-skills, which reads the directory.
   managedSkills = [
     "autoreview"
     "chrome-devtools-axi"
+    "computer-use-cli"
     "create-project-level-agents-md-file"
+    "defuddle"
     "grill-me"
     "improve-codebase-architecture"
+    "json-canvas"
     "lavish"
     "no-mistakes"
+    "obsidian-bases"
+    "obsidian-cli"
+    "obsidian-markdown"
     "shadcn"
   ];
   skillRoots = [
@@ -40,6 +51,7 @@ in
   home.stateVersion = "24.11";
 
   home.packages = with pkgs; [
+    bun
     fd
     fzf
     gitleaks
@@ -57,11 +69,17 @@ in
   ];
   fonts.fontconfig.enable = true;
 
+  # Directories holding locally-installed tool distributions are deliberately absent:
+  # their names are workplace-specific and this repository is public. ~/.zshenv.local
+  # prepends them, which is also what keeps them ahead of everything below.
   home.sessionPath = [
     "${config.home.homeDirectory}/.local/bin"
     "${config.home.homeDirectory}/.local/share/npm/bin"
     "${config.home.homeDirectory}/bin"
     "/usr/local/bin"
+    "/etc/profiles/per-user/${user}/bin"
+    "/run/current-system/sw/bin"
+    "/nix/var/nix/profiles/default/bin"
   ];
   home.sessionVariables = {
     EDITOR = "nvim";
@@ -69,6 +87,11 @@ in
     CHROME_DEVTOOLS_AXI_CHANNEL = "stable";
     CHROME_DEVTOOLS_AXI_MCP_PATH = "${config.home.homeDirectory}/.local/share/npm/lib/node_modules/chrome-devtools-mcp/build/src/bin/chrome-devtools-mcp.js";
     NPM_CONFIG_PREFIX = "${config.home.homeDirectory}/.local/share/npm";
+    TERMINFO_DIRS = "${pkgs.ncurses}/share/terminfo:/usr/share/terminfo";
+    # Host migration snapshots live here and contain whole copies of tracked
+    # checkouts. Without this the fleet view offers those copies as if they were
+    # live work, and opening one is always the wrong answer.
+    GIT_FLEET_EXCLUDE = "${config.home.homeDirectory}/Downloads/Firstmate Migration";
   };
 
   launchd.agents.chrome-devtools-axi-auto-connect = {
@@ -85,17 +108,15 @@ in
       RunAtLoad = true;
     };
   };
-  launchd.agents.herdr-prefix-key = {
-    enable = true;
-    config = {
-      ProgramArguments = [ "${dotfiles}/scripts/apply-herdr-prefix" ];
-      EnvironmentVariables.JQ_BIN = "${pkgs.jq}/bin/jq";
-      RunAtLoad = true;
-    };
-  };
-
-  home.activation.herdrPrefixKey = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    JQ_BIN=${pkgs.jq}/bin/jq ${dotfiles}/scripts/apply-herdr-prefix >/dev/null
+  # Links this machine's untracked material: the workplace-specific skills a pure
+  # flake cannot enumerate, and any local dotfile that must not be published from
+  # a public repository. Both hooks are optional, so a fresh checkout activates
+  # unchanged; the local one is gitignored by design.
+  home.activation.localExtras = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
+    ${dotfiles}/scripts/link-portable-skills >/dev/null || true
+    if [ -x ${dotfiles}/scripts/link-local-extras ]; then
+      ${dotfiles}/scripts/link-local-extras >/dev/null || true
+    fi
   '';
   home.activation.piRuntime = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
     PI_DECLARATIVE_AGENT_DIR=${./home/.pi/agent} \
@@ -110,16 +131,29 @@ in
       RunAtLoad = true;
     };
   };
+  launchd.agents.context-keeper = {
+    enable = true;
+    config = {
+      ProgramArguments = [ "${config.home.homeDirectory}/bin/context-keeper" "run" ];
+      RunAtLoad = true;
+      KeepAlive = true;
+      ProcessType = "Background";
+      ThrottleInterval = 30;
+      StandardOutPath = "${config.home.homeDirectory}/Library/Logs/context-keeper.out.log";
+      StandardErrorPath = "${config.home.homeDirectory}/Library/Logs/context-keeper.err.log";
+      EnvironmentVariables = {
+        PATH = "${config.home.homeDirectory}/.local/bin:/usr/local/bin:/usr/bin:/bin:/etc/profiles/per-user/${user}/bin:/run/current-system/sw/bin";
+      };
+    };
+  };
 
   programs.git = {
     enable = true;
     settings = {
       user = {
         name = "Sandeep Salwan";
-        email = "salwan.s@northeastern.edu";
+        email = "salwansa@amazon.com";
       };
-      url."git@github.com:".insteadOf = "https://github.com/";
-      url."git@gist.github.com:".insteadOf = "https://gist.github.com/";
     };
   };
 
@@ -127,8 +161,20 @@ in
     enable = true;
     autosuggestion.enable = true;
     syntaxHighlighting.enable = true;
+    envExtra = ''
+      typeset -U path
+      path=(
+        /etc/profiles/per-user/${user}/bin
+        /run/current-system/sw/bin
+        /nix/var/nix/profiles/default/bin
+        $path
+      )
+      export PATH
+      [[ -f "$HOME/.zshenv.local" ]] && source "$HOME/.zshenv.local"
+    '';
     initContent = ''
       bindkey '^f' autosuggest-accept
+      [[ -f "$HOME/.zshrc.local" ]] && source "$HOME/.zshrc.local"
     '';
     shellAliases = {
       ".." = "cd ..";
@@ -136,8 +182,19 @@ in
       push = "git push";
       pull = "git pull";
       m = "git switch main";
-      cc = "claude --dangerously-skip-permissions";
+      cc = "claude";
+      cx = "codex";
+      fm = "cd ${config.home.homeDirectory}/Downloads/firstmate";
       co = "codex --full-auto";
+      # Re-link every skill in the dotfiles into all four skill roots. On this
+      # machine Home Manager already did it, so this is the escape hatch for a
+      # cloud desktop and the way to pick up a newly added skill without a
+      # rebuild. Named after the habit it replaces: the original did
+      # `rm -rf ~/.claude/skills` first, which also destroyed every link this
+      # repo does not own.
+      sync-skills = "${dotfiles}/scripts/link-portable-skills";
+      # Fleet-wide git status, the shell half of :GitFleet in Neovim.
+      fleet = "git-fleet-status";
     };
   };
 
@@ -155,17 +212,33 @@ in
   };
 
   home.file = managedSkillFiles // {
+    ".local/bin/cua-cli" = {
+      source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/skills/computer-use-cli/scripts/cua-cli.mjs";
+      force = true;
+    };
+    # Both surfaces of the fleet view resolve the script through PATH, and nvim's
+    # exepath() reaches ~/.local/bin before any dotfiles fallback. Managing the
+    # symlink here is what keeps the repo copy authoritative rather than whatever
+    # was hand-copied there once, and it is the entire install step on a new host.
+    ".local/bin/git-fleet-status" = {
+      source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/scripts/git-fleet-status";
+      force = true;
+    };
     ".config/wezterm".source =
       config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/wezterm";
     ".config/nvim".source =
       config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/nvim";
-    ".config/herdr".source =
-      config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/herdr";
+    ".config/herdr/config.toml".source =
+      config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/herdr/config.toml";
 
-    ".claude/settings.json" = {
-      source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/settings.json";
+    # Workplace-specific rules live beside the shared ones but are never tracked, so
+    # this repository can stay public. The pointer line in home/AGENTS.md loads them,
+    # and the link simply dangles on a checkout that has no such file.
+    "AGENTS.local.md" = {
+      source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.local.md";
       force = true;
     };
+
     ".claude/CLAUDE.md" = {
       source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
       force = true;
@@ -196,6 +269,27 @@ in
     };
     "bin/learn" = {
       source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/bin/learn";
+      force = true;
+    };
+    "bin/context-keeper" = {
+      source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/bin/context-keeper";
+      force = true;
+    };
+    # ob goes on PATH because it is meant to be typed; the broker does not, because
+    # only launchd should start it. Copy this same ob byte-for-byte to any ssh host
+    # and it works there through the reverse-forwarded broker socket.
+    ".local/bin/ob" = {
+      source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/bin/ob";
+      force = true;
+    };
+    "bin/obsidian-broker" = {
+      source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/bin/obsidian-broker";
+      force = true;
+    };
+    # The only way the vault reaches an ssh host, and only for as long as the
+    # session it opens. Mac-only by design: it is the thing that starts the broker.
+    ".local/bin/ob-link" = {
+      source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/bin/ob-link";
       force = true;
     };
   };

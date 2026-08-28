@@ -3,5 +3,6 @@ acpx@0.13.1
 backpass@0.1.8
 chrome-devtools-axi@0.1.30
 chrome-devtools-mcp@1.7.0
-gh-axi@0.1.29
-lavish-axi@0.1.56
+gh-axi@0.1.34
+lavish-axi@0.1.62
+@earendil-works/pi-coding-agent@0.84.3

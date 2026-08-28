@@ -5,11 +5,9 @@ Verified against `herdr --default-config` on herdr 0.8.2: `split_horizontal` (de
 `close_tab` (default `prefix+shift+x` -> `prefix+&`), and `copy_mode` (unset by default ->
 `prefix+y`). All four are tmux muscle memory. The four `focus_pane_*` keys, `new_tab`,
 `workspace_picker`, `goto` and `ui.agent_panel_sort = "spaces"` already match Herdr's
-defaults. The fifth override is `f13` instead of the default `ctrl+b`. Home Manager
-maps the physical Caps Lock key beside the home row to F13 at activation and login,
-so the prefix is one easy key without colliding with this Neovim, WezTerm, Rectangle,
-or macOS configuration. Plain Tab was rejected because it is required for shell
-completion and the configured Neovim insert shortcut.
+defaults. The fifth override is `tab` instead of the default `ctrl+b`; it works
+consistently across the built-in and external keyboards. Inside Herdr, Tab is reserved
+for prefix sequences.
 
 Why it matters for teaching: the large default set he *keeps* is where the value is -
 `prefix+z` zoom, `prefix+b` sidebar, `prefix+shift+g` new worktree, `prefix+e` edit

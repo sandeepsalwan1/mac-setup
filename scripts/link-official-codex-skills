@@ -56,16 +56,34 @@ link_skill() {
 	note "linked $skill_name for Codex and Claude"
 }
 
-linked=0
-for skill_name in control-in-app-browser computer-use; do
-	if source_dir="$(find_skill "$skill_name")"; then
-		link_skill "$skill_name" "$source_dir"
-		linked=$((linked + 1))
-	else
-		note "$skill_name is not installed yet"
-	fi
-done
+retire_plugin_skill_link() {
+	local skill_name root target source root_label
+	skill_name=$1
 
-if [ "$linked" -lt 2 ]; then
-	note 'open Codex, enable the Browser and Computer Use plugins, then rerun this command'
+	for root in \
+		"$HOME/.skills" \
+		"$HOME/.agents/skills" \
+		"$HOME/.claude/skills" \
+		"$HOME/.codex/skills"; do
+		target="$root/$skill_name"
+		[ -L "$target" ] || continue
+		source="$(readlink "$target")"
+		case "$source" in
+		"$CODEX_DIR"/plugins/cache/* | "$CODEX_DIR"/.tmp/bundled-marketplaces/* | "$CODEX_DIR"/browser-marketplace/*)
+			root_label="$(printf '%s' "$root" | tr '/' '_')"
+			mkdir -p "$BACKUP_DIR/$root_label"
+			mv "$target" "$BACKUP_DIR/$root_label/$skill_name"
+			;;
+		esac
+	done
+	note "$skill_name remains plugin-managed instead of being exposed as a global skill"
+}
+
+retire_plugin_skill_link control-in-app-browser
+
+if source_dir="$(find_skill computer-use)"; then
+	link_skill computer-use "$source_dir"
+else
+	note 'computer-use is not installed yet'
+	note 'open Codex, enable the Computer Use plugin, then rerun this command'
 fi

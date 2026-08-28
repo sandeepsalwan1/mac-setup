@@ -7,10 +7,12 @@ shellcheck -x \
 	"$ROOT/bootstrap.sh" \
 	"$ROOT/rebuild.sh" \
 	"$ROOT/home/bin/learn" \
+	"$ROOT/scripts/git-fleet-status" \
 	"$ROOT/scripts/install-agent-tools" \
 	"$ROOT/scripts/install-tools" \
 	"$ROOT/scripts/link-official-codex-skills" \
 	"$ROOT/scripts/read-flake-user" \
+	"$ROOT/scripts/link-portable-skills" \
 	"$ROOT/scripts/apply-herdr-prefix" \
 	"$ROOT/scripts/check-herdr-prefix" \
 	"$ROOT/scripts/add-vault-secret" \
@@ -20,7 +22,11 @@ shellcheck -x \
 	"$ROOT/scripts/pi-firstmate" \
 	"$ROOT/scripts/setup-pi-runtime" \
 	"$ROOT/tests/security-scan.sh" \
+	"$ROOT/tests/backpass-config.test.sh" \
 	"$ROOT/tests/bootstrap.test.sh" \
+	"$ROOT/tests/computer-use-cli.test.sh" \
+	"$ROOT/tests/context-keeper.test.sh" \
+	"$ROOT/tests/git-fleet-status.test.sh" \
 	"$ROOT/tests/global-agents.test.sh" \
 	"$ROOT/tests/homebrew-config.test.sh" \
 	"$ROOT/tests/herdr-prefix.test.sh" \
@@ -30,6 +36,7 @@ shellcheck -x \
 	"$ROOT/tests/official-codex-skills.test.sh" \
 	"$ROOT/tests/security-scan.test.sh" \
 	"$ROOT/tests/pi-runtime.test.sh" \
+	"$ROOT/tests/pi-compaction.test.sh" \
 	"$ROOT/tests/setup-vault.test.sh" \
 	"$ROOT/tests/terminal-mastery.test.sh" \
 	"$ROOT/tests/vault-access.test.sh"
@@ -38,10 +45,12 @@ shfmt -d \
 	"$ROOT/bootstrap.sh" \
 	"$ROOT/rebuild.sh" \
 	"$ROOT/home/bin/learn" \
+	"$ROOT/scripts/git-fleet-status" \
 	"$ROOT/scripts/install-agent-tools" \
 	"$ROOT/scripts/install-tools" \
 	"$ROOT/scripts/link-official-codex-skills" \
 	"$ROOT/scripts/read-flake-user" \
+	"$ROOT/scripts/link-portable-skills" \
 	"$ROOT/scripts/apply-herdr-prefix" \
 	"$ROOT/scripts/check-herdr-prefix" \
 	"$ROOT/scripts/add-vault-secret" \
@@ -51,7 +60,11 @@ shfmt -d \
 	"$ROOT/scripts/pi-firstmate" \
 	"$ROOT/scripts/setup-pi-runtime" \
 	"$ROOT/tests/security-scan.sh" \
+	"$ROOT/tests/backpass-config.test.sh" \
 	"$ROOT/tests/bootstrap.test.sh" \
+	"$ROOT/tests/computer-use-cli.test.sh" \
+	"$ROOT/tests/context-keeper.test.sh" \
+	"$ROOT/tests/git-fleet-status.test.sh" \
 	"$ROOT/tests/global-agents.test.sh" \
 	"$ROOT/tests/homebrew-config.test.sh" \
 	"$ROOT/tests/herdr-prefix.test.sh" \
@@ -61,11 +74,16 @@ shfmt -d \
 	"$ROOT/tests/official-codex-skills.test.sh" \
 	"$ROOT/tests/security-scan.test.sh" \
 	"$ROOT/tests/pi-runtime.test.sh" \
+	"$ROOT/tests/pi-compaction.test.sh" \
 	"$ROOT/tests/setup-vault.test.sh" \
 	"$ROOT/tests/terminal-mastery.test.sh" \
 	"$ROOT/tests/vault-access.test.sh"
 
+"$ROOT/tests/backpass-config.test.sh"
 "$ROOT/tests/bootstrap.test.sh"
+"$ROOT/tests/computer-use-cli.test.sh"
+"$ROOT/tests/context-keeper.test.sh"
+"$ROOT/tests/git-fleet-status.test.sh"
 "$ROOT/tests/global-agents.test.sh"
 "$ROOT/tests/homebrew-config.test.sh"
 "$ROOT/tests/herdr-prefix.test.sh"
@@ -75,6 +93,7 @@ shfmt -d \
 "$ROOT/tests/official-codex-skills.test.sh"
 "$ROOT/tests/security-scan.test.sh"
 "$ROOT/tests/pi-runtime.test.sh"
+"$ROOT/tests/pi-compaction.test.sh"
 "$ROOT/tests/setup-vault.test.sh"
 "$ROOT/tests/terminal-mastery.test.sh"
 "$ROOT/tests/vault-access.test.sh"

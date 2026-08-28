@@ -27,10 +27,10 @@ It performs these steps:
 2. Gives the checkout the stable `~/.dotfiles` path used by Home Manager.
 3. Checks the configured macOS username.
 4. Applies nix-darwin and Home Manager.
-5. Maps Caps Lock to F13 and validates the one-key Herdr prefix against macOS, Rectangle, Neovim, and WezTerm conflicts.
+5. Configures and validates Tab as Herdr's one-key prefix.
 6. Installs Claude Code or Codex only when that command and its Homebrew receipt are both absent.
-7. Installs only the pinned agent tools that are missing or outdated.
-8. Links locally installed official Codex Browser and Computer Use skills when available.
+7. Installs only the pinned supporting agent tools that are missing or outdated.
+8. Links the locally installed official Codex Computer Use skill when available.
 9. Reports what remains for Automic Vault onboarding.
 10. Opens the complete macOS permission guide in a direct, verified WezTerm tab.
 
@@ -43,23 +43,32 @@ The Homebrew baseline is deliberately small:
 
 - [Automic Vault](https://www.automicvault.com/) and its hardened GitHub CLI
 - [Herdr](https://herdr.dev/)
-- Claude Code, only when `claude` is not already installed
-- Codex CLI, only when `codex` is not already installed
 - WezTerm
 
-Nix supplies `uv`, Node.js, Python, Git, Neovim, ripgrep, fd, fzf, jq,
+Nix supplies Bun, `uv`, Node.js, Python, Git, Neovim, ripgrep, fd, fzf, jq,
 lazygit, ShellCheck, shfmt, Gitleaks, TruffleHog, and Hack Nerd Font.
+
+This repository is public, so anything specific to one workplace stays out of it
+and the checkout is built to work without it. Every skill in `skills/` is exposed,
+and the ones that only make sense inside a company are kept untracked.
+Machine-specific agent rules go in `home/AGENTS.local.md`, which `home/AGENTS.md`
+points at and Git ignores.
 
 Homebrew activation uses `cleanup = "none"` and `autoUpdate = false`. It neither
 deletes work-specific packages nor records later `brew install` commands in Git.
 Claude Code and Codex are declared in `home/agent-casks.txt` and installed by a
-separate additive step. An existing command or Homebrew cask receipt satisfies
-that step regardless of how the tool originally arrived. It never reinstalls or
-upgrades a satisfied copy.
+separate additive step, so an existing command or cask receipt satisfies that step
+regardless of how the tool arrived. It never reinstalls or upgrades a satisfied copy.
 
 Pinned npm tools are listed in `home/npm-globals.txt`. `scripts/install-tools`
 checks each command's installed version before running npm, and installs the
 pinned no-mistakes release only when needed.
+
+Backpass is pinned there and configured by `.backpassrc.json`. It treats
+`AGENTS.md` as this repository's canonical memory file and places accepted skill
+extractions under the tracked `skills/` directory. `backpass scan` is a local,
+model-free inventory. Model-backed analysis is deliberate periodic maintenance,
+and `backpass apply` remains an explicit evidence-review step.
 
 ## macOS permissions
 
@@ -95,6 +104,7 @@ The repository snapshots these selected authored skills exactly as installed:
 
 - autoreview
 - chrome-devtools-axi
+- computer-use-cli
 - create-project-level-agents-md-file
 - grill-me
 - improve-codebase-architecture
@@ -114,18 +124,25 @@ region, and dedicated agent directory. That directory omits the global Calm
 command because Firstmate's project extension owns `/calm`, while retaining a
 command-free status helper that suppresses Pi 0.83+ toggle noise.
 
-Browser and Computer Use are proprietary plugins distributed with Codex, so
-their implementations are not copied into Git. The Homebrew `codex` cask
-supplies the CLI. Install and open the [Codex desktop app](https://openai.com/codex/),
-enable both official plugins, then run:
+Browser and Computer Use are proprietary plugins distributed with Codex, so their
+implementations are not copied into Git. The tracked `computer-use-cli` skill is a
+compact shell front end to the locally installed official Computer Use runtime;
+Home Manager installs its command as `~/.local/bin/cua-cli`. Browser stays managed
+by its Codex plugin rather than being linked into the global skill directories;
+browser automation uses the pinned `chrome-devtools-axi` skill. The Homebrew
+`codex` cask supplies the CLI. Install and open the
+[Codex desktop app](https://openai.com/codex/), enable both official plugins,
+then run:
 
 ```sh
 ~/.dotfiles/scripts/link-official-codex-skills
 ```
 
-That links the locally installed official skill files into the same four skill
-locations. Their runtime tools remain Codex-only. Claude uses
-`chrome-devtools-axi` for functional browser control.
+That links the official Computer Use skill into the same four skill locations.
+The `computer-use` and `computer-use-cli` entries share one runtime: the former
+exposes the native tool integration, while the latter exposes `cua-cli`. Every
+bootstrap and rebuild refreshes the official skill link to the installed plugin
+cache, while the tracked CLI skill updates with this repository.
 
 ## Pi
 
@@ -207,17 +224,9 @@ learn panic
 
 Progress remains in the browser's local storage, not in Git.
 
-Herdr uses the physical <kbd>Caps Lock</kbd> key as its one-key prefix, followed
-by the action key. Home Manager maps Caps Lock to the otherwise-unused F13 event
-at activation and login, while preserving unrelated HID key remaps. Reapplying
-at login is necessary because [Apple documents that `hidutil` mappings
-reset](https://developer.apple.com/library/archive/technotes/tn2450/_index.html)
-after restart or removal of the last keyboard service. This is easier to reach
-than Herdr's default <kbd>Ctrl</kbd>+<kbd>b</kbd> and does not
-collide with the tracked Neovim and WezTerm bindings or the current Rectangle
-and macOS shortcuts. Bootstrap refuses to continue if one of those later claims
-F13. Plain <kbd>Tab</kbd> remains available for shell completion and Neovim.
-Caps Lock no longer toggles capitalization by design.
+Herdr uses <kbd>Tab</kbd> as its one-key prefix, followed by the action key.
+Inside Herdr, tap and release Tab, then press the action key. Caps Lock retains
+its normal macOS behavior.
 
 ## Daily use
 

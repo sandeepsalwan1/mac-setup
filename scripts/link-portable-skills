@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+# Expose every skill in this repo's skills/ directory to all four skill roots.
+#
+# On macOS this is redundant: Home Manager already links the same set from
+# home.nix `managedSkills`, and re-linking to the identical target is a no-op.
+# It exists for the cloud desktops, where bootstrap.sh refuses to run at all
+# (it is nix-darwin only), so the links there were previously made by hand and
+# silently drifted - which is how a host ended up missing three skills entirely
+# while looking correctly configured. It is also how the untracked,
+# workplace-specific skills get linked, since a pure flake cannot see them.
+#
+# Idempotent. A pre-existing real file or directory is moved aside rather than
+# deleted, because a hand-written skill is not recoverable from this repo.
+
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+SKILLS_DIR="$ROOT/skills"
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/mac-setup"
+BACKUP_DIR="$STATE_DIR/skill-backups/$(date +%Y%m%d-%H%M%S)"
+
+ROOTS=(
+	"$HOME/.skills"
+	"$HOME/.agents/skills"
+	"$HOME/.claude/skills"
+	"${CODEX_HOME:-$HOME/.codex}/skills"
+)
+
+note() {
+	printf 'portable-skills: %s\n' "$1"
+}
+
+die() {
+	printf 'portable-skills: %s\n' "$1" >&2
+	exit 1
+}
+
+[ -d "$SKILLS_DIR" ] || die "missing skills directory: $SKILLS_DIR"
+
+linked=0
+skipped=0
+
+for source in "$SKILLS_DIR"/*; do
+	[ -d "$source" ] || continue
+	name="$(basename "$source")"
+
+	for root in "${ROOTS[@]}"; do
+		mkdir -p "$root"
+		target="$root/$name"
+
+		# Compare where the link ends up, not what it literally says. On macOS
+		# Home Manager owns these links and points them at a /nix/store path that
+		# only then hops to skills/<name>; a literal comparison would call that
+		# wrong and replace a correct, Nix-managed link with an unmanaged one.
+		# Skills are directories, so cd + pwd -P resolves the whole chain without
+		# needing readlink -f.
+		if [ "$(cd "$target" 2>/dev/null && pwd -P)" = "$source" ]; then
+			skipped=$((skipped + 1))
+			continue
+		fi
+
+		if [ -L "$target" ]; then
+			rm -f "$target"
+		elif [ -e "$target" ]; then
+			root_label="$(printf '%s' "$root" | tr '/' '_')"
+			mkdir -p "$BACKUP_DIR/$root_label"
+			mv "$target" "$BACKUP_DIR/$root_label/$name"
+			note "moved a pre-existing $name aside into $BACKUP_DIR/$root_label"
+		fi
+
+		ln -s "$source" "$target"
+		linked=$((linked + 1))
+	done
+done
+
+note "$linked links written, $skipped already correct"

@@ -1,13 +1,4 @@
-# Existing applicable tools are hardened. Missing tools are skipped.
-aws
-codex
-docker
-flyctl
+# Keep managed and existing developer launchers unchanged on this work Mac.
+# These two compatible hardeners are already healthy and safe to reconcile.
 gh
-heroku
-huggingface-cli
-node
-pnpm
-stripe
 sudo
-supabase

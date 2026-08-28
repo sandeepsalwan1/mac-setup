@@ -3,20 +3,26 @@ set -euo pipefail
 
 HIDUTIL_BIN="${HIDUTIL_BIN:-/usr/bin/hidutil}"
 JQ_BIN="${JQ_BIN:-$(command -v jq 2>/dev/null || true)}"
+AWK_BIN="${AWK_BIN:-/usr/bin/awk}"
+GREP_BIN="${GREP_BIN:-/usr/bin/grep}"
+UNAME_BIN="${UNAME_BIN:-/usr/bin/uname}"
 CAPS_LOCK_USAGE=30064771129
-F13_USAGE=30064771176
 
 die() {
 	printf 'herdr-prefix: %s\n' "$1" >&2
 	exit 1
 }
 
-[ "$(uname -s)" = Darwin ] || die 'this key mapping supports macOS only'
+[ "$("$UNAME_BIN" -s)" = Darwin ] || die 'this key mapping supports macOS only'
 [ -x "$HIDUTIL_BIN" ] || die 'hidutil is unavailable'
 [ -n "$JQ_BIN" ] || die 'jq is unavailable after the Nix activation'
+[ -x "$AWK_BIN" ] || die 'awk is unavailable'
+[ -x "$GREP_BIN" ] || die 'grep is unavailable'
 
 current_mapping="$("$HIDUTIL_BIN" property --get UserKeyMapping 2>/dev/null || true)"
-preserved_pairs="$(printf '%s\n' "$current_mapping" | awk -v caps="$CAPS_LOCK_USAGE" '
+# Dollar-prefixed names in this program are awk fields.
+# shellcheck disable=SC2016
+preserved_pairs="$(printf '%s\n' "$current_mapping" | "$AWK_BIN" -v caps="$CAPS_LOCK_USAGE" '
 	/^[[:space:]]*\{/ { src = ""; dst = "" }
 	/HIDKeyboardModifierMappingSrc[[:space:]]*=/ {
 		src = $3
@@ -34,8 +40,7 @@ preserved_pairs="$(printf '%s\n' "$current_mapping" | awk -v caps="$CAPS_LOCK_US
 # Dollar-prefixed names in this program are jq variables.
 # shellcheck disable=SC2016
 mapping_payload="$(printf '%s\n' "$preserved_pairs" | "$JQ_BIN" -Rnc \
-	--argjson caps "$CAPS_LOCK_USAGE" \
-	--argjson f13 "$F13_USAGE" '
+	'
 	[
 		inputs
 		| select(length > 0)
@@ -44,18 +49,15 @@ mapping_payload="$(printf '%s\n' "$preserved_pairs" | "$JQ_BIN" -Rnc \
 			HIDKeyboardModifierMappingSrc: (.[0] | tonumber),
 			HIDKeyboardModifierMappingDst: (.[1] | tonumber)
 		}
-	] + [{
-		HIDKeyboardModifierMappingSrc: $caps,
-		HIDKeyboardModifierMappingDst: $f13
-	}]
+	]
 	| {UserKeyMapping: .}
 ')"
 
 "$HIDUTIL_BIN" property --set "$mapping_payload" >/dev/null
 applied_mapping="$("$HIDUTIL_BIN" property --get UserKeyMapping 2>/dev/null || true)"
-printf '%s\n' "$applied_mapping" | grep -Fq "$CAPS_LOCK_USAGE" ||
-	die 'Caps Lock source mapping was not applied'
-printf '%s\n' "$applied_mapping" | grep -Fq "$F13_USAGE" ||
-	die 'F13 destination mapping was not applied'
+if printf '%s\n' "$applied_mapping" |
+	"$GREP_BIN" -Fq "HIDKeyboardModifierMappingSrc = $CAPS_LOCK_USAGE;"; then
+	die 'the obsolete Caps Lock source mapping is still active'
+fi
 
-printf '%s\n' 'herdr-prefix: physical Caps Lock is mapped to F13'
+printf '%s\n' 'herdr-prefix: Caps Lock is restored; Herdr uses Tab'

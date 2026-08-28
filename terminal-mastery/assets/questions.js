@@ -49,7 +49,7 @@ window.QBANK = {
     correct: 1,
     why: 'done is idle-you-have-not-seen. Focusing the tab flips it to idle; a CLI read deliberately does not. That is what makes the sidebar an unread inbox.' },
 
-  { q: 'Caps Lock then the percent key splits the pane how?',
+  { q: 'Tab then the percent key splits the pane how?',
     a: ['Into two panes arranged side by side',
         'Into two panes stacked top and bottom',
         'Into a new tab holding the second pane'],
@@ -64,15 +64,15 @@ window.QBANK = {
     why: 'Herdr is a background server. Closing the window is a detach. Only `herdr server stop` kills the panes.' },
 
   { q: 'Fastest way to read a long stack trace from an agent pane?',
-    a: ['Caps Lock then e, opening scrollback in Neovim',
-        'Caps Lock then y, then select it in copy mode',
-        'Caps Lock then z, then scroll back through it'],
+    a: ['Tab then e, opening scrollback in Neovim',
+        'Tab then y, then select it in copy mode',
+        'Tab then z, then scroll back through it'],
     correct: 0,
     why: 'edit_scrollback drops the history into Neovim with search, motions and yank. Copy mode works but is slower for anything long.' },
 
   { q: 'How do you find out what a key does on YOUR machine?',
     a: ['Read the keys table in your own config.toml',
-        'Press Caps Lock and then the question-mark key',
+        'Press Tab and then the question-mark key',
         'Search the herdr.dev configuration reference'],
     correct: 1,
     why: 'Your config overrides four actions plus the prefix. The site shows defaults. Only the in-app list shows the merged result, which is what actually happens.' }
@@ -267,7 +267,7 @@ window.QBANK = {
         'The keybindings in home/.config/herdr/config.toml',
         'A cask added to the list in configuration.nix'],
     correct: 1,
-    why: 'Anything under home/ is symlinked live - reload it with Caps Lock Shift+R. Aliases and package lists live in .nix files and need a switch.' }
+    why: 'Anything under home/ is symlinked live - reload it with Tab Shift+R. Aliases and package lists live in .nix files and need a switch.' }
 ]
 };
 

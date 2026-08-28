@@ -3,16 +3,12 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 HERDR_CONFIG="${HERDR_CONFIG:-$ROOT/home/.config/herdr/config.toml}"
+HERDR_FALLBACK_BIN="${HERDR_FALLBACK_BIN:-/opt/homebrew/bin/herdr}"
 HERDR_BIN="${HERDR_BIN:-$(command -v herdr 2>/dev/null || true)}"
+[ -n "$HERDR_BIN" ] || HERDR_BIN="$HERDR_FALLBACK_BIN"
 APPLY_PREFIX_BIN="${APPLY_PREFIX_BIN:-$ROOT/scripts/apply-herdr-prefix}"
 HIDUTIL_BIN="${HIDUTIL_BIN:-/usr/bin/hidutil}"
-DEFAULTS_BIN="${DEFAULTS_BIN:-/usr/bin/defaults}"
-PLUTIL_BIN="${PLUTIL_BIN:-/usr/bin/plutil}"
-JQ_BIN="${JQ_BIN:-$(command -v jq 2>/dev/null || true)}"
-OPEN_BIN="${OPEN_BIN:-/usr/bin/open}"
-RECTANGLE_PLIST="${RECTANGLE_PLIST:-$HOME/Library/Preferences/com.knollsoft.Rectangle.plist}"
 CAPS_LOCK_USAGE=30064771129
-F13_USAGE=30064771176
 
 note() {
 	printf 'herdr-prefix: %s\n' "$1"
@@ -25,61 +21,21 @@ die() {
 
 [ "$(uname -s)" = Darwin ] || die 'this keybinding check supports macOS only'
 [ -r "$HERDR_CONFIG" ] || die "missing Herdr config: $HERDR_CONFIG"
-grep -Eq '^[[:space:]]*prefix[[:space:]]*=[[:space:]]*"f13"[[:space:]]*$' "$HERDR_CONFIG" ||
-	die 'Herdr prefix must remain f13 for the physical Caps Lock mapping'
-[ -n "$HERDR_BIN" ] || die 'Herdr is unavailable after the Homebrew activation'
+grep -Eq '^[[:space:]]*prefix[[:space:]]*=[[:space:]]*"tab"[[:space:]]*$' "$HERDR_CONFIG" ||
+	die 'Herdr prefix must remain tab'
+[ -x "$HERDR_BIN" ] || die 'Herdr is unavailable after the Homebrew activation'
 [ -x "$HIDUTIL_BIN" ] || die 'hidutil is unavailable'
-[ -n "$JQ_BIN" ] || die 'jq is unavailable after the Nix activation'
 HERDR_CONFIG_PATH="$HERDR_CONFIG" "$HERDR_BIN" config check >/dev/null
 
-if rg -i '<f13>|(^|[^a-z0-9])f13([^a-z0-9]|$)' \
-	"$ROOT/home/.config/nvim" "$ROOT/home/.config/wezterm" >/dev/null; then
-	die 'F13 conflicts with the tracked Neovim or WezTerm configuration'
-fi
-
-macos_conflicts="$({
-	"$DEFAULTS_BIN" export com.apple.symbolichotkeys - 2>/dev/null || true
-} | "$PLUTIL_BIN" -convert json -o - - 2>/dev/null | "$JQ_BIN" -r '
-	.AppleSymbolicHotKeys // {}
-	| to_entries[]
-	| select(.value.enabled == true)
-	| select((.value.value.parameters[1] // -1) == 105)
-	| select((.value.value.parameters[2] // -1) == 0)
-	| .key
-' 2>/dev/null || true)"
-if [ -n "$macos_conflicts" ]; then
-	note "macOS uses bare F13 in symbolic shortcut IDs: $(printf '%s' "$macos_conflicts" | paste -sd, -)"
-	"$OPEN_BIN" 'x-apple.systempreferences:com.apple.Keyboard-Settings.extension?Shortcuts' || true
-	die 'disable the listed macOS shortcut, then rerun bootstrap.sh'
-fi
-
-rectangle_conflicts=''
-if [ -r "$RECTANGLE_PLIST" ] && [ -n "$JQ_BIN" ]; then
-	rectangle_conflicts="$({
-		"$PLUTIL_BIN" -convert json -o - "$RECTANGLE_PLIST" 2>/dev/null || true
-	} | "$JQ_BIN" -r '
-		to_entries[]
-		| select(.value | type == "object")
-		| select((.value.keyCode // -1) == 105)
-		| select((.value.modifierFlags // -1) == 0)
-		| .key
-	' 2>/dev/null || true)"
-fi
-if [ -n "$rectangle_conflicts" ]; then
-	note "Rectangle uses bare F13 in: $(printf '%s' "$rectangle_conflicts" | paste -sd, -)"
-	"$OPEN_BIN" -b com.knollsoft.Rectangle || true
-	die 'change the listed Rectangle shortcut, then rerun bootstrap.sh'
-fi
-
 applied_mapping="$("$HIDUTIL_BIN" property --get UserKeyMapping 2>/dev/null || true)"
-if ! printf '%s\n' "$applied_mapping" | grep -Fq "$CAPS_LOCK_USAGE" ||
-	! printf '%s\n' "$applied_mapping" | grep -Fq "$F13_USAGE"; then
+if printf '%s\n' "$applied_mapping" |
+	grep -Fq "HIDKeyboardModifierMappingSrc = $CAPS_LOCK_USAGE;"; then
 	"$APPLY_PREFIX_BIN" >/dev/null
 	applied_mapping="$("$HIDUTIL_BIN" property --get UserKeyMapping 2>/dev/null || true)"
 fi
-printf '%s\n' "$applied_mapping" | grep -Fq "$CAPS_LOCK_USAGE" ||
-	die 'the physical Caps Lock source mapping is absent'
-printf '%s\n' "$applied_mapping" | grep -Fq "$F13_USAGE" ||
-	die 'the F13 destination mapping is absent'
+if printf '%s\n' "$applied_mapping" |
+	grep -Fq "HIDKeyboardModifierMappingSrc = $CAPS_LOCK_USAGE;"; then
+	die 'the obsolete Caps Lock mapping is still active'
+fi
 
-note 'physical Caps Lock emits F13, Herdr accepts it, and no tracked shortcut conflicts'
+note 'Tab is the Herdr prefix and Caps Lock is unmodified'

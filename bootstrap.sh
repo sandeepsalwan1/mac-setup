@@ -81,7 +81,8 @@ note 'step 6/10: additive Claude Code and Codex'
 note 'step 7/10: pinned agent tools'
 "$DIR/scripts/install-tools"
 
-note 'step 8/10: official Codex plugin skills'
+note 'step 8/10: skill links'
+"$DIR/scripts/link-portable-skills"
 "$DIR/scripts/link-official-codex-skills"
 
 note 'step 9/10: Automic Vault status'
@@ -100,7 +101,7 @@ note 'done'
 printf '%s\n' \
 	'Finish the guide in its direct WezTerm tab, then run there:' \
 	'  ~/.dotfiles/scripts/setup-vault --all' \
-	'Install/open the Codex desktop app and enable Browser and Computer Use, then run:' \
+	'If an approved Codex installation provides Computer Use, link its skill with:' \
 	'  ~/.dotfiles/scripts/link-official-codex-skills' \
 	'Open the terminal course with:' \
 	'  learn'

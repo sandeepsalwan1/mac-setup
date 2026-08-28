@@ -2,12 +2,14 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+APPLICATIONS_DIR="${APPLICATIONS_DIR:-/Applications}"
 WEZTERM_APP="${WEZTERM_APP:-/Applications/WezTerm.app}"
 EXPECTED_WEZTERM_BUNDLE_ID="${EXPECTED_WEZTERM_BUNDLE_ID:-com.github.wez.wezterm}"
 EXPECTED_WEZTERM_TEAM_ID="${EXPECTED_WEZTERM_TEAM_ID:-P4A6FU9KZ3}"
 PLIST_BUDDY_BIN="${PLIST_BUDDY_BIN:-/usr/libexec/PlistBuddy}"
 CODESIGN_BIN="${CODESIGN_BIN:-/usr/bin/codesign}"
 PS_BIN="${PS_BIN:-/bin/ps}"
+READLINK_BIN="${READLINK_BIN:-/usr/bin/readlink}"
 OPEN_BIN="${OPEN_BIN:-/usr/bin/open}"
 OSASCRIPT_BIN="${OSASCRIPT_BIN:-/usr/bin/osascript}"
 PROFILES_BIN="${PROFILES_BIN:-/usr/bin/profiles}"
@@ -71,7 +73,11 @@ verify_signed_app() {
 
 find_codex_app() {
 	local candidate
-	for candidate in "${CODEX_APP:-}" '/Applications/Codex.app' '/Applications/Codex 2.app'; do
+	for candidate in \
+		"${CODEX_APP:-}" \
+		"$APPLICATIONS_DIR/ChatGPT.app" \
+		"$APPLICATIONS_DIR/Codex.app" \
+		"$APPLICATIONS_DIR/Codex 2.app"; do
 		[ -n "$candidate" ] || continue
 		if [ -d "$candidate" ]; then
 			printf '%s\n' "$candidate"
@@ -79,6 +85,17 @@ find_codex_app() {
 		fi
 	done
 	return 1
+}
+
+is_verified_wezterm_process() {
+	local command_line=$1 command_path expected_path link_target
+
+	command_path="${command_line%% *}"
+	expected_path="$WEZTERM_APP/Contents/MacOS/wezterm-gui"
+	[ "$command_path" = "$expected_path" ] && return 0
+	[ -L "$command_path" ] || return 1
+	link_target="$("$READLINK_BIN" "$command_path" 2>/dev/null || true)"
+	[ "$link_target" = "$expected_path" ]
 }
 
 session_kind() {
@@ -93,7 +110,7 @@ session_kind() {
 	while [ -n "$current_pid" ] && [ "$current_pid" -gt 1 ] 2>/dev/null; do
 		command_line="$("$PS_BIN" -o command= -p "$current_pid" 2>/dev/null || true)"
 		case "$command_line" in
-		*'/Codex.app/'* | *'/Codex 2.app/'* | codex\ * | */codex\ *)
+		*'/ChatGPT.app/'* | *'/Codex.app/'* | *'/Codex 2.app/'* | codex\ * | */codex\ *)
 			printf '%s\n' codex
 			return
 			;;
@@ -101,11 +118,11 @@ session_kind() {
 			printf '%s\n' herdr
 			return
 			;;
-		*'/WezTerm.app/Contents/MacOS/wezterm-gui'*)
+		esac
+		if is_verified_wezterm_process "$command_line"; then
 			printf '%s\n' wezterm
 			return
-			;;
-		esac
+		fi
 		current_pid="$("$PS_BIN" -o ppid= -p "$current_pid" 2>/dev/null | tr -d ' ' || true)"
 	done
 

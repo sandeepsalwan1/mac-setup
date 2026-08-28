@@ -1,0 +1,112 @@
+#!/usr/bin/env python3
+"""Serve a narrowed Obsidian CLI over a unix socket, for ssh to reverse-forward.
+
+Obsidian's own CLI socket (~/.obsidian-cli.sock) accepts `eval code=<JS>`, which
+runs arbitrary JavaScript inside the Obsidian process. Reverse-forwarding that
+socket to a shared dev desktop would therefore hand remote code execution on this
+Mac to anything running as this uid over there. That is the concrete blocker that
+justifies a broker rather than forwarding the real socket: this process forwards
+only the read and note-write subcommands below, and nothing else, ever.
+
+Wire protocol, deliberately the same shape as Obsidian's own so `ob` needs one
+code path: one JSON line in, {"argv": [...]}, raw text out until EOF.
+"""
+
+import json
+import os
+import socket
+import subprocess
+import sys
+
+NATIVE = "/Applications/Obsidian.app/Contents/MacOS/obsidian-cli"
+SOCK = os.path.expanduser("~/.obsidian-remote.sock")
+MAX_REQUEST = 1 << 20
+
+# Reads, and writes that can only land inside a note. `eval`, `plugin:*`,
+# `vault:*` and anything unrecognised are refused. Adding a name here widens what
+# every ssh host can do to this Mac, so add one only on purpose.
+ALLOWED = frozenset(
+    {
+        "append",
+        "backlinks",
+        "base:query",
+        "bookmark",
+        "create",
+        "daily:append",
+        "daily:path",
+        "daily:read",
+        "links",
+        "list",
+        "read",
+        "search",
+        "tags",
+        "version",
+    }
+)
+
+
+def subcommand(argv):
+    """The first bare word. Obsidian passes options as `key=value`, so anything
+    containing '=' is an argument, not the command being run."""
+    for arg in argv:
+        if "=" not in arg:
+            return arg
+    return None
+
+
+def handle(payload):
+    try:
+        request = json.loads(payload)
+    except ValueError:
+        return "obsidian-broker: malformed request\n"
+    argv = request.get("argv")
+    if not isinstance(argv, list) or not all(isinstance(a, str) for a in argv):
+        return "obsidian-broker: argv must be a list of strings\n"
+    name = subcommand(argv)
+    if name not in ALLOWED:
+        return "obsidian-broker: refused %r; allowed: %s\n" % (
+            name,
+            " ".join(sorted(ALLOWED)),
+        )
+    done = subprocess.run([NATIVE] + argv, capture_output=True, text=True, timeout=60)
+    return done.stdout + done.stderr
+
+
+def main():
+    if not os.path.exists(NATIVE):
+        sys.exit("obsidian-broker: %s is missing" % NATIVE)
+    # A stale socket from an unclean exit would make bind() fail forever.
+    try:
+        os.unlink(SOCK)
+    except FileNotFoundError:
+        pass
+    server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    old_umask = os.umask(0o177)
+    try:
+        server.bind(SOCK)
+    finally:
+        os.umask(old_umask)
+    server.listen(8)
+    while True:
+        conn, _ = server.accept()
+        try:
+            conn.settimeout(30)
+            buf = b""
+            while b"\n" not in buf and len(buf) < MAX_REQUEST:
+                chunk = conn.recv(65536)
+                if not chunk:
+                    break
+                buf += chunk
+            reply = handle(buf.split(b"\n", 1)[0].decode("utf-8", "replace"))
+            conn.sendall(reply.encode())
+        except Exception as exc:  # one bad client must not stop the broker
+            try:
+                conn.sendall(("obsidian-broker: %s\n" % exc).encode())
+            except OSError:
+                pass
+        finally:
+            conn.close()
+
+
+if __name__ == "__main__":
+    main()

@@ -73,4 +73,13 @@ run_bootstrap >"$TMP_ROOT/second.out"
 grep -Fq 'Nix is already installed' "$TMP_ROOT/second.out" ||
 	fail 'bootstrap did not detect the existing Nix command'
 
+stable_user_path="/etc/profiles/per-user/\${user}/bin"
+for stable_path in \
+	"$stable_user_path" \
+	'/run/current-system/sw/bin' \
+	'/nix/var/nix/profiles/default/bin'; do
+	[ "$(rg -Fc "$stable_path" "$ROOT/home.nix")" -ge 2 ] ||
+		fail "$stable_path is not restored in both normal and inherited-guard zsh sessions"
+done
+
 pass 'bootstrap completes end to end and is safe to rerun'

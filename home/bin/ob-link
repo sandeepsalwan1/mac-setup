@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# ob-link <host> [command...] - open an ssh session where `ob` reaches this vault.
+#
+# With no command you get an interactive shell; with one it runs there and exits.
+# Anything after <host> is the remote command, not ssh flags: put ssh options in
+# ~/.ssh/config for the host instead.
+#
+# Deliberately ephemeral and foreground: it starts obsidian-broker, hands the remote
+# a socket that maps onto it, and stops the broker when the session ends. There is no
+# launchd agent and no RemoteForward line in ~/.ssh/config, so the channel exists only
+# while you are sitting in the session that asked for it.
+#
+# The broker, not Obsidian's own ~/.obsidian-cli.sock, is what gets forwarded: that
+# socket accepts `eval code=<javascript>` and forwarding it would be code execution
+# inside this Mac's Obsidian from the remote host.
+set -euo pipefail
+
+BROKER="${OB_BROKER:-$HOME/bin/obsidian-broker}"
+LOCAL_SOCK="$HOME/.obsidian-remote.sock"
+
+[ "$#" -ge 1 ] || {
+	printf 'usage: ob-link <host> [remote command...]\n' >&2
+	exit 2
+}
+host=$1
+shift
+
+# ssh rejects a relative remote socket path outright ("Bad remote forwarding
+# specification"), and the remote home is not always /home/$USER, so ask.
+remote_home=$(ssh -o BatchMode=yes "$host" 'printf %s "$HOME"') || {
+	printf 'ob-link: cannot reach %s\n' "$host" >&2
+	exit 1
+}
+REMOTE_SOCK="$remote_home/.obsidian-remote.sock"
+
+[ -x "$BROKER" ] || {
+	printf 'ob-link: %s is missing or not executable\n' "$BROKER" >&2
+	exit 1
+}
+
+broker_pid=''
+cleanup() {
+	[ -n "$broker_pid" ] && kill "$broker_pid" 2>/dev/null
+	# Leaving the remote socket behind blocks the next forward, because sshd here
+	# runs with streamlocalbindunlink=no.
+	ssh -o BatchMode=yes "$host" "rm -f '$REMOTE_SOCK'" 2>/dev/null || true
+	return 0
+}
+trap cleanup EXIT INT TERM
+
+if [ -S "$LOCAL_SOCK" ] && printf '{"argv":["version"]}\n' | nc -U "$LOCAL_SOCK" >/dev/null 2>&1; then
+	printf 'ob-link: reusing the broker already listening on %s\n' "$LOCAL_SOCK"
+else
+	"$BROKER" &
+	broker_pid=$!
+	for _ in 1 2 3 4 5 6 7 8 9 10; do
+		[ -S "$LOCAL_SOCK" ] && break
+		sleep 0.2
+	done
+	[ -S "$LOCAL_SOCK" ] || {
+		printf 'ob-link: the broker did not create %s (is Obsidian installed?)\n' "$LOCAL_SOCK" >&2
+		exit 1
+	}
+fi
+
+# Not ExitOnForwardFailure: if Obsidian is closed the forward fails and you still
+# want the shell. `ob` on the far side says so plainly in that case.
+ssh -R "$REMOTE_SOCK:$LOCAL_SOCK" "$host" "$@"

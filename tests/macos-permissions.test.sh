@@ -8,10 +8,15 @@ TMP_ROOT="$(dotfiles_test_tmproot macos-permissions)"
 TEST_BIN="$TMP_ROOT/bin"
 FIXTURE_WEZTERM_APP="$TMP_ROOT/Applications/WezTerm.app"
 FIXTURE_CODEX_APP="$TMP_ROOT/Applications/Codex.app"
+FIXTURE_CHATGPT_APP="$TMP_ROOT/Applications/ChatGPT.app"
+FIXTURE_WEZTERM_LINK="$TMP_ROOT/opt/homebrew/bin/wezterm-gui"
 FIXTURE_OPEN_LOG="$TMP_ROOT/open.log"
 FIXTURE_OSASCRIPT_LOG="$TMP_ROOT/osascript.log"
 FIXTURE_WEZTERM_LOG="$TMP_ROOT/wezterm.log"
-mkdir -p "$TEST_BIN" "$FIXTURE_WEZTERM_APP/Contents" "$FIXTURE_CODEX_APP/Contents"
+mkdir -p "$TEST_BIN" "$FIXTURE_WEZTERM_APP/Contents/MacOS" "$FIXTURE_CODEX_APP/Contents" \
+	"$FIXTURE_CHATGPT_APP/Contents" \
+	"$(dirname "$FIXTURE_WEZTERM_LINK")"
+ln -s "$FIXTURE_WEZTERM_APP/Contents/MacOS/wezterm-gui" "$FIXTURE_WEZTERM_LINK"
 
 cat >"$TEST_BIN/plistbuddy" <<'SH'
 #!/usr/bin/env bash
@@ -23,7 +28,7 @@ case "${*: -1}" in
 		printf '%s\n' com.github.wez.wezterm
 	fi
 	;;
-*Codex.app*) printf '%s\n' com.openai.codex ;;
+*Codex.app* | *ChatGPT.app*) printf '%s\n' com.openai.codex ;;
 *) exit 1 ;;
 esac
 SH
@@ -33,14 +38,14 @@ cat >"$TEST_BIN/codesign" <<'SH'
 if [ "${1:-}" = --verify ]; then
 	case "${*: -1}" in
 	*WezTerm.app*) [ "${BAD_WEZTERM_SIGNATURE:-0}" != 1 ] ;;
-	*Codex.app*) exit 0 ;;
+	*Codex.app* | *ChatGPT.app*) exit 0 ;;
 	*) exit 1 ;;
 	esac
 	exit
 fi
 case "${*: -1}" in
 *WezTerm.app*) printf '%s\n' 'TeamIdentifier=P4A6FU9KZ3' >&2 ;;
-*Codex.app*) printf '%s\n' 'TeamIdentifier=2DC432GLL2' >&2 ;;
+*Codex.app* | *ChatGPT.app*) printf '%s\n' 'TeamIdentifier=2DC432GLL2' >&2 ;;
 *) exit 1 ;;
 esac
 SH
@@ -64,6 +69,15 @@ printf '%s\n' 'Enrolled via DEP: Yes'
 printf '%s\n' 'MDM enrollment: Yes'
 SH
 
+cat >"$TEST_BIN/ps" <<'SH'
+#!/usr/bin/env bash
+case "$*" in
+*'command='*) printf '%s\n' "$WEZTERM_LINK start" ;;
+*'ppid='*) printf '%s\n' 1 ;;
+*) exit 64 ;;
+esac
+SH
+
 cat >"$TEST_BIN/wezterm" <<'SH'
 #!/usr/bin/env bash
 printf '%s\n' "$*" >>"$WEZTERM_LOG"
@@ -76,6 +90,7 @@ run_permissions() {
 		CODEX_APP="$FIXTURE_CODEX_APP" \
 		PLIST_BUDDY_BIN="$TEST_BIN/plistbuddy" \
 		CODESIGN_BIN="$TEST_BIN/codesign" \
+		PS_BIN="$TEST_BIN/ps" \
 		OPEN_BIN="$TEST_BIN/open" \
 		OSASCRIPT_BIN="$TEST_BIN/osascript" \
 		PROFILES_BIN="$TEST_BIN/profiles" \
@@ -83,9 +98,17 @@ run_permissions() {
 		OPEN_LOG="$FIXTURE_OPEN_LOG" \
 		OSASCRIPT_LOG="$FIXTURE_OSASCRIPT_LOG" \
 		WEZTERM_LOG="$FIXTURE_WEZTERM_LOG" \
+		WEZTERM_LINK="$FIXTURE_WEZTERM_LINK" \
 		MAC_SETUP_NONINTERACTIVE=1 \
 		"$ROOT/scripts/setup-macos-permissions" "$@"
 }
+
+run_permissions --check-wezterm
+ln -sfn "$TMP_ROOT/not-wezterm" "$FIXTURE_WEZTERM_LINK"
+if run_permissions --check-wezterm; then
+	fail 'launcher check accepted a Homebrew symlink to an unexpected executable'
+fi
+ln -sfn "$FIXTURE_WEZTERM_APP/Contents/MacOS/wezterm-gui" "$FIXTURE_WEZTERM_LINK"
 
 MAC_SETUP_SESSION_KIND=wezterm run_permissions --status >"$TMP_ROOT/status.out"
 grep -Fq 'verified WezTerm' "$TMP_ROOT/status.out" ||
@@ -94,6 +117,21 @@ grep -Fq 'verified Codex' "$TMP_ROOT/status.out" ||
 	fail 'status did not verify Codex identity'
 grep -Fq 'this Mac is managed' "$TMP_ROOT/status.out" ||
 	fail 'status did not report MDM enrollment'
+
+MAC_SETUP_SESSION_KIND=wezterm \
+	CODEX_APP='' \
+	WEZTERM_APP="$FIXTURE_WEZTERM_APP" \
+	PLIST_BUDDY_BIN="$TEST_BIN/plistbuddy" \
+	CODESIGN_BIN="$TEST_BIN/codesign" \
+	PS_BIN="$TEST_BIN/ps" \
+	OPEN_BIN="$TEST_BIN/open" \
+	OSASCRIPT_BIN="$TEST_BIN/osascript" \
+	PROFILES_BIN="$TEST_BIN/profiles" \
+	APPLICATIONS_DIR="$TMP_ROOT/Applications" \
+	HOME="$TMP_ROOT" \
+	"$ROOT/scripts/setup-macos-permissions" --status >"$TMP_ROOT/chatgpt-status.out"
+grep -Fq "verified Codex: $FIXTURE_CHATGPT_APP" "$TMP_ROOT/chatgpt-status.out" ||
+	fail 'status did not discover the signed ChatGPT Codex launcher'
 
 MAC_SETUP_SESSION_KIND=wezterm run_permissions --guide >"$TMP_ROOT/guide.out"
 for anchor in \

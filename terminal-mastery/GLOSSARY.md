@@ -63,7 +63,7 @@ _Avoid_: split, terminal
 
 **Prefix**:
 The keystroke that tells Herdr the next key is for Herdr, not for the program inside
-the pane. Configured here as <kbd>Caps Lock</kbd>.
+the pane. Configured here as <kbd>Tab</kbd>.
 _Avoid_: escape key, modifier
 
 **Detach**:
