@@ -17,7 +17,7 @@
 #   degradation with one clear diagnostic;
 # - working ship: geometry, cadence, colors, resize, narrow fallback,
 #   freeze/resume, timer disposal, extension lifecycle;
-# - real Pi 0.82 TUI proofs in tmux without credentials or provider calls.
+# - real Pi 0.84.3 TUI proofs in tmux without credentials or provider calls.
 set -u
 
 # shellcheck source=tests/lib.sh
@@ -82,6 +82,7 @@ build_node_fixture() {
   local fixture=$1
   mkdir -p "$fixture/calm" "$fixture/node_modules/@earendil-works"
   cp -R "$CALM_DIR/index.ts" "$CALM_DIR/lib" "$fixture/calm/"
+  cp "$ROOT/home/.pi/agent/extensions/firstmate-calm-status.ts" "$fixture/"
   ln -s "$PI_PACKAGE_DIR" "$fixture/node_modules/@earendil-works/pi-coding-agent"
   ln -s "$PI_PACKAGE_DIR/node_modules/@earendil-works/pi-tui" "$fixture/node_modules/@earendil-works/pi-tui"
   ln -s "$PI_PACKAGE_DIR/node_modules/typebox" "$fixture/node_modules/typebox"
@@ -144,9 +145,9 @@ test_zero_coupling_and_state_file() {
     assert_not_contains "$(cat "$file")" "$pat_dash" "$file mentions $pat_dash"
     assert_not_contains "$(cat "$file")" "$separator" "$file contains the operational separator"
   done
-  # The upstream project name may appear only in a license attribution.
+  # The standalone extension tree may name the upstream project only for attribution.
   local attribution_name="First""mate"
-  license_hits=$(grep -rni "$attribution_name" "$CALM_DIR" "$ROOT/README.md" "$ROOT/home.nix" 2>/dev/null | grep -v "Adapted from" || true)
+  license_hits=$(grep -rni "$attribution_name" "$CALM_DIR" 2>/dev/null | grep -v "Adapted from" || true)
   [ -z "$license_hits" ] || fail "unexpected upstream references outside license attribution: $license_hits"
   grep -q "MIT License" "$CALM_DIR/LICENSE" || fail "calm LICENSE lost the MIT permission text"
   grep -q "Copyright (c) 2026 Kun Chen" "$CALM_DIR/LICENSE" || fail "calm LICENSE lost the copyright notice"
@@ -244,7 +245,7 @@ test_static_typescript_and_repo_wiring() {
     "skipLibCheck": true,
     "verbatimModuleSyntax": true
   },
-  "include": ["calm/**/*.ts"]
+  "include": ["calm/**/*.ts", "firstmate-calm-status.ts"]
 }
 JSON
     (cd "$fixture" && tsc -p tsconfig.json) \
@@ -252,6 +253,184 @@ JSON
   fi
 
   pass "static wiring: Home Manager auto-load intact, TypeScript typechecks, existing JS extension parses"
+}
+
+test_firstmate_calm_status_mitigation() {
+  local fixture out status
+  if ! command -v node >/dev/null 2>&1 || ! have_pi_package; then
+    echo "skip: node or installed Pi package not found for Firstmate Calm status mitigation"
+    return 0
+  fi
+
+  fixture="$TMP_ROOT/firstmate-calm-status"
+  build_node_fixture "$fixture"
+  out=$(cd "$fixture" && node --input-type=module 2>&1 <<'JS'
+import { pathToFileURL } from "node:url";
+
+const extension = await import(pathToFileURL(`${process.cwd()}/firstmate-calm-status.ts`).href);
+const check = (condition, message) => {
+  if (!condition) throw new Error(message);
+};
+
+delete process.env.FM_PI_HARNESS;
+let ordinaryHandlerCount = 0;
+extension.default({
+  on() {
+    ordinaryHandlerCount += 1;
+  },
+});
+check(
+  ordinaryHandlerCount === 0,
+  "Firstmate status mitigation activated in an ordinary Pi runtime",
+);
+
+process.env.FM_PI_HARNESS = "pi";
+const handlers = new Map();
+let registeredCommands = 0;
+const pi = {
+  on(event, handler) {
+    const list = handlers.get(event) ?? [];
+    list.push(handler);
+    handlers.set(event, list);
+  },
+  registerCommand() {
+    registeredCommands += 1;
+  },
+};
+extension.default(pi);
+check(registeredCommands === 0, "status mitigation registered a duplicate command");
+
+let editorText = "/calm";
+let terminalHandler;
+let terminalHandlerRemoved = false;
+let expandedCalls = 0;
+let expanded = false;
+const statuses = [];
+const originalSetToolsExpanded = (value) => {
+  expandedCalls += 1;
+  expanded = value;
+};
+const ctx = {
+  ui: {
+    getEditorText: () => editorText,
+    getToolsExpanded: () => expanded,
+    onTerminalInput(handler) {
+      terminalHandler = handler;
+      return () => {
+        terminalHandlerRemoved = true;
+      };
+    },
+    setStatus(key, value) {
+      statuses.push([key, value]);
+    },
+    setToolsExpanded: originalSetToolsExpanded,
+  },
+};
+
+for (const handler of handlers.get("session_start") ?? []) {
+  await handler({ reason: "startup" }, ctx);
+}
+check(typeof terminalHandler === "function", "status mitigation did not observe terminal input");
+terminalHandler("\r");
+await new Promise((resolve) => setTimeout(resolve, 10));
+check(
+  statuses.length === 0,
+  "status mitigation completed before the delayed /calm handler repaint",
+);
+ctx.ui.setToolsExpanded(true);
+ctx.ui.setToolsExpanded(false);
+check(expandedCalls === 0, "Pi 0.83+ expansion status was not suppressed during /calm");
+check(
+  statuses.some(([key, value]) => key === "firstmate-calm-submit" && value === undefined),
+  "status mitigation did not request a quiet redraw when /calm completed",
+);
+ctx.ui.setToolsExpanded(true);
+check(expandedCalls === 1, "status mitigation suppressed expansion after /calm completed");
+
+editorText = "/other";
+terminalHandler("\r");
+ctx.ui.setToolsExpanded(false);
+check(expandedCalls === 2, "status mitigation affected an unrelated command");
+
+editorText = "/calm";
+terminalHandler("\r");
+await new Promise((resolve) => setTimeout(resolve, 300));
+ctx.ui.setToolsExpanded(true);
+check(
+  expandedCalls === 3,
+  "failed /calm left stale suppression armed for an unrelated expansion",
+);
+
+editorText = "/calm";
+terminalHandler("\r");
+ctx.ui.setToolsExpanded(false);
+check(expandedCalls === 3, "shutdown-path /calm expansion was not suppressed");
+const statusCountBeforeShutdown = statuses.length;
+for (const handler of handlers.get("session_shutdown") ?? []) {
+  await handler({}, ctx);
+}
+await new Promise((resolve) => setTimeout(resolve, 10));
+check(terminalHandlerRemoved, "status mitigation did not remove its terminal handler");
+check(
+  ctx.ui.setToolsExpanded === originalSetToolsExpanded,
+  "status mitigation did not restore Pi's original expansion method",
+);
+check(
+  statuses.length === statusCountBeforeShutdown,
+  "status mitigation timer touched the UI after session shutdown",
+);
+ctx.ui.setToolsExpanded(false);
+check(expandedCalls === 4, "status mitigation was not disabled after session shutdown");
+JS
+)
+  status=$?
+  [ "$status" -eq 0 ] || fail "Firstmate Calm status mitigation failed: $out"
+  [ -z "$out" ] || fail "Firstmate Calm status mitigation printed output: $out"
+  pass "command-free Firstmate helper suppresses only /calm's Pi 0.83+ expansion status, expires failed commands, and restores the original UI method"
+}
+
+test_collapsed_thinking_patch_identity() {
+  local fixture out status
+  if ! command -v node >/dev/null 2>&1 || ! have_pi_package; then
+    echo "skip: node or installed Pi package not found for collapsed-thinking patch identity"
+    return 0
+  fi
+
+  fixture="$TMP_ROOT/collapsed-thinking-patch-identity"
+  build_node_fixture "$fixture"
+  out=$(cd "$fixture" && node --input-type=module 2>&1 <<'JS'
+import { AssistantMessageComponent } from "@earendil-works/pi-coding-agent";
+import { pathToFileURL } from "node:url";
+
+const check = (condition, message) => {
+  if (!condition) throw new Error(message);
+};
+const legacyKey = Symbol.for("pi-calm:collapsed-thinking-layout:pi-0.82.0");
+const legacyPatch = { hidesThinking: () => false };
+globalThis[legacyKey] = legacyPatch;
+const originalUpdateContent = AssistantMessageComponent.prototype.updateContent;
+const adapter = await import(
+  pathToFileURL(`${process.cwd()}/calm/lib/collapsed-thinking.ts`).href
+);
+const visibility = await import(
+  pathToFileURL(`${process.cwd()}/calm/lib/visibility.ts`).href
+);
+visibility.setCalmPresentation(true);
+adapter.installCalmCollapsedThinkingLayout();
+check(
+  AssistantMessageComponent.prototype.updateContent === originalUpdateContent,
+  "compatible Pi upgrade double-patched AssistantMessageComponent.updateContent",
+);
+check(
+  globalThis[legacyKey] === legacyPatch && legacyPatch.hidesThinking(),
+  "compatible Pi upgrade did not reuse and refresh the introduction-version patch",
+);
+JS
+)
+  status=$?
+  [ "$status" -eq 0 ] || fail "Pi Calm collapsed-thinking patch identity failed: $out"
+  [ -z "$out" ] || fail "Pi Calm collapsed-thinking patch identity printed output: $out"
+  pass "collapsed-thinking keeps its introduction-version identity and cannot double-patch a compatible live Pi process"
 }
 
 test_preference_and_command() {
@@ -318,6 +497,7 @@ check(!handlers.has("context"), "Calm registered a model-context interceptor");
 let editorText = "";
 let expanded = false;
 let hiddenThinkingLabel = "unset";
+let terminalInputHandler;
 const uiCalls = [];
 const ctx = {
   ui: {
@@ -327,9 +507,17 @@ const ctx = {
       uiCalls.push(["setToolsExpanded", value]);
       expanded = value;
     },
-    onTerminalInput: () => () => {},
+    onTerminalInput(handler) {
+      terminalInputHandler = handler;
+      return () => {
+        if (terminalInputHandler === handler) terminalInputHandler = undefined;
+      };
+    },
     setHiddenThinkingLabel(value) {
       hiddenThinkingLabel = value;
+    },
+    setStatus(key, value) {
+      uiCalls.push(["setStatus", key, value]);
     },
     setWidget() {},
     setWorkingVisible() {},
@@ -344,10 +532,30 @@ await fire("session_start", { reason: "startup" });
 check(!visibility.calmPresentationIsActive(), "Calm was not off by default");
 check(!existsSync(`${process.env.AGENT_DIR}/calm`), "session start created the state file without a toggle");
 check(hiddenThinkingLabel === undefined, "default session did not keep the stock thinking label");
+check(typeof terminalInputHandler === "function", "Calm did not observe terminal input");
 
-// Malformed state content also means off, and is left untouched until a toggle.
+// A replacement session cancels an in-flight export reset before it can touch
+// the retired UI and restores stock-export state itself.
+editorText = "/export";
+terminalInputHandler("\r");
+check(
+  visibility.calmStockExportRenderingIsActive(),
+  "export submit did not enable stock transcript rendering",
+);
 writeFileSync(`${process.env.AGENT_DIR}/calm`, "sometimes\n");
 await fire("session_start", { reason: "reload" });
+const statusCountAfterReplacement = uiCalls.filter(([method]) => method === "setStatus").length;
+await new Promise((resolve) => setTimeout(resolve, 10));
+check(
+  uiCalls.filter(([method]) => method === "setStatus").length === statusCountAfterReplacement,
+  "retired export timer touched the UI after session replacement",
+);
+check(
+  !visibility.calmStockExportRenderingIsActive(),
+  "session replacement left stock-export rendering enabled",
+);
+
+// Malformed state content also means off, and is left untouched until a toggle.
 check(!visibility.calmPresentationIsActive(), "malformed state did not fall back to off");
 check(readFileSync(`${process.env.AGENT_DIR}/calm`, "utf8") === "sometimes\n", "loading a malformed state rewrote it");
 
@@ -359,6 +567,14 @@ check(readFileSync(`${process.env.AGENT_DIR}/calm`, "utf8") === "on\n", "toggle 
 check((statSync(`${process.env.AGENT_DIR}/calm`).mode & 0o777) === 0o600, "state file is not owner-only");
 check(hiddenThinkingLabel === "", "Calm did not hide the collapsed thinking label");
 check(expanded === true, "toggle changed the Ctrl+O tools-expanded state");
+check(
+  uiCalls.some(([method, key, value]) => method === "setStatus" && key === "calm" && value === undefined),
+  "Calm did not request a quiet extension-status redraw",
+);
+check(
+  !uiCalls.some(([method]) => method === "setToolsExpanded"),
+  "Calm used Pi 0.83+ setToolsExpanded(), which emits visible transcript status",
+);
 
 // The choice survives new sessions and replacement reasons.
 for (const reason of ["startup", "new", "resume", "fork", "reload"]) {
@@ -374,6 +590,26 @@ check(readFileSync(`${process.env.AGENT_DIR}/calm`, "utf8") === "off\n", "second
 check(hiddenThinkingLabel === undefined, "turning Calm off did not restore the stock thinking label");
 await fire("session_start", { reason: "startup" });
 check(!visibility.calmPresentationIsActive(), "restart did not retain the persisted off choice");
+
+// Shutdown also cancels the delayed export redraw and removes its input handler.
+editorText = "/share";
+terminalInputHandler("\r");
+check(
+  visibility.calmStockExportRenderingIsActive(),
+  "share submit did not enable stock transcript rendering",
+);
+const statusCountBeforeShutdown = uiCalls.filter(([method]) => method === "setStatus").length;
+await fire("session_shutdown");
+await new Promise((resolve) => setTimeout(resolve, 10));
+check(
+  uiCalls.filter(([method]) => method === "setStatus").length === statusCountBeforeShutdown,
+  "export timer touched the UI after session shutdown",
+);
+check(
+  !visibility.calmStockExportRenderingIsActive(),
+  "session shutdown left stock-export rendering enabled",
+);
+check(terminalInputHandler === undefined, "session shutdown retained its terminal input handler");
 
 // An unwritable state file fails the toggle with a clear error and leaves the
 // in-memory state untouched, so the failure is loud instead of silently
@@ -444,6 +680,7 @@ const ui = {
   getToolsExpanded: () => false,
   onTerminalInput: () => () => {},
   setHiddenThinkingLabel() {},
+  setStatus() {},
   setToolsExpanded() {},
   setWidget() {},
   setWorkingVisible() {},
@@ -584,6 +821,7 @@ extension.default(pi);
 const widgets = new Map(); const changes = []; let expanded = true;
 const ui = {
   getEditorText: () => "", getToolsExpanded: () => expanded, onTerminalInput: () => () => {}, setHiddenThinkingLabel() {},
+  setStatus() {},
   setToolsExpanded(value) { expanded = value; },
   setWorkingVisible(value) { changes.push(["working", value]); },
   setWidget(key, value) { changes.push(["widget", key, value === undefined ? "clear" : "set"]); if (value === undefined) { widgets.get(key)?.dispose?.(); widgets.delete(key); } else widgets.set(key, value(tui)); },
@@ -656,8 +894,8 @@ test_real_pi_tui_smoke() {
     echo "skip: pi or tmux not found for isolated real TUI smoke"
     return 0
   fi
-  [ "$(pi --version 2>/dev/null || true)" = "0.82.0" ] \
-    || fail "real Pi smoke requires the installed Pi 0.82.0 proof target"
+  [ "$(pi --version 2>/dev/null || true)" = "0.84.3" ] \
+    || fail "real Pi smoke requires the installed Pi 0.84.3 proof target"
 
   fixture="$TMP_ROOT/tui-smoke"
   agent="$fixture/agent"
@@ -734,6 +972,8 @@ TS
   tmux -L "$socket" send-keys -t "$TMUX_SESSION" Enter
   sleep 0.2
   capture_tui after-calm
+  assert_not_contains "$(cat "$fixture/captures/after-calm.scrollback.txt")" \
+    "Tool output:" "real Pi /calm toggle left visible tool-output status noise"
   tmux -L "$socket" send-keys -t "$TMUX_SESSION" -l '/calm-smoke'
   tmux -L "$socket" send-keys -t "$TMUX_SESSION" Enter
   for i in $(seq 1 120); do
@@ -746,6 +986,9 @@ TS
   done
   grep -Fq 'stream-start' "$fixture/provider-markers.txt" || fail "real Pi smoke did not enter the provider stream"
   grep -Fq '\__/' "$fixture/wide" || fail "real Pi smoke did not show Calm's wide working boat"
+  if grep -Eiq 'thinking[.][.][.]' "$fixture/wide"; then
+    fail "real Pi 0.84.3 showed thinking... noise while Calm's working ship was active"
+  fi
   tmux -L "$socket" resize-window -t "$TMUX_SESSION" -x 40 -y 30
   for i in $(seq 1 120); do
     capture_tui working-narrow
@@ -772,11 +1015,13 @@ TS
   tmux -L "$socket" send-keys -t "$TMUX_SESSION" Enter
   sleep 0.1
   tmux -L "$socket" kill-server 2>/dev/null || true
-  pass "isolated Pi 0.82 TUI proves auto-load, /calm persistence, resize-safe working animation, and genuine transcript text without credentials"
+  pass "isolated Pi 0.84.3 TUI proves auto-load, quiet /calm persistence, resize-safe working animation, suppressed thinking noise, and genuine transcript text without credentials"
 }
 
 test_zero_coupling_and_state_file
 test_static_typescript_and_repo_wiring
+test_firstmate_calm_status_mitigation
+test_collapsed_thinking_patch_identity
 test_preference_and_command
 test_rendering_adapters_and_tool_shells
 test_working_ship_and_lifecycle

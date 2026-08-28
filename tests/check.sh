@@ -17,6 +17,8 @@ shellcheck -x \
 	"$ROOT/scripts/setup-macos-permissions" \
 	"$ROOT/scripts/setup-vault" \
 	"$ROOT/scripts/setup-vault-access" \
+	"$ROOT/scripts/pi-firstmate" \
+	"$ROOT/scripts/setup-pi-runtime" \
 	"$ROOT/tests/security-scan.sh" \
 	"$ROOT/tests/bootstrap.test.sh" \
 	"$ROOT/tests/global-agents.test.sh" \
@@ -27,6 +29,7 @@ shellcheck -x \
 	"$ROOT/tests/macos-permissions.test.sh" \
 	"$ROOT/tests/official-codex-skills.test.sh" \
 	"$ROOT/tests/security-scan.test.sh" \
+	"$ROOT/tests/pi-runtime.test.sh" \
 	"$ROOT/tests/setup-vault.test.sh" \
 	"$ROOT/tests/terminal-mastery.test.sh" \
 	"$ROOT/tests/vault-access.test.sh"
@@ -45,6 +48,8 @@ shfmt -d \
 	"$ROOT/scripts/setup-macos-permissions" \
 	"$ROOT/scripts/setup-vault" \
 	"$ROOT/scripts/setup-vault-access" \
+	"$ROOT/scripts/pi-firstmate" \
+	"$ROOT/scripts/setup-pi-runtime" \
 	"$ROOT/tests/security-scan.sh" \
 	"$ROOT/tests/bootstrap.test.sh" \
 	"$ROOT/tests/global-agents.test.sh" \
@@ -55,6 +60,7 @@ shfmt -d \
 	"$ROOT/tests/macos-permissions.test.sh" \
 	"$ROOT/tests/official-codex-skills.test.sh" \
 	"$ROOT/tests/security-scan.test.sh" \
+	"$ROOT/tests/pi-runtime.test.sh" \
 	"$ROOT/tests/setup-vault.test.sh" \
 	"$ROOT/tests/terminal-mastery.test.sh" \
 	"$ROOT/tests/vault-access.test.sh"
@@ -68,6 +74,7 @@ shfmt -d \
 "$ROOT/tests/macos-permissions.test.sh"
 "$ROOT/tests/official-codex-skills.test.sh"
 "$ROOT/tests/security-scan.test.sh"
+"$ROOT/tests/pi-runtime.test.sh"
 "$ROOT/tests/setup-vault.test.sh"
 "$ROOT/tests/terminal-mastery.test.sh"
 "$ROOT/tests/vault-access.test.sh"

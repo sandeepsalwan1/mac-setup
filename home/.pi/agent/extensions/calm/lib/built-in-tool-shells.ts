@@ -3,7 +3,7 @@
 // Adapted from the Firstmate project's Calm implementation.
 // Copyright (c) 2026 Kun Chen. MIT License - see the LICENSE file in this directory.
 //
-// Verified against Pi 0.82.0, which exports AgentSession and
+// Verified against Pi 0.84.3, which exports AgentSession and
 // ToolExecutionComponent. The source-aware lookup returns Pi's active definition
 // unchanged and the adapter changes only its final TUI row layout. Execution,
 // settings, SDK overrides, extension collisions, and stored results remain
@@ -44,7 +44,7 @@ type CalmBuiltInToolShellPatch = {
 };
 
 const CALM_BUILT_IN_TOOL_SHELL_PATCH = Symbol.for(
-  "pi-calm:built-in-tool-shell-layout:pi-0.82.0",
+  "pi-calm:built-in-tool-shell-layout:pi-0.84.3",
 );
 
 export function installCalmBuiltInToolShellLayout(): void {

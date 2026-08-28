@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# mac-setup-pi-firstmate-wrapper
+set -euo pipefail
+
+find_real_pi() {
+	local candidate
+
+	is_wrapper() {
+		local path=$1
+		[ "$path" -ef "${BASH_SOURCE[0]}" ] ||
+			cmp -s "$path" "${BASH_SOURCE[0]}" ||
+			grep -Fqx '# mac-setup-pi-firstmate-wrapper' "$path" ||
+			grep -Fq 'pi-firstmate: regular pi executable not found on PATH' "$path"
+	}
+
+	use_candidate() {
+		local path=$1
+		[ -f "$path" ] && [ -x "$path" ] || return 1
+		is_wrapper "$path" && return 1
+		printf '%s\n' "$path"
+	}
+
+	if [ -n "${PI_FIRSTMATE_REAL_PI:-}" ]; then
+		use_candidate "$PI_FIRSTMATE_REAL_PI" || {
+			printf 'pi-firstmate: PI_FIRSTMATE_REAL_PI is not an executable regular Pi: %s\n' "$PI_FIRSTMATE_REAL_PI" >&2
+			return 1
+		}
+		return
+	fi
+
+	if use_candidate "${BASH_SOURCE[0]}.real"; then
+		return
+	fi
+
+	while IFS= read -r candidate; do
+		if use_candidate "$candidate"; then
+			return
+		fi
+	done < <(type -aP pi 2>/dev/null || true)
+
+	if [ -n "${HOMEBREW_PREFIX:-}" ]; then
+		if use_candidate "$HOMEBREW_PREFIX/bin/pi"; then
+			return
+		fi
+	fi
+
+	for candidate in \
+		"$HOME/.local/share/npm/bin/pi" \
+		"$HOME/.local/nvm-default/bin/pi" \
+		"/etc/profiles/per-user/$(id -un)/bin/pi" \
+		"/opt/homebrew/bin/pi" \
+		"/usr/local/bin/pi"; do
+		if use_candidate "$candidate"; then
+			return
+		fi
+	done
+
+	printf 'pi-firstmate: regular pi executable not found on PATH or in supported install locations\n' >&2
+	return 1
+}
+
+if [ "${FM_PI_HARNESS:-}" = "pi" ]; then
+	export AWS_PROFILE=codex-DO-NOT-DELETE
+	export AWS_REGION=us-east-2
+	export PI_CODING_AGENT_DIR="${PI_FIRSTMATE_AGENT_DIR:-$HOME/.local/state/pi-firstmate/agent}"
+fi
+
+REAL_PI=$(find_real_pi)
+exec "$REAL_PI" "$@"

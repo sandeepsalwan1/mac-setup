@@ -3,10 +3,10 @@
 // Adapted from the Firstmate project's Calm implementation.
 // Copyright (c) 2026 Kun Chen. MIT License - see the LICENSE file in this directory.
 //
-// Verified against Pi 0.82.0, which exports its shared tool-row component,
+// Verified against Pi 0.84.3, which exports its shared tool-row component,
 // session_start replacement reasons, agent_start
-// and agent_settled, ExtensionUIContext.setToolsExpanded(), setWorkingVisible(),
-// setWidget() with a disposable component factory, and setHiddenThinkingLabel().
+// and agent_settled, ExtensionUIContext.setStatus(), setWorkingVisible(), setWidget()
+// with a disposable component factory, and setHiddenThinkingLabel().
 // ./lib/working-ship.ts owns the animated working presentation this file
 // installs. ./lib/preference.ts owns the local state file. The collapsed-thinking
 // presentation adapter probes the exact public API seam it patches and degrades
@@ -35,6 +35,8 @@ import {
   createCalmWorkingShipWidget,
 } from "./lib/working-ship.ts";
 
+const CALM_STATUS_KEY = "calm";
+
 // Each presentation adapter probes the exact Pi API it patches. If a future Pi
 // removes that API, only the affected adapter degrades; the rest of Calm keeps
 // working.
@@ -52,6 +54,8 @@ export default function (pi: ExtensionAPI) {
   installCalmPresentationAdapter("built-in-tool-shells", installCalmBuiltInToolShellLayout);
 
   let removeTerminalInputHandler: (() => void) | undefined;
+  let exportResetTimeout: ReturnType<typeof setTimeout> | undefined;
+  let activeUi: ExtensionUIContext | undefined;
   // One logical agent run, tracked from agent_start through agent_settled rather
   // than from turns or tool calls, so the boat never flickers between tool calls,
   // automatic continuations, retries, or compaction that stay inside the same run.
@@ -85,16 +89,28 @@ export default function (pi: ExtensionAPI) {
     }
   };
 
-  pi.on("session_start", (_event, ctx) => {
-    setCalmPresentation(loadCalmPreference());
+  const clearActiveSession = (): void => {
+    if (exportResetTimeout !== undefined) {
+      clearTimeout(exportResetTimeout);
+      exportResetTimeout = undefined;
+    }
+    removeTerminalInputHandler?.();
+    removeTerminalInputHandler = undefined;
+    activeUi = undefined;
     setCalmStockExportRendering(false);
+  };
+
+  pi.on("session_start", (_event, ctx) => {
+    clearActiveSession();
+    activeUi = ctx.ui;
+    setCalmPresentation(loadCalmPreference());
     agentRunActive = false;
     workingShipShown = false;
     // A genuine new session lifetime starts the boat at the normal initial position.
     workingShipAnimation.reset();
     applyWorkingPresentation(ctx.ui, true);
     ctx.ui.setHiddenThinkingLabel(calmPresentationIsActive() ? "" : undefined);
-    removeTerminalInputHandler?.();
+    ctx.ui.setStatus(CALM_STATUS_KEY, undefined);
     removeTerminalInputHandler = ctx.ui.onTerminalInput((data) => {
       if (!getKeybindings().matches(data, "tui.input.submit")) return;
 
@@ -111,11 +127,11 @@ export default function (pi: ExtensionAPI) {
       // uses, so force stock output for the duration of the command. Session and
       // export data are never filtered; this only concerns the visual components.
       setCalmStockExportRendering(true);
-      setTimeout(() => {
+      if (exportResetTimeout !== undefined) clearTimeout(exportResetTimeout);
+      exportResetTimeout = setTimeout(() => {
+        exportResetTimeout = undefined;
         setCalmStockExportRendering(false);
-        const expanded = ctx.ui.getToolsExpanded();
-        ctx.ui.setToolsExpanded(!expanded);
-        ctx.ui.setToolsExpanded(expanded);
+        if (activeUi === ctx.ui) ctx.ui.setStatus(CALM_STATUS_KEY, undefined);
       }, 0);
     });
   });
@@ -132,8 +148,10 @@ export default function (pi: ExtensionAPI) {
   });
 
   pi.on("session_shutdown", (_event, ctx) => {
+    if (activeUi !== ctx.ui) return;
     agentRunActive = false;
     applyWorkingPresentation(ctx.ui);
+    clearActiveSession();
   });
 
   pi.registerCommand("calm", {
@@ -146,12 +164,9 @@ export default function (pi: ExtensionAPI) {
       setCalmPresentation(active);
       applyWorkingPresentation(ctx.ui, true);
       ctx.ui.setHiddenThinkingLabel(active ? "" : undefined);
-
-      // Flip expansion twice to force a transcript redraw while preserving the
-      // user's exact Ctrl+O tools-expanded state.
-      const expanded = ctx.ui.getToolsExpanded();
-      ctx.ui.setToolsExpanded(!expanded);
-      ctx.ui.setToolsExpanded(expanded);
+      // Pi 0.83+ appends a transcript status row from setToolsExpanded(). The
+      // extension status slot requests the same repaint without visible noise.
+      ctx.ui.setStatus(CALM_STATUS_KEY, undefined);
     },
   });
 }

@@ -106,6 +106,14 @@ Home Manager exposes each one through `~/.skills`, `~/.agents/skills`,
 `~/.codex/skills`, and `~/.claude/skills`. Only those named directories are
 replaced. Every unrelated skill already on the machine is preserved.
 
+Pi keeps declarative settings in this repository but runs from writable settings
+materialized by `scripts/setup-pi-runtime`, so version bookkeeping cannot modify
+tracked files. Firstmate-spawned Pi uses the regular `pi` command through a scoped
+wrapper: only launches marked `FM_PI_HARNESS=pi` receive the named Bedrock profile,
+region, and dedicated agent directory. That directory omits the global Calm
+command because Firstmate's project extension owns `/calm`, while retaining a
+command-free status helper that suppresses Pi 0.83+ toggle noise.
+
 Browser and Computer Use are proprietary plugins distributed with Codex, so
 their implementations are not copied into Git. The Homebrew `codex` cask
 supplies the CLI. Install and open the [Codex desktop app](https://openai.com/codex/),
