@@ -10,7 +10,6 @@ umask 077
 gitleaks detect --source "$ROOT" --no-git --redact --exit-code 1
 
 trufflehog filesystem \
-	--no-update \
 	--json \
 	--results=verified,unknown \
 	--fail-on-scan-errors \

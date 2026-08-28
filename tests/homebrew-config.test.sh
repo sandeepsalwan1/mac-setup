@@ -11,8 +11,9 @@ jq -e '
   | ($names | index("claude-code") | not)
     and ($names | index("codex") | not)
     and ($names | index("automic-vault/isotopes/automic-vault") != null)
+    and ($names | index("obsidian") != null)
     and ($names | index("wezterm") != null)
 ' >/dev/null <<<"$CASKS_JSON" ||
-	fail 'nix-darwin Homebrew activation still owns Claude Code or Codex, or lost a required baseline cask'
+	fail 'nix-darwin Homebrew activation owns an additive agent or lost a required baseline cask'
 
-pass 'nix-darwin leaves Claude Code and Codex to the additive installer'
+pass 'nix-darwin keeps the portable app baseline and leaves agent CLIs additive'

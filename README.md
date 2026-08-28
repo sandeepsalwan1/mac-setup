@@ -45,6 +45,7 @@ The Homebrew baseline is deliberately small:
 - [Herdr](https://herdr.dev/)
 - Claude Code, only when `claude` is not already installed
 - Codex CLI, only when `codex` is not already installed
+- [Obsidian](https://obsidian.md/) with its official CLI on `PATH`
 - WezTerm
 
 Nix supplies `uv`, Node.js, Python, Git, Neovim, ripgrep, fd, fzf, jq,
@@ -118,6 +119,16 @@ enable both official plugins, then run:
 That links the locally installed official skill files into the same four skill
 locations. Their runtime tools remain Codex-only. Claude uses
 `chrome-devtools-axi` for functional browser control.
+
+## Knowledge workflow
+
+The CLI-first knowledge workflow uses `my kb` as the source of truth and opens
+the same Markdown directory as an Obsidian vault. Capture only concise,
+reviewed decisions or findings. Do not ingest raw transcripts, credentials, or
+unreviewed tool output, and do not run a background transcript watcher.
+
+See [docs/obsidian-knowledge-workflow.md](docs/obsidian-knowledge-workflow.md)
+for the evidence boundary, initial setup, and daily commands.
 
 ## Automic Vault
 
