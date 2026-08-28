@@ -9,6 +9,7 @@ shellcheck -x \
 	"$ROOT/home/bin/learn" \
 	"$ROOT/scripts/install-agent-tools" \
 	"$ROOT/scripts/install-tools" \
+	"$ROOT/scripts/git-fleet-status" \
 	"$ROOT/scripts/link-official-codex-skills" \
 	"$ROOT/scripts/read-flake-user" \
 	"$ROOT/scripts/apply-herdr-prefix" \
@@ -21,6 +22,7 @@ shellcheck -x \
 	"$ROOT/scripts/setup-pi-runtime" \
 	"$ROOT/tests/security-scan.sh" \
 	"$ROOT/tests/bootstrap.test.sh" \
+	"$ROOT/tests/git-fleet.test.sh" \
 	"$ROOT/tests/global-agents.test.sh" \
 	"$ROOT/tests/homebrew-config.test.sh" \
 	"$ROOT/tests/herdr-prefix.test.sh" \
@@ -40,6 +42,7 @@ shfmt -d \
 	"$ROOT/home/bin/learn" \
 	"$ROOT/scripts/install-agent-tools" \
 	"$ROOT/scripts/install-tools" \
+	"$ROOT/scripts/git-fleet-status" \
 	"$ROOT/scripts/link-official-codex-skills" \
 	"$ROOT/scripts/read-flake-user" \
 	"$ROOT/scripts/apply-herdr-prefix" \
@@ -52,6 +55,7 @@ shfmt -d \
 	"$ROOT/scripts/setup-pi-runtime" \
 	"$ROOT/tests/security-scan.sh" \
 	"$ROOT/tests/bootstrap.test.sh" \
+	"$ROOT/tests/git-fleet.test.sh" \
 	"$ROOT/tests/global-agents.test.sh" \
 	"$ROOT/tests/homebrew-config.test.sh" \
 	"$ROOT/tests/herdr-prefix.test.sh" \
@@ -66,6 +70,7 @@ shfmt -d \
 	"$ROOT/tests/vault-access.test.sh"
 
 "$ROOT/tests/bootstrap.test.sh"
+"$ROOT/tests/git-fleet.test.sh"
 "$ROOT/tests/global-agents.test.sh"
 "$ROOT/tests/homebrew-config.test.sh"
 "$ROOT/tests/herdr-prefix.test.sh"

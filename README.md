@@ -219,6 +219,33 @@ and macOS shortcuts. Bootstrap refuses to continue if one of those later claims
 F13. Plain <kbd>Tab</kbd> remains available for shell completion and Neovim.
 Caps Lock no longer toggles capitalization by design.
 
+## Fleet-wide git changes
+
+<kbd>Space</kbd><kbd>g</kbd> opens Neogit, which is a single-repository tool by
+design: it resolves exactly one repository from the current buffer or directory
+(bound at `home/.config/nvim/lua/plugins/git.lua:12`). When work is spread over a
+clone, its `projects/` clones and a pool of linked worktrees under
+`~/.treehouse/`, that cannot show the whole picture.
+
+Inside an agent workspace root - a directory carrying `VISION.md`, `projects/`
+and `state/` - <kbd>Space</kbd><kbd>g</kbd> therefore first offers a picker of
+only the repositories that have changes, one dense row each.
+<kbd>Enter</kbd> opens ordinary Neogit rooted at the repository under the cursor,
+and <kbd>q</kbd> returns to the picker. Everywhere else
+<kbd>Space</kbd><kbd>g</kbd> is plain Neogit, unchanged.
+
+The same summary as plain text, with no Neovim involved:
+
+```sh
+~/.dotfiles/scripts/git-fleet-status
+~/.dotfiles/scripts/git-fleet-status --all
+~/.dotfiles/scripts/git-fleet-status --json
+```
+
+The picker renders the rows this command produces rather than formatting its own,
+so the two cannot disagree. The default scan is read-only and offline. See
+[docs/git-fleet.md](docs/git-fleet.md).
+
 ## Daily use
 
 After editing this repository:

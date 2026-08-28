@@ -12,6 +12,7 @@ Deliberate decisions in this repo:
 - Herdr's prefix is the physical Caps Lock key mapped to F13. Keep its Home Manager mapping, terminal course, and conflict regression synchronized with any future binding change.
 - Never commit `.no-mistakes/` validation evidence. The directory is gitignored.
 - Managed Pi packages in `home/.pi/agent/settings.json` are exact npm version pins. Never declare a Pi package from a Git URL; `tests/pi-calm.test.sh` enforces this.
+- Keep the fleet git view to `<leader>g`, `:GitFleet`, and `scripts/git-fleet-status`; the picker must display the script's preformatted `row` unchanged. See `docs/git-fleet.md`.
 
 ## Maintaining this file
 
