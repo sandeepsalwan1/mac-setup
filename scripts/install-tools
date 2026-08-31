@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 NPM_GLOBALS_FILE="${NPM_GLOBALS_FILE:-$ROOT/home/npm-globals.txt}"
 NPM_PREFIX="${NPM_PREFIX:-$HOME/.local/share/npm}"
-NO_MISTAKES_VERSION="${NO_MISTAKES_VERSION:-v1.57.0}"
+NO_MISTAKES_VERSION="${NO_MISTAKES_VERSION:-v1.60.2}"
 
 note() {
 	printf 'install-tools: %s\n' "$1"
@@ -179,11 +179,11 @@ install_no_mistakes() {
 	case "$(uname -m)" in
 	arm64 | aarch64)
 		architecture=arm64
-		expected_checksum=b621637578afcd62bc0e8ddbe829d08ee093079d0e5fbb9edd1f15f7cfffe635
+		expected_checksum=a7c88b1ab2fba96b30ccc64ca3e95676ae3c3d8625a32d3e74cc2461621ab54a
 		;;
 	x86_64 | amd64)
 		architecture=amd64
-		expected_checksum=7f84897c17bc963819dc7c576d1b2682ac1502581086345a7c0adccc86f783f8
+		expected_checksum=f99df63ef2f1974932068fce3bb7b4322a72203b4c8bf958e97e2a09bab01930
 		;;
 	*) die "unsupported architecture: $(uname -m)" ;;
 	esac
