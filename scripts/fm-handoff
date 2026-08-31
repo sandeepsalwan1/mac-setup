@@ -47,16 +47,28 @@ INCLUDE_MUT=0
 DO_FETCH=1
 
 while [ $# -gt 0 ]; do
-  case "$1" in
-    --dry-run) DRY_RUN=1 ;;
-    --include-mut) INCLUDE_MUT=1 ;;
-    --no-fetch) DO_FETCH=0 ;;
-    --old) OLD_HOST=$2; shift ;;
-    --new) NEW_HOST=$2; shift ;;
-    -h|--help) sed -n '2,36p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
-    *) echo "fm-handoff: unknown argument: $1" >&2; exit 2 ;;
-  esac
-  shift
+	case "$1" in
+	--dry-run) DRY_RUN=1 ;;
+	--include-mut) INCLUDE_MUT=1 ;;
+	--no-fetch) DO_FETCH=0 ;;
+	--old)
+		OLD_HOST=$2
+		shift
+		;;
+	--new)
+		NEW_HOST=$2
+		shift
+		;;
+	-h | --help)
+		sed -n '2,36p' "$0" | sed 's/^# \{0,1\}//'
+		exit 0
+		;;
+	*)
+		echo "fm-handoff: unknown argument: $1" >&2
+		exit 2
+		;;
+	esac
+	shift
 done
 
 RUN=$(date -u +%Y%m%dT%H%M%SZ)
@@ -64,22 +76,25 @@ STAGE=$(mktemp -d "${TMPDIR:-/tmp}/fm-handoff.XXXXXX")
 trap 'rm -rf "$STAGE"' EXIT
 
 say() { printf '%s\n' "$*"; }
-die() { printf 'fm-handoff: %s\n' "$*" >&2; exit 1; }
+die() {
+	printf 'fm-handoff: %s\n' "$*" >&2
+	exit 1
+}
 
 [ -n "$OLD_HOST" ] || die "no source host: export FM_HANDOFF_OLD in ~/.zshenv.local or pass --old"
 [ -n "$NEW_HOST" ] || die "no target host: export FM_HANDOFF_NEW in ~/.zshenv.local or pass --new"
 
-ssh -o BatchMode=yes -o ConnectTimeout=15 "$OLD_HOST" true 2>/dev/null \
-  || die "cannot reach the old host ($OLD_HOST) without a password"
+ssh -o BatchMode=yes -o ConnectTimeout=15 "$OLD_HOST" true 2>/dev/null ||
+	die "cannot reach the old host ($OLD_HOST) without a password"
 if [ "$DRY_RUN" = 0 ]; then
-  ssh -o BatchMode=yes -o ConnectTimeout=15 "$NEW_HOST" true 2>/dev/null \
-    || die "cannot reach the new host ($NEW_HOST) without a password"
+	ssh -o BatchMode=yes -o ConnectTimeout=15 "$NEW_HOST" true 2>/dev/null ||
+		die "cannot reach the new host ($NEW_HOST) without a password"
 fi
 
 # ---------------------------------------------------------------- capture side
 # This runs on the OLD host. Read-only by construction: it writes only into its
 # own scratch directory under /tmp and never mutates a repo.
-cat > "$STAGE/capture.sh" <<'CAPTURE'
+cat >"$STAGE/capture.sh" <<'CAPTURE'
 set -uo pipefail
 RUN=$1
 INCLUDE_MUT=$2
@@ -212,8 +227,8 @@ say "  new: $NEW_HOST"
 say ""
 
 if [ "$DRY_RUN" = 1 ]; then
-  say "dry run - what the old host would hand over:"
-  ssh -o BatchMode=yes "$OLD_HOST" "bash -s -- '$SKIP_DIRS'" <<'PROBE'
+	say "dry run - what the old host would hand over:"
+	ssh -o BatchMode=yes "$OLD_HOST" "bash -s -- '$SKIP_DIRS'" <<'PROBE'
 SKIP_DIRS=$1
 git_net_remote() {
   git remote -v 2>/dev/null \
@@ -248,13 +263,13 @@ done
 echo "cr-bundles: $(du -sh "$HOME/cr-bundles" 2>/dev/null | cut -f1 || echo absent)"
 echo "/tmp/mut  : $(du -sh /tmp/mut 2>/dev/null | cut -f1 || echo absent)  (needs --include-mut)"
 PROBE
-  exit 0
+	exit 0
 fi
 
 say "capturing from the old host ..."
 ssh -o BatchMode=yes "$OLD_HOST" "bash -s -- '$RUN' '$INCLUDE_MUT' '$SKIP_DIRS'" \
-  < "$STAGE/capture.sh" > "$STAGE/payload.tar.gz" \
-  || die "capture failed on the old host; nothing was changed there"
+	<"$STAGE/capture.sh" >"$STAGE/payload.tar.gz" ||
+	die "capture failed on the old host; nothing was changed there"
 [ -s "$STAGE/payload.tar.gz" ] || die "capture produced an empty payload"
 say "  payload: $(du -h "$STAGE/payload.tar.gz" | cut -f1)"
 
@@ -266,7 +281,7 @@ say "  local copy: $LOCAL_ARCHIVE/fm-handoff-$RUN.tar.gz"
 
 say "landing on the new host ..."
 # The lander is copied over as a file because the payload itself occupies stdin.
-cat > "$STAGE/land.sh" <<'LANDER'
+cat >"$STAGE/land.sh" <<'LANDER'
 set -uo pipefail
 RUN=$1
 DO_FETCH=$2
@@ -413,9 +428,9 @@ echo
 echo "payload  : $D"
 echo "latest   : $BASE/latest"
 LANDER
-ssh -o BatchMode=yes "$NEW_HOST" "cat > /tmp/fm-land-$RUN.sh" < "$STAGE/land.sh"
+ssh -o BatchMode=yes "$NEW_HOST" "cat > /tmp/fm-land-$RUN.sh" <"$STAGE/land.sh"
 ssh -o BatchMode=yes "$NEW_HOST" "bash /tmp/fm-land-$RUN.sh '$RUN' '$DO_FETCH'; rm -f /tmp/fm-land-$RUN.sh" \
-  < "$STAGE/payload.tar.gz" || die "landing failed on the new host"
+	<"$STAGE/payload.tar.gz" || die "landing failed on the new host"
 
 cat <<EOF
 

@@ -9,6 +9,7 @@ shellcheck -x \
 	"$ROOT/home/bin/learn" \
 	"$ROOT/scripts/git-fleet-status" \
 	"$ROOT/scripts/git-fleet-diff" \
+	"$ROOT/scripts/fm-handoff" \
 	"$ROOT/scripts/install-diff-tools" \
 	"$ROOT/scripts/install-agent-tools" \
 	"$ROOT/scripts/install-tools" \
@@ -50,6 +51,7 @@ shfmt -d \
 	"$ROOT/home/bin/learn" \
 	"$ROOT/scripts/git-fleet-status" \
 	"$ROOT/scripts/git-fleet-diff" \
+	"$ROOT/scripts/fm-handoff" \
 	"$ROOT/scripts/install-diff-tools" \
 	"$ROOT/scripts/install-agent-tools" \
 	"$ROOT/scripts/install-tools" \
