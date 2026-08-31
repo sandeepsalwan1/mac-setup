@@ -1,0 +1,302 @@
+#!/usr/bin/env bash
+# fm-handoff - move in-flight work from the old cloud desktop to the new one.
+#
+# Runs from the Mac, which is the only machine with SSH to both hosts. Every
+# operation on the OLD host is read-only (bundle/diff/stash-show), so it is safe
+# to run while you are still working there. Re-runnable: each run writes its own
+# timestamped directory on the new host and repoints a "latest" symlink.
+#
+# What it captures, per git repo that has anything uncaptured:
+#   - every commit on a local branch that no remote has, as a git bundle
+#   - uncommitted tracked changes, as a patch
+#   - untracked, non-ignored files, as a tarball
+#   - every stash, as a numbered patch
+# Plus, optionally, ~/cr-bundles and /tmp/mut.
+#
+# On the new host the bundles are FETCHED into the matching repo, which only
+# creates refs under refs/handoff/<run>/ and never touches your branches,
+# working tree, or index. Nothing is merged or checked out for you; the run
+# prints the exact commands to do that when you are ready.
+#
+# The two hosts are workplace-specific and this repository is public, so they
+# are read from the environment and never committed here. Export them from
+# ~/.zshenv.local, which home.nix sources:
+#   export FM_HANDOFF_OLD=<source host>
+#   export FM_HANDOFF_NEW=<target host>
+# Directories to skip come from GIT_FLEET_PRUNE, the same machine-local list
+# scripts/git-fleet-status uses, so one place owns the workplace-specific names.
+#
+# Usage:
+#   fm-handoff                 capture + fetch into the new host's repos
+#   fm-handoff --dry-run       show what would be captured, transfer nothing
+#   fm-handoff --include-mut   also copy /tmp/mut (large)
+#   fm-handoff --no-fetch      stage the payload only, skip the git fetch step
+#   fm-handoff --old H --new H override the hosts
+set -uo pipefail
+
+OLD_HOST=${FM_HANDOFF_OLD:-}
+NEW_HOST=${FM_HANDOFF_NEW:-}
+# node_modules and dotdirs are universal and handled below; anything else is
+# workplace-specific, so it comes from the environment, not from this public
+# repository. Shared with scripts/git-fleet-status on purpose.
+SKIP_DIRS=${GIT_FLEET_PRUNE:-}
+DRY_RUN=0
+INCLUDE_MUT=0
+DO_FETCH=1
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --dry-run) DRY_RUN=1 ;;
+    --include-mut) INCLUDE_MUT=1 ;;
+    --no-fetch) DO_FETCH=0 ;;
+    --old) OLD_HOST=$2; shift ;;
+    --new) NEW_HOST=$2; shift ;;
+    -h|--help) sed -n '2,36p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *) echo "fm-handoff: unknown argument: $1" >&2; exit 2 ;;
+  esac
+  shift
+done
+
+RUN=$(date -u +%Y%m%dT%H%M%SZ)
+STAGE=$(mktemp -d "${TMPDIR:-/tmp}/fm-handoff.XXXXXX")
+trap 'rm -rf "$STAGE"' EXIT
+
+say() { printf '%s\n' "$*"; }
+die() { printf 'fm-handoff: %s\n' "$*" >&2; exit 1; }
+
+[ -n "$OLD_HOST" ] || die "no source host: export FM_HANDOFF_OLD in ~/.zshenv.local or pass --old"
+[ -n "$NEW_HOST" ] || die "no target host: export FM_HANDOFF_NEW in ~/.zshenv.local or pass --new"
+
+ssh -o BatchMode=yes -o ConnectTimeout=15 "$OLD_HOST" true 2>/dev/null \
+  || die "cannot reach the old host ($OLD_HOST) without a password"
+if [ "$DRY_RUN" = 0 ]; then
+  ssh -o BatchMode=yes -o ConnectTimeout=15 "$NEW_HOST" true 2>/dev/null \
+    || die "cannot reach the new host ($NEW_HOST) without a password"
+fi
+
+# ---------------------------------------------------------------- capture side
+# This runs on the OLD host. Read-only by construction: it writes only into its
+# own scratch directory under /tmp and never mutates a repo.
+cat > "$STAGE/capture.sh" <<'CAPTURE'
+set -uo pipefail
+RUN=$1
+INCLUDE_MUT=$2
+SKIP_DIRS=$3
+OUT=/tmp/fm-handoff-$RUN
+rm -rf "$OUT"; mkdir -p "$OUT/repos"
+MANIFEST=$OUT/manifest.tsv
+: > "$MANIFEST"
+
+cd "$HOME" || exit 1
+# Skip vendored trees, dotdirs, and any build cache named in GIT_FLEET_PRUNE:
+# nothing under those is your work.
+REPOS=$(find . -maxdepth 4 -name .git \
+          -not -path '*/node_modules/*' \
+          -not -path './.*/*' 2>/dev/null | sed 's|/\.git$||' | sort)
+for skip in $SKIP_DIRS; do
+  REPOS=$(printf '%s\n' "$REPOS" | grep -vE "^\./$skip(/|\$)" || true)
+done
+
+for rel in $REPOS; do
+  repo="$HOME/${rel#./}"
+  cd "$repo" 2>/dev/null || continue
+  git rev-parse --git-dir >/dev/null 2>&1 || continue
+
+  dirty=$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')
+  stashes=$(git stash list 2>/dev/null | wc -l | tr -d ' ')
+  has_remote=$(git remote 2>/dev/null | head -1)
+  if [ -n "$has_remote" ]; then
+    local_only=$(git rev-list --count --all --not --remotes 2>/dev/null || echo 0)
+  else
+    local_only=$(git rev-list --count --all 2>/dev/null || echo 0)
+  fi
+  [ "$dirty" = 0 ] && [ "$stashes" = 0 ] && [ "$local_only" = 0 ] && continue
+
+  slug=$(printf '%s' "${rel#./}" | tr '/' '~')
+  d="$OUT/repos/$slug"; mkdir -p "$d"
+  printf '%s\n' "${rel#./}" > "$d/path"
+  git rev-parse --abbrev-ref HEAD 2>/dev/null > "$d/branch" || true
+  git remote -v 2>/dev/null > "$d/remotes" || true
+  git log --oneline -1 2>/dev/null > "$d/head" || true
+
+  # Commits no remote has. With a remote we record prerequisites so the bundle
+  # stays small; without one the bundle must be self-contained.
+  if [ "$local_only" != 0 ]; then
+    if [ -n "$has_remote" ]; then
+      git bundle create "$d/local-commits.bundle" --all --not --remotes >/dev/null 2>&1 \
+        || rm -f "$d/local-commits.bundle"
+    else
+      git bundle create "$d/local-commits.bundle" --all >/dev/null 2>&1 \
+        || rm -f "$d/local-commits.bundle"
+    fi
+    git log --oneline --all --not --remotes > "$d/local-commits.log" 2>/dev/null || true
+  fi
+
+  # Uncommitted tracked changes, binary-safe.
+  if [ "$dirty" != 0 ]; then
+    git diff HEAD --binary > "$d/uncommitted.patch" 2>/dev/null || true
+    [ -s "$d/uncommitted.patch" ] || rm -f "$d/uncommitted.patch"
+    # Untracked but not ignored, so build output stays behind.
+    git ls-files --others --exclude-standard -z > "$d/untracked.list0" 2>/dev/null || true
+    if [ -s "$d/untracked.list0" ]; then
+      tar czf "$d/untracked.tar.gz" --null -T "$d/untracked.list0" 2>/dev/null || true
+      tr '\0' '\n' < "$d/untracked.list0" > "$d/untracked.list"
+    fi
+    rm -f "$d/untracked.list0"
+    git status --porcelain > "$d/status.txt" 2>/dev/null || true
+  fi
+
+  # Stashes, one patch each, newest first as git lists them.
+  if [ "$stashes" != 0 ]; then
+    mkdir -p "$d/stashes"
+    git stash list --format='%gd%x09%s' > "$d/stashes/index.tsv" 2>/dev/null || true
+    i=0
+    while [ "$i" -lt "$stashes" ]; do
+      git stash show -p --binary "stash@{$i}" > "$d/stashes/$i.patch" 2>/dev/null || true
+      i=$((i+1))
+    done
+  fi
+
+  printf '%s\t%s\t%s\t%s\t%s\n' "${rel#./}" "$local_only" "$dirty" "$stashes" \
+    "$(git rev-parse --abbrev-ref HEAD 2>/dev/null)" >> "$MANIFEST"
+  cd "$HOME"
+done
+
+# Review bundles are already self-contained artifacts; copy them wholesale.
+if [ -d "$HOME/cr-bundles" ]; then
+  tar czf "$OUT/cr-bundles.tar.gz" -C "$HOME" cr-bundles 2>/dev/null || true
+fi
+if [ "$INCLUDE_MUT" = 1 ] && [ -d /tmp/mut ]; then
+  tar czf "$OUT/mut.tar.gz" --exclude=node_modules --exclude=.git -C /tmp mut 2>/dev/null || true
+fi
+
+{
+  echo "run       : $RUN"
+  echo "old host  : $(hostname -f)"
+  echo "captured  : $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  echo "repos     : $(wc -l < "$MANIFEST" | tr -d ' ')"
+  echo "cr-bundles: $([ -f "$OUT/cr-bundles.tar.gz" ] && du -h "$OUT/cr-bundles.tar.gz" | cut -f1 || echo skipped)"
+  echo "/tmp/mut  : $([ -f "$OUT/mut.tar.gz" ] && du -h "$OUT/mut.tar.gz" | cut -f1 || echo skipped)"
+} > "$OUT/RUN.txt"
+
+tar czf "/tmp/fm-handoff-$RUN.tar.gz" -C /tmp "fm-handoff-$RUN" 2>/dev/null
+rm -rf "$OUT"
+cat "/tmp/fm-handoff-$RUN.tar.gz"
+rm -f "/tmp/fm-handoff-$RUN.tar.gz"
+CAPTURE
+
+say "fm-handoff run $RUN"
+say "  old: $OLD_HOST  (read-only)"
+say "  new: $NEW_HOST"
+say ""
+
+if [ "$DRY_RUN" = 1 ]; then
+  say "dry run - what the old host would hand over:"
+  ssh -o BatchMode=yes "$OLD_HOST" "bash -s -- '$SKIP_DIRS'" <<'PROBE'
+SKIP_DIRS=$1
+cd "$HOME" || exit 1
+CANDIDATES=$(find . -maxdepth 4 -name .git -not -path '*/node_modules/*' \
+               -not -path './.*/*' 2>/dev/null | sed 's|/\.git$||' | sort)
+for skip in $SKIP_DIRS; do
+  CANDIDATES=$(printf '%s\n' "$CANDIDATES" | grep -vE "^\./$skip(/|\$)" || true)
+done
+printf '%-52s %8s %6s %6s  %s\n' REPO COMMITS DIRTY STASH BRANCH
+for g in $CANDIDATES; do
+  cd "$HOME/${g#./}" 2>/dev/null || continue
+  d=$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')
+  s=$(git stash list 2>/dev/null | wc -l | tr -d ' ')
+  if [ -n "$(git remote 2>/dev/null | head -1)" ]; then
+    c=$(git rev-list --count --all --not --remotes 2>/dev/null || echo 0)
+  else
+    c=$(git rev-list --count --all 2>/dev/null || echo 0)
+  fi
+  [ "$d" = 0 ] && [ "$s" = 0 ] && [ "$c" = 0 ] && { cd "$HOME"; continue; }
+  printf '%-52s %8s %6s %6s  %s\n' "${g#./}" "$c" "$d" "$s" "$(git rev-parse --abbrev-ref HEAD 2>/dev/null)"
+  cd "$HOME"
+done
+echo "cr-bundles: $(du -sh "$HOME/cr-bundles" 2>/dev/null | cut -f1 || echo absent)"
+echo "/tmp/mut  : $(du -sh /tmp/mut 2>/dev/null | cut -f1 || echo absent)  (needs --include-mut)"
+PROBE
+  exit 0
+fi
+
+say "capturing from the old host ..."
+ssh -o BatchMode=yes "$OLD_HOST" "bash -s -- '$RUN' '$INCLUDE_MUT' '$SKIP_DIRS'" \
+  < "$STAGE/capture.sh" > "$STAGE/payload.tar.gz" \
+  || die "capture failed on the old host; nothing was changed there"
+[ -s "$STAGE/payload.tar.gz" ] || die "capture produced an empty payload"
+say "  payload: $(du -h "$STAGE/payload.tar.gz" | cut -f1)"
+
+# Keep a local copy so the Mac is a third place the work exists.
+LOCAL_ARCHIVE="$HOME/Downloads/Firstmate Migration/handoffs"
+mkdir -p "$LOCAL_ARCHIVE"
+cp "$STAGE/payload.tar.gz" "$LOCAL_ARCHIVE/fm-handoff-$RUN.tar.gz"
+say "  local copy: $LOCAL_ARCHIVE/fm-handoff-$RUN.tar.gz"
+
+say "landing on the new host ..."
+# The lander is copied over as a file because the payload itself occupies stdin.
+cat > "$STAGE/land.sh" <<'LANDER'
+set -uo pipefail
+RUN=$1
+DO_FETCH=$2
+BASE=$HOME/handoff
+mkdir -p "$BASE"
+cd "$BASE"
+rm -rf "fm-handoff-$RUN"
+tar xzf - 2>/dev/null || { echo "fm-handoff: failed to unpack payload" >&2; exit 1; }
+[ -d "fm-handoff-$RUN" ] || { echo "fm-handoff: payload missing its run directory" >&2; exit 1; }
+ln -sfn "fm-handoff-$RUN" latest
+D="$BASE/fm-handoff-$RUN"
+cat "$D/RUN.txt"
+echo
+printf '%-52s %-9s %s\n' REPO BUNDLE 'FETCHED AS'
+for rd in "$D"/repos/*/; do
+  [ -d "$rd" ] || continue
+  rel=$(cat "$rd/path")
+  target="$HOME/$rel"
+  bundle="$rd/local-commits.bundle"
+  state=none; fetched="-"
+  if [ -f "$bundle" ]; then
+    state=present
+    if [ "$DO_FETCH" = 1 ] && [ -d "$target/.git" ]; then
+      if git -C "$target" fetch --quiet "$bundle" \
+           "+refs/heads/*:refs/handoff/$RUN/*" 2>/dev/null; then
+        fetched="refs/handoff/$RUN/*"
+      else
+        fetched="MISSING-BASE (see note)"
+      fi
+    elif [ "$DO_FETCH" = 1 ]; then
+      fetched="no such repo here"
+    fi
+  fi
+  printf '%-52s %-9s %s\n' "$rel" "$state" "$fetched"
+done
+echo
+echo "payload  : $D"
+echo "latest   : $BASE/latest"
+LANDER
+ssh -o BatchMode=yes "$NEW_HOST" "cat > /tmp/fm-land-$RUN.sh" < "$STAGE/land.sh"
+ssh -o BatchMode=yes "$NEW_HOST" "bash /tmp/fm-land-$RUN.sh '$RUN' '$DO_FETCH'; rm -f /tmp/fm-land-$RUN.sh" \
+  < "$STAGE/payload.tar.gz" || die "landing failed on the new host"
+
+cat <<EOF
+
+Done. Nothing on the old host changed, and nothing on the new host was merged.
+
+On the new host, to see what came over:
+  git -C ~/<repo> log --oneline --graph refs/handoff/$RUN/
+  cat ~/handoff/latest/repos/<repo~slug>/local-commits.log
+
+To take a branch:
+  git -C ~/<repo> checkout -b <name> refs/handoff/$RUN/<branch>
+
+To reapply uncommitted work or a stash:
+  git -C ~/<repo> apply ~/handoff/latest/repos/<repo~slug>/uncommitted.patch
+  git -C ~/<repo> apply ~/handoff/latest/repos/<repo~slug>/stashes/0.patch
+  tar xzf ~/handoff/latest/repos/<repo~slug>/untracked.tar.gz -C ~/<repo>
+
+MISSING-BASE means that repo's clone on the new host does not yet have the
+commits the bundle builds on. Fetch its remote there, then re-run:
+  git -C ~/<repo> fetch --all
+  fm-handoff
+EOF
