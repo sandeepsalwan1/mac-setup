@@ -5,30 +5,25 @@ import type {
 
 export const EARLY_COMPACTION_TOKENS = 272_000;
 
-const BEDROCK_LARGE_CONTEXT_MODELS = new Set([
-  "global.openai.gpt-5.6-luna",
-  "global.openai.gpt-5.6-sol",
-  "global.openai.gpt-5.6-terra",
-  "openai.gpt-5.6-luna",
-  "openai.gpt-5.6-sol",
-  "openai.gpt-5.6-terra",
-]);
-
+// Pi derives the compaction threshold, the footer denominator, and the per-request
+// output budget from one number: model.contextWindow. Lowering it in models.json to
+// buy earlier compaction also clamps maxTokens, which collapses to a single output
+// token once a session passes the faked window. So the window stays truthful and the
+// threshold lives here instead, applied to every model whose window exceeds it.
 export function shouldCompactEarly(ctx: ExtensionContext): boolean {
-  const model = ctx.model;
+  const contextWindow = ctx.model?.contextWindow;
   const tokens = ctx.getContextUsage()?.tokens;
 
   return (
-    model?.provider === "amazon-bedrock" &&
-    BEDROCK_LARGE_CONTEXT_MODELS.has(model.id) &&
-    model.contextWindow > EARLY_COMPACTION_TOKENS &&
+    contextWindow !== undefined &&
+    contextWindow > EARLY_COMPACTION_TOKENS &&
     tokens !== null &&
     tokens !== undefined &&
     tokens >= EARLY_COMPACTION_TOKENS
   );
 }
 
-export default function bedrockEarlyCompaction(pi: ExtensionAPI): void {
+export default function earlyCompaction(pi: ExtensionAPI): void {
   let compactionInProgress = false;
 
   const compactIfNeeded = (ctx: ExtensionContext): void => {

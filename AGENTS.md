@@ -10,7 +10,7 @@ Deliberate decisions in this repo:
 - Browser and Computer Use are proprietary Codex plugins. Do not vendor their code. `computer-use-cli` is only a tracked shell front end to the local official runtime. Keep Browser plugin-managed; `scripts/link-official-codex-skills` exposes only the locally installed Computer Use skill.
 - Managed authored skills are exact snapshots under `skills/`. Home Manager replaces only those named skill directories and preserves every unrelated installed skill.
 - Herdr's prefix is the right Command key, remapped to F12 in the HID stack because a terminal cannot transmit a bare modifier; that indirection is what makes the same key work over ssh. Herdr accepts `f13` and then ignores its escape sequence, and its onboarding overlay swallows every key when `onboarding = false` is absent, so any future rebinding must be proved against a running Herdr, not just `config check`. Keep the config, terminal course, and regression synchronized.
-- Keep Pi model context windows truthful; configure earlier compaction independently of provider request capacity.
+- Keep Pi model context windows truthful for every provider, and never add a `models.json` `contextWindow` override. Pi budgets output tokens from that same number, so shrinking it to compact sooner clamps replies to one token once the session passes the faked limit. `home/.pi/agent/extensions/early-compaction.ts` owns the 272K threshold for any window larger than it.
 - Never commit `.no-mistakes/` validation evidence. The directory is gitignored.
 - Managed Pi packages in `home/.pi/agent/settings.json` are exact npm version pins. Never declare a Pi package from a Git URL; `tests/pi-calm.test.sh` enforces this.
 

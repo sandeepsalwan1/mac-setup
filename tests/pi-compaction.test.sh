@@ -1,23 +1,22 @@
 #!/usr/bin/env bash
-# Regression coverage for the independent 272K Bedrock compaction threshold.
+# Regression coverage for the independent 272K compaction threshold.
 set -euo pipefail
 
 # shellcheck source=tests/lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
-EXTENSION="$ROOT/home/.pi/agent/extensions/bedrock-early-compaction.ts"
+EXTENSION="$ROOT/home/.pi/agent/extensions/early-compaction.ts"
 MODELS="$ROOT/home/.pi/agent/models.json"
 PI_PACKAGE_DIR=${PI_COMPACTION_TEST_PACKAGE_DIR:-"$(npm root -g 2>/dev/null)/@earendil-works/pi-coding-agent"}
 
-[ -f "$EXTENSION" ] || fail "Bedrock early-compaction extension is missing"
+[ -f "$EXTENSION" ] || fail "early-compaction extension is missing"
 
-if jq -e '.providers["amazon-bedrock"].modelOverrides["global.openai.gpt-5.6-sol"].contextWindow' \
-	"$MODELS" >/dev/null 2>&1; then
-	fail "Bedrock GPT-5.6 Sol context window is still overridden"
-fi
-if jq -e '.providers["amazon-bedrock"].modelOverrides["openai.gpt-5.6-sol"].contextWindow' \
-	"$MODELS" >/dev/null 2>&1; then
-	fail "regional Bedrock GPT-5.6 Sol context window is still overridden"
+# No provider may buy earlier compaction by shrinking a context window: that number
+# also budgets output tokens. The extension above is the only 272K mechanism.
+if [ -f "$MODELS" ] &&
+	jq -e '[.providers // {} | .[] | .modelOverrides // {} | .[] | .contextWindow] | any' \
+		"$MODELS" >/dev/null 2>&1; then
+	fail "models.json overrides a model context window"
 fi
 
 if [ ! -f "$PI_PACKAGE_DIR/package.json" ]; then
@@ -101,13 +100,22 @@ check(
   "compaction failure was not reported",
 );
 
-ctx.model = { ...model, provider: "openai-codex" };
-await fire("agent_settled", ctx);
-check(compactions.length === 2, "extension compacted a non-Bedrock model");
-
-ctx.model = { ...model, contextWindow: 272_000 };
-await fire("agent_settled", ctx);
-check(compactions.length === 2, "extension treated a constrained model as large-context");
+// The threshold follows the window, not the provider, so a large-context model on any
+// backend gets the same 272K treatment and a model already inside 272K is left to Pi.
+check(
+  extension.shouldCompactEarly({
+    ...ctx,
+    model: { ...model, provider: "openai-codex", id: "gpt-5.6-luna" },
+  }),
+  "a large-context model outside Bedrock does not use the 272K threshold",
+);
+check(
+  !extension.shouldCompactEarly({
+    ...ctx,
+    model: { ...model, contextWindow: 272_000 },
+  }),
+  "extension treated a constrained model as large-context",
+);
 
 const piAiDir = `${process.env.PI_PACKAGE_DIR}/node_modules/@earendil-works/pi-ai/dist`;
 const { getModels } = await import(pathToFileURL(`${piAiDir}/compat.js`).href);
@@ -125,6 +133,16 @@ check(
   regionalCatalogModel?.contextWindow === 1_050_000,
   "regional Bedrock GPT-5.6 Sol is not a 1.05M model",
 );
+
+// Pi ships 272K for Codex GPT-5.6 itself, so pinning it locally only risks drifting
+// into the clamp below the day Pi publishes the backend's larger window.
+for (const id of ["gpt-5.6-luna", "gpt-5.6-sol", "gpt-5.6-terra"]) {
+  const codexModel = getModels("openai-codex").find((candidate) => candidate.id === id);
+  check(
+    codexModel?.contextWindow === 272_000,
+    `Codex ${id} no longer ships a 272K window, so the extension must cover it`,
+  );
+}
 
 const failedSessionEstimate = {
   systemPrompt: "",
@@ -149,4 +167,4 @@ check(fakeBudget === 1, "regression fixture no longer reproduces the one-token c
 check(realBudget === 128_000, `real model window unexpectedly clamps output to ${realBudget}`);
 JS
 
-pass "Bedrock keeps its 1.05M request window and compacts independently at 272K"
+pass "context windows stay truthful and every large-context model compacts at 272K"

@@ -154,11 +154,20 @@ npm install -g --ignore-scripts @earendil-works/pi-coding-agent
 ```
 
 Home Manager owns only the authored Pi resources: the `~/.pi/agent/themes` and
-`~/.pi/agent/extensions` directories, plus the individual `models.json` and
-`settings.json` files. Pi's credentials, session history, and other runtime state
+`~/.pi/agent/extensions` directories, plus the individual `settings.json` file.
+Pi's credentials, session history, and other runtime state
 stay local and untracked. The local extensions directory is for public
 repository-authored extensions only; third-party package code never belongs
 there. Run `/reload` in Pi after editing a local extension.
+
+There is deliberately no `models.json`. Pi reads one number, `model.contextWindow`,
+for three unrelated jobs: when to compact, what the footer shows, and how many output
+tokens a request may ask for. Shrinking a window to compact sooner therefore starves
+the reply - past the faked limit `clampMaxTokensToContext` collapses the output budget
+to a single token. `home/.pi/agent/extensions/early-compaction.ts` holds the 272K
+threshold instead and leaves every published window alone, so the footer on a 1.05M
+Bedrock model correctly reads a low percentage of 1M while compaction still runs at
+272K. `tests/pi-compaction.test.sh` pins both halves.
 
 `home/.pi/agent/settings.json` declares third-party Pi packages as exact npm
 version pins, currently `pi-web-access` and

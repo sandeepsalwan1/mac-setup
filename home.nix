@@ -292,8 +292,6 @@ in
       config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.pi/agent/themes";
     ".pi/agent/extensions".source =
       config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.pi/agent/extensions";
-    ".pi/agent/models.json".source =
-      config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.pi/agent/models.json";
     ".pi/agent/AGENTS.md" = {
       source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
       force = true;
