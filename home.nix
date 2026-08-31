@@ -21,6 +21,7 @@ let
     "obsidian-bases"
     "obsidian-cli"
     "obsidian-markdown"
+    "personal-context"
     "shadcn"
   ];
   skillRoots = [
