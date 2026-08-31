@@ -221,8 +221,9 @@ Darwin)
 *)
 	install_linux_tools
 	link_commands
-	# Before the host-local override below, so that `git config --global` writes
-	# its [delta] section above the include and the override still wins.
+	# Before the host-local override below. `git config --global` appends a new
+	# [delta] section at the end of ~/.gitconfig, so running it after the include
+	# is what puts the override where git reads it last.
 	wire_git_include
 	adjust_for_old_less
 	;;
