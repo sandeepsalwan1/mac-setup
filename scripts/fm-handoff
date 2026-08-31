@@ -7,7 +7,9 @@
 # timestamped directory on the new host and repoints a "latest" symlink.
 #
 # What it captures, per git repo that has anything uncaptured:
-#   - every commit on a local branch that no remote has, as a git bundle
+#   - every commit no reachable remote has, as a git bundle. A repo cloned from
+#     another directory on the source host has no remote the target can reach,
+#     so its bundle is made self-contained rather than thin.
 #   - uncommitted tracked changes, as a patch
 #   - untracked, non-ignored files, as a tarball
 #   - every stash, as a numbered patch
@@ -87,6 +89,15 @@ rm -rf "$OUT"; mkdir -p "$OUT/repos"
 MANIFEST=$OUT/manifest.tsv
 : > "$MANIFEST"
 
+# First fetch remote that some other machine could actually clone from. A
+# filesystem path or file:// URL is local to this host and does not count.
+git_net_remote() {
+  git remote -v 2>/dev/null \
+    | awk '$3 == "(fetch)" { print $2 }' \
+    | grep -E '^(ssh|https?)://|^[A-Za-z0-9._-]+@[A-Za-z0-9._-]+:' \
+    | head -1
+}
+
 cd "$HOME" || exit 1
 # Skip vendored trees, dotdirs, and any build cache named in GIT_FLEET_PRUNE:
 # nothing under those is your work.
@@ -104,8 +115,13 @@ for rel in $REPOS; do
 
   dirty=$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')
   stashes=$(git stash list 2>/dev/null | wc -l | tr -d ' ')
-  has_remote=$(git remote 2>/dev/null | head -1)
-  if [ -n "$has_remote" ]; then
+  # A remote only helps the target host if the target host can reach it. Many
+  # repos here were cloned from another directory on this same machine, so
+  # their "remote" is a path that exists nowhere else; a thin bundle built
+  # against one has no base to land on and restoring it fails with "remote
+  # transport reported error". Only a real network remote earns a thin bundle.
+  net_remote=$(git_net_remote)
+  if [ -n "$net_remote" ]; then
     local_only=$(git rev-list --count --all --not --remotes 2>/dev/null || echo 0)
   else
     local_only=$(git rev-list --count --all 2>/dev/null || echo 0)
@@ -119,17 +135,22 @@ for rel in $REPOS; do
   git remote -v 2>/dev/null > "$d/remotes" || true
   git log --oneline -1 2>/dev/null > "$d/head" || true
 
-  # Commits no remote has. With a remote we record prerequisites so the bundle
-  # stays small; without one the bundle must be self-contained.
+  # With a reachable remote, record prerequisites so the bundle stays small.
+  # Otherwise it must be self-contained, because nothing on the target host can
+  # supply the base objects. Record which, so the lander prints a command that
+  # actually works instead of one that looks like the work was lost.
   if [ "$local_only" != 0 ]; then
-    if [ -n "$has_remote" ]; then
+    if [ -n "$net_remote" ]; then
+      printf 'thin\n' > "$d/bundle-kind"
       git bundle create "$d/local-commits.bundle" --all --not --remotes >/dev/null 2>&1 \
         || rm -f "$d/local-commits.bundle"
+      git log --oneline --all --not --remotes > "$d/local-commits.log" 2>/dev/null || true
     else
+      printf 'full\n' > "$d/bundle-kind"
       git bundle create "$d/local-commits.bundle" --all >/dev/null 2>&1 \
         || rm -f "$d/local-commits.bundle"
+      git log --oneline --all -200 > "$d/local-commits.log" 2>/dev/null || true
     fi
-    git log --oneline --all --not --remotes > "$d/local-commits.log" 2>/dev/null || true
   fi
 
   # Uncommitted tracked changes, binary-safe.
@@ -159,7 +180,7 @@ for rel in $REPOS; do
 
   printf '%s\t%s\t%s\t%s\t%s\n' "${rel#./}" "$local_only" "$dirty" "$stashes" \
     "$(git rev-parse --abbrev-ref HEAD 2>/dev/null)" >> "$MANIFEST"
-  cd "$HOME"
+  cd "$HOME" || exit 1
 done
 
 # Review bundles are already self-contained artifacts; copy them wholesale.
@@ -194,25 +215,35 @@ if [ "$DRY_RUN" = 1 ]; then
   say "dry run - what the old host would hand over:"
   ssh -o BatchMode=yes "$OLD_HOST" "bash -s -- '$SKIP_DIRS'" <<'PROBE'
 SKIP_DIRS=$1
+git_net_remote() {
+  git remote -v 2>/dev/null \
+    | awk '$3 == "(fetch)" { print $2 }' \
+    | grep -E '^(ssh|https?)://|^[A-Za-z0-9._-]+@[A-Za-z0-9._-]+:' \
+    | head -1
+}
 cd "$HOME" || exit 1
 CANDIDATES=$(find . -maxdepth 4 -name .git -not -path '*/node_modules/*' \
                -not -path './.*/*' 2>/dev/null | sed 's|/\.git$||' | sort)
 for skip in $SKIP_DIRS; do
   CANDIDATES=$(printf '%s\n' "$CANDIDATES" | grep -vE "^\./$skip(/|\$)" || true)
 done
-printf '%-52s %8s %6s %6s  %s\n' REPO COMMITS DIRTY STASH BRANCH
+printf '%-52s %8s %6s %6s %-6s %s\n' REPO COMMITS DIRTY STASH BUNDLE BRANCH
 for g in $CANDIDATES; do
   cd "$HOME/${g#./}" 2>/dev/null || continue
   d=$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')
   s=$(git stash list 2>/dev/null | wc -l | tr -d ' ')
-  if [ -n "$(git remote 2>/dev/null | head -1)" ]; then
+  if [ -n "$(git_net_remote)" ]; then
+    k=thin
     c=$(git rev-list --count --all --not --remotes 2>/dev/null || echo 0)
   else
+    k=full
     c=$(git rev-list --count --all 2>/dev/null || echo 0)
   fi
-  [ "$d" = 0 ] && [ "$s" = 0 ] && [ "$c" = 0 ] && { cd "$HOME"; continue; }
-  printf '%-52s %8s %6s %6s  %s\n' "${g#./}" "$c" "$d" "$s" "$(git rev-parse --abbrev-ref HEAD 2>/dev/null)"
-  cd "$HOME"
+  [ "$d" = 0 ] && [ "$s" = 0 ] && [ "$c" = 0 ] && { cd "$HOME" || exit 1; continue; }
+  [ "$c" = 0 ] && k=-
+  printf '%-52s %8s %6s %6s %-6s %s\n' "${g#./}" "$c" "$d" "$s" "$k" \
+    "$(git rev-parse --abbrev-ref HEAD 2>/dev/null)"
+  cd "$HOME" || exit 1
 done
 echo "cr-bundles: $(du -sh "$HOME/cr-bundles" 2>/dev/null | cut -f1 || echo absent)"
 echo "/tmp/mut  : $(du -sh /tmp/mut 2>/dev/null | cut -f1 || echo absent)  (needs --include-mut)"
@@ -241,7 +272,7 @@ RUN=$1
 DO_FETCH=$2
 BASE=$HOME/handoff
 mkdir -p "$BASE"
-cd "$BASE"
+cd "$BASE" || { echo "fm-handoff: cannot enter $BASE" >&2; exit 1; }
 rm -rf "fm-handoff-$RUN"
 tar xzf - 2>/dev/null || { echo "fm-handoff: failed to unpack payload" >&2; exit 1; }
 [ -d "fm-handoff-$RUN" ] || { echo "fm-handoff: payload missing its run directory" >&2; exit 1; }
@@ -249,7 +280,30 @@ ln -sfn "fm-handoff-$RUN" latest
 D="$BASE/fm-handoff-$RUN"
 cat "$D/RUN.txt"
 echo
+# A bundle names more than branches: remote-tracking refs, the checked-out
+# HEAD, and one HEAD per linked worktree. "git clone" of a bundle maps only
+# refs/heads/*, which silently drops the rest - on one repo here that was 127
+# of 138 commits. Always move every ref explicitly.
+# Wildcard refspecs that match nothing are ignored, but a plain one that does
+# not is fatal and aborts the whole fetch: "couldn't find remote ref HEAD".
+# A thin bundle has no HEAD ref, because HEAD's commit already exists in the
+# remote and is excluded, so ask for HEAD only when the bundle really has it.
+bundle_has_head() {
+  git bundle list-heads "$1" 2>/dev/null \
+    | awk '$2 == "HEAD" { found = 1 } END { exit !found }'
+}
+RESTORE_SH="$D/restore-missing.sh"
+RESTORE_N=0
+{
+  echo "#!/usr/bin/env bash"
+  echo "# Generated by fm-handoff run $RUN. Recreates the repos that this host"
+  echo "# has no clone of, preserving every ref exactly as the source had it."
+  echo "set -uo pipefail"
+} > "$RESTORE_SH"
+
 printf '%-52s %-9s %s\n' REPO BUNDLE 'FETCHED AS'
+RESTORE_REMOTE=""
+RESTORE_ALT=""
 for rd in "$D"/repos/*/; do
   [ -d "$rd" ] || continue
   rel=$(cat "$rd/path")
@@ -259,18 +313,102 @@ for rd in "$D"/repos/*/; do
   if [ -f "$bundle" ]; then
     state=present
     if [ "$DO_FETCH" = 1 ] && [ -d "$target/.git" ]; then
-      if git -C "$target" fetch --quiet "$bundle" \
-           "+refs/heads/*:refs/handoff/$RUN/*" 2>/dev/null; then
+      specs=(
+        "+refs/heads/*:refs/handoff/$RUN/heads/*"
+        "+refs/remotes/*:refs/handoff/$RUN/remotes/*"
+        "+refs/tags/*:refs/handoff/$RUN/tags/*"
+        "+worktrees/*/HEAD:refs/handoff/$RUN/worktrees/*"
+      )
+      bundle_has_head "$bundle" \
+        && specs+=( "+HEAD:refs/handoff/$RUN/checked-out" )
+      if git -C "$target" fetch --quiet "$bundle" "${specs[@]}" 2>/dev/null; then
         fetched="refs/handoff/$RUN/*"
       else
         fetched="MISSING-BASE (see note)"
       fi
     elif [ "$DO_FETCH" = 1 ]; then
-      fetched="no such repo here"
+      # No clone to fetch into. Whether the bundle alone is enough depends on
+      # how it was built. A thin bundle's base objects live in a network remote,
+      # so it must be cloned from there first; a full bundle is self-contained.
+      # The capture side recorded which, because the wrong command here looks
+      # exactly like the work was lost.
+      kind=full
+      [ -f "$rd/bundle-kind" ] && kind=$(cat "$rd/bundle-kind")
+      if [ "$kind" = thin ]; then
+        url=$(awk '$3 == "(fetch)" { print $2; exit }' "$rd/remotes")
+        # A thin bundle needs only SOME clone of the same remote to supply its
+        # base objects, and this host may already have one under a different
+        # directory name. Prefer that over demanding a fresh network clone.
+        alt=""
+        for other in "$D"/repos/*/; do
+          [ -d "$other" ] || continue
+          orel=$(cat "$other/path")
+          [ "$orel" = "$rel" ] && continue
+          [ -d "$HOME/$orel/.git" ] || continue
+          [ -s "$other/remotes" ] || continue
+          if [ "$(awk '$3 == "(fetch)" { print $2; exit }' "$other/remotes")" = "$url" ]; then
+            alt=$orel
+            break
+          fi
+        done
+        if [ -n "$alt" ]; then
+          fetched="no clone yet (land it in $alt)"
+          RESTORE_ALT="${RESTORE_ALT}  $rel  ->  ~/$alt
+      git -C ~/$alt fetch ~/handoff/fm-handoff-$RUN/repos/$(basename "$rd")/local-commits.bundle \\
+        '+refs/heads/*:refs/handoff/$RUN-$(basename "$rd")/heads/*'
+"
+        else
+          fetched="no clone yet (needs its remote)"
+          RESTORE_REMOTE="${RESTORE_REMOTE}  $rel
+      from: $url
+"
+        fi
+      else
+        fetched="no clone yet (see RESTORE)"
+        RESTORE_N=$((RESTORE_N + 1))
+        # Restore into the source's own ref layout rather than a namespace, so
+        # the repo comes back exactly as it was. HEAD and each worktree head
+        # land under refs/recovered/ because they are not refs/* names.
+        rspecs="'+refs/*:refs/*' '+worktrees/*/HEAD:refs/recovered/worktrees/*'"
+        bundle_has_head "$bundle" \
+          && rspecs="$rspecs '+HEAD:refs/recovered/checked-out'"
+        {
+          echo
+          echo "echo '-> $rel'"
+          echo "git init --quiet \"\$HOME/$rel\""
+          echo "git -C \"\$HOME/$rel\" fetch \\"
+          echo "  \"\$HOME/handoff/fm-handoff-$RUN/repos/$(basename "$rd")/local-commits.bundle\" \\"
+          echo "  $rspecs"
+        } >> "$RESTORE_SH"
+      fi
     fi
   fi
   printf '%-52s %-9s %s\n' "$rel" "$state" "$fetched"
 done
+if [ "$RESTORE_N" -gt 0 ]; then
+  chmod +x "$RESTORE_SH"
+  echo
+  echo "RESTORE - $RESTORE_N repos have no clone here. Their bundles are"
+  echo "self-contained, so one command recreates all of them with every branch,"
+  echo "remote-tracking ref, and detached worktree head the source had:"
+  echo "  bash $RESTORE_SH"
+else
+  rm -f "$RESTORE_SH"
+fi
+if [ -n "$RESTORE_ALT" ]; then
+  echo
+  echo "RESTORE - no clone here under that name, but another clone of the same"
+  echo "remote is already here and can supply the bundle's base objects, so the"
+  echo "commits land with one fetch each:"
+  printf '%s' "$RESTORE_ALT"
+fi
+if [ -n "$RESTORE_REMOTE" ]; then
+  echo
+  echo "RESTORE - no clone here yet, and these bundles are THIN: they hold only"
+  echo "the commits the remote lacks, so cloning the bundle alone fails. Clone"
+  echo "each from its remote first, then re-run fm-handoff to land the commits:"
+  printf '%s' "$RESTORE_REMOTE"
+fi
 echo
 echo "payload  : $D"
 echo "latest   : $BASE/latest"
@@ -284,11 +422,17 @@ cat <<EOF
 Done. Nothing on the old host changed, and nothing on the new host was merged.
 
 On the new host, to see what came over:
-  git -C ~/<repo> log --oneline --graph refs/handoff/$RUN/
+  git -C ~/<repo> for-each-ref refs/handoff/$RUN/
   cat ~/handoff/latest/repos/<repo~slug>/local-commits.log
 
+Every ref arrives namespaced, so nothing of yours is touched:
+  refs/handoff/$RUN/heads/<branch>      a branch from the old host
+  refs/handoff/$RUN/remotes/<remote>/*  its remote-tracking refs
+  refs/handoff/$RUN/checked-out         whatever HEAD pointed at
+  refs/handoff/$RUN/worktrees/<name>    a detached worktree's head
+
 To take a branch:
-  git -C ~/<repo> checkout -b <name> refs/handoff/$RUN/<branch>
+  git -C ~/<repo> checkout -b <name> refs/handoff/$RUN/heads/<branch>
 
 To reapply uncommitted work or a stash:
   git -C ~/<repo> apply ~/handoff/latest/repos/<repo~slug>/uncommitted.patch
