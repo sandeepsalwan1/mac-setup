@@ -19,6 +19,8 @@
 // removes, or reorders semantic input, tool execution, model context, session
 // storage, or export data; /export and /share render the complete stock
 // transcript.
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { type ExtensionAPI, type ExtensionUIContext } from "@earendil-works/pi-coding-agent";
 import { getKeybindings } from "@earendil-works/pi-tui";
 import { installCalmBuiltInToolShellLayout } from "./lib/built-in-tool-shells.ts";
@@ -37,6 +39,29 @@ import {
 
 const CALM_STATUS_KEY = "calm";
 
+// Pi renames *both* registrations when two extensions claim one command name,
+// so plain /calm would vanish inside a project that ships its own calm command.
+// Pi loads project-local extensions before global ones but offers no per-extension
+// disable and no command-registry introspection, so detect the clash from the
+// project's own extension sources and stand down. Calm is presentation only, so
+// yielding to the project's version is always safe.
+function projectShipsOwnCalm(): boolean {
+  const dir = join(process.cwd(), ".pi", "extensions");
+  try {
+    return readdirSync(dir, { withFileTypes: true }).some((entry) => {
+      const source = entry.isDirectory() ? join(dir, entry.name, "index.ts") : join(dir, entry.name);
+      if (!/\.[cm]?[jt]s$/.test(source)) return false;
+      try {
+        return /registerCommand\(\s*["'`]calm["'`]/.test(readFileSync(source, "utf8"));
+      } catch {
+        return false;
+      }
+    });
+  } catch {
+    return false;
+  }
+}
+
 // Each presentation adapter probes the exact Pi API it patches. If a future Pi
 // removes that API, only the affected adapter degrades; the rest of Calm keeps
 // working.
@@ -50,6 +75,7 @@ function installCalmPresentationAdapter(name: string, install: () => void): void
 }
 
 export default function (pi: ExtensionAPI) {
+  if (projectShipsOwnCalm()) return;
   installCalmPresentationAdapter("collapsed-thinking", installCalmCollapsedThinkingLayout);
   installCalmPresentationAdapter("built-in-tool-shells", installCalmBuiltInToolShellLayout);
 
