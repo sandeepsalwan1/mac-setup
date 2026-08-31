@@ -100,6 +100,77 @@ check(
   "compaction failure was not reported",
 );
 
+// Losing a race with another compaction is transient, not a failure. Pi nulls one of
+// its two abort controllers in a `finally` while a second compaction is still reading
+// `<controller>.signal` across an await, which throws. It must clear the guard so the
+// next settle retries, and it must never reach the captain as an error.
+const quietBaseline = notifications.length;
+await fire("agent_settled", ctx);
+check(compactions.length === 3, "extension did not retry after a reported failure");
+compactions[2].onError(
+  new Error("Cannot read properties of undefined (reading 'signal')"),
+);
+check(
+  notifications.length === quietBaseline,
+  "transient compaction race was reported to the captain as a failure",
+);
+await fire("agent_settled", ctx);
+check(compactions.length === 4, "transient race left the compaction guard stuck");
+compactions[3].onComplete();
+
+for (
+  const message of [
+    "Compaction cancelled",
+    "Cannot submit a prompt while compaction is in progress. Wait for compaction to finish and retry.",
+  ]
+) {
+  const before = notifications.length;
+  await fire("agent_settled", ctx);
+  compactions[compactions.length - 1].onError(new Error(message));
+  check(
+    notifications.length === before,
+    `benign compaction interleaving was reported as a failure: ${message}`,
+  );
+}
+
+const abortError = new Error("The operation was aborted");
+abortError.name = "AbortError";
+check(
+  extension.isTransientCompactionRace(abortError),
+  "an aborted compaction was not classified as transient",
+);
+check(
+  !extension.isTransientCompactionRace(new Error("summarization model rejected request")),
+  "a real compaction failure was misclassified as a transient race",
+);
+
+// Pi's own automatic compaction announces itself through these lifecycle events, and
+// stacking a second compaction on one already in flight is what nulls an abort
+// controller mid-read. So an externally started compaction must hold the guard too.
+const externalBaseline = compactions.length;
+await fire("session_before_compact", ctx);
+await fire("agent_settled", ctx);
+check(
+  compactions.length === externalBaseline,
+  "extension stacked a compaction on one Pi had already started",
+);
+await fire("session_compact", ctx);
+await fire("agent_settled", ctx);
+check(
+  compactions.length === externalBaseline + 1,
+  "a completed external compaction did not release the guard",
+);
+compactions[compactions.length - 1].onComplete();
+
+await fire("session_before_compact", ctx);
+await fire("session_compact_failed", ctx);
+await fire("agent_settled", ctx);
+check(
+  compactions.length === externalBaseline + 2,
+  "a failed external compaction did not release the guard",
+);
+compactions[compactions.length - 1].onComplete();
+
 // The threshold follows the window, not the provider, so a large-context model on any
 // backend gets the same 272K treatment and a model already inside 272K is left to Pi.
 check(
