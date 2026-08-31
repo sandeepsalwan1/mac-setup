@@ -163,12 +163,15 @@ in
     };
   };
 
+  # The global identity is the personal one, because this repository is public and
+  # the committed address is world-readable. Work repositories set their own
+  # `user.email` locally; see the note in home/AGENTS.local.md.
   programs.git = {
     enable = true;
     settings = {
       user = {
         name = "Sandeep Salwan";
-        email = "salwansa@amazon.com";
+        email = "salwansandeep5@gmail.com";
       };
     };
   };

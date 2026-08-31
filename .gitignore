@@ -36,3 +36,8 @@ __pycache__/
 /home/*.local.env
 /home/*.local.txt
 /scripts/link-local-extras
+
+# Third-party book text kept locally as prompt reference material. It carries an
+# "All rights reserved" notice, so it must not be published from here. Note that a
+# GitHub web upload bypasses this file entirely; that is how it was published once.
+/Clean code agent. .md
