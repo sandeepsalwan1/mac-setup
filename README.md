@@ -27,7 +27,7 @@ It performs these steps:
 2. Gives the checkout the stable `~/.dotfiles` path used by Home Manager.
 3. Checks the configured macOS username.
 4. Applies nix-darwin and Home Manager.
-5. Configures and validates Tab as Herdr's one-key prefix.
+5. Maps the right Command key to F12 and validates it as Herdr's one-key prefix.
 6. Installs Claude Code or Codex only when that command and its Homebrew receipt are both absent.
 7. Installs only the pinned supporting agent tools that are missing or outdated.
 8. Links the locally installed official Codex Computer Use skill when available.
@@ -224,9 +224,23 @@ learn panic
 
 Progress remains in the browser's local storage, not in Git.
 
-Herdr uses <kbd>Tab</kbd> as its one-key prefix, followed by the action key.
-Inside Herdr, tap and release Tab, then press the action key. Caps Lock retains
-its normal macOS behavior.
+Herdr uses <kbd>Right ⌘</kbd> as its one-key prefix, followed by the action key.
+Inside Herdr, tap and release right Command, then press the action key.
+
+A terminal cannot transmit a bare modifier, so macOS remaps the right Command
+usage to F12 in the HID stack (`scripts/apply-herdr-prefix`, reapplied at login
+by a launchd agent) and Herdr binds `f12`. The prefix therefore travels as the
+ordinary `\e[24~` that every terminal and every ssh hop already carries, so the
+same key drives Herdr locally and on a remote server. Left Command keeps every
+macOS shortcut; only the right one is reassigned. F13 looks like the tidier
+target and is a trap: Herdr never decodes the `\e[25~` WezTerm sends for it, so
+the config validates and the prefix silently never fires.
+
+A remote host needs the same two things and nothing else: this repository's
+`home/.config/herdr/config.toml` linked to `~/.config/herdr/config.toml`, and a
+matching Herdr from `herdr update`. Keep `onboarding = false` in that file - the
+onboarding overlay swallows every key, prefix included, which is exactly how a
+correct-looking config ends up doing nothing.
 
 ## Daily use
 

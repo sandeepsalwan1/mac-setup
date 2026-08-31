@@ -49,7 +49,7 @@ window.QBANK = {
     correct: 1,
     why: 'done is idle-you-have-not-seen. Focusing the tab flips it to idle; a CLI read deliberately does not. That is what makes the sidebar an unread inbox.' },
 
-  { q: 'Tab then the percent key splits the pane how?',
+  { q: 'Right ⌘ then the percent key splits the pane how?',
     a: ['Into two panes arranged side by side',
         'Into two panes stacked top and bottom',
         'Into a new tab holding the second pane'],
@@ -64,9 +64,9 @@ window.QBANK = {
     why: 'Herdr is a background server. Closing the window is a detach. Only `herdr server stop` kills the panes.' },
 
   { q: 'Fastest way to read a long stack trace from an agent pane?',
-    a: ['Tab then e, opening scrollback in Neovim',
-        'Tab then y, then select it in copy mode',
-        'Tab then z, then scroll back through it'],
+    a: ['Right ⌘ then e, opening scrollback in Neovim',
+        'Right ⌘ then y, then select it in copy mode',
+        'Right ⌘ then z, then scroll back through it'],
     correct: 0,
     why: 'edit_scrollback drops the history into Neovim with search, motions and yank. Copy mode works but is slower for anything long.' },
 

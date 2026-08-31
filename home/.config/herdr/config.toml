@@ -1,7 +1,12 @@
 onboarding = false
 [keys]
-# Tap Tab, release it, then press the Herdr action key.
-prefix = "tab"
+# Tap the right Command key, release it, then press the Herdr action key.
+# Right Command is not a key a terminal can transmit, so macOS remaps it to F12
+# at the HID layer (scripts/apply-herdr-prefix) and Herdr binds F12. The prefix
+# therefore arrives as the ordinary "\e[24~" that every terminal and every ssh
+# hop already carries, so it behaves identically locally and on a remote server.
+# F13 looks like the tidier choice and is not: Herdr ignores its "\e[25~".
+prefix = "f12"
 focus_pane_left  = "prefix+h"
 focus_pane_down  = "prefix+j"
 focus_pane_up    = "prefix+k"

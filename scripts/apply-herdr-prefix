@@ -1,4 +1,15 @@
 #!/usr/bin/env bash
+# Makes the right Command key Herdr's one-key prefix.
+#
+# A terminal can only transmit what a terminal can encode, and a bare modifier is
+# not that. So the key is renamed one layer lower: macOS remaps the right Command
+# usage to F12 in the HID stack, every application from then on sees a real F12,
+# and WezTerm sends the ordinary "\e[24~" that survives any ssh hop unchanged.
+# Herdr's prefix is F12, so the same keystroke works locally and on a remote
+# server without either side knowing about the remap.
+#
+# The mapping is session state, not a file, so login has to reassert it; the
+# home.nix launchd agent runs this script at load for that reason.
 set -euo pipefail
 
 HIDUTIL_BIN="${HIDUTIL_BIN:-/usr/bin/hidutil}"
@@ -6,7 +17,9 @@ JQ_BIN="${JQ_BIN:-$(command -v jq 2>/dev/null || true)}"
 AWK_BIN="${AWK_BIN:-/usr/bin/awk}"
 GREP_BIN="${GREP_BIN:-/usr/bin/grep}"
 UNAME_BIN="${UNAME_BIN:-/usr/bin/uname}"
-CAPS_LOCK_USAGE=30064771129
+# HID usage page 0x07: right GUI is 0xE7, F12 is 0x45.
+RIGHT_COMMAND_USAGE=30064771303
+F12_USAGE=30064771141
 
 die() {
 	printf 'herdr-prefix: %s\n' "$1" >&2
@@ -20,9 +33,12 @@ die() {
 [ -x "$GREP_BIN" ] || die 'grep is unavailable'
 
 current_mapping="$("$HIDUTIL_BIN" property --get UserKeyMapping 2>/dev/null || true)"
+# Every mapping this script does not own is carried over verbatim; only a right
+# Command source is dropped, so a rerun replaces its own pair instead of stacking
+# a duplicate onto it.
 # Dollar-prefixed names in this program are awk fields.
 # shellcheck disable=SC2016
-preserved_pairs="$(printf '%s\n' "$current_mapping" | "$AWK_BIN" -v caps="$CAPS_LOCK_USAGE" '
+preserved_pairs="$(printf '%s\n' "$current_mapping" | "$AWK_BIN" -v owned="$RIGHT_COMMAND_USAGE" '
 	/^[[:space:]]*\{/ { src = ""; dst = "" }
 	/HIDKeyboardModifierMappingSrc[[:space:]]*=/ {
 		src = $3
@@ -32,7 +48,7 @@ preserved_pairs="$(printf '%s\n' "$current_mapping" | "$AWK_BIN" -v caps="$CAPS_
 		dst = $3
 		gsub(/;/, "", dst)
 	}
-	/^[[:space:]]*\}/ && src != "" && dst != "" && src != caps {
+	/^[[:space:]]*\}/ && src != "" && dst != "" && src != owned {
 		print src "\t" dst
 	}
 ')"
@@ -40,6 +56,8 @@ preserved_pairs="$(printf '%s\n' "$current_mapping" | "$AWK_BIN" -v caps="$CAPS_
 # Dollar-prefixed names in this program are jq variables.
 # shellcheck disable=SC2016
 mapping_payload="$(printf '%s\n' "$preserved_pairs" | "$JQ_BIN" -Rnc \
+	--argjson src "$RIGHT_COMMAND_USAGE" \
+	--argjson dst "$F12_USAGE" \
 	'
 	[
 		inputs
@@ -50,14 +68,17 @@ mapping_payload="$(printf '%s\n' "$preserved_pairs" | "$JQ_BIN" -Rnc \
 			HIDKeyboardModifierMappingDst: (.[1] | tonumber)
 		}
 	]
+	+ [ { HIDKeyboardModifierMappingSrc: $src, HIDKeyboardModifierMappingDst: $dst } ]
 	| {UserKeyMapping: .}
 ')"
 
 "$HIDUTIL_BIN" property --set "$mapping_payload" >/dev/null
 applied_mapping="$("$HIDUTIL_BIN" property --get UserKeyMapping 2>/dev/null || true)"
-if printf '%s\n' "$applied_mapping" |
-	"$GREP_BIN" -Fq "HIDKeyboardModifierMappingSrc = $CAPS_LOCK_USAGE;"; then
-	die 'the obsolete Caps Lock source mapping is still active'
-fi
+printf '%s\n' "$applied_mapping" |
+	"$GREP_BIN" -Fq "HIDKeyboardModifierMappingSrc = $RIGHT_COMMAND_USAGE;" ||
+	die 'the right Command mapping did not take effect'
+printf '%s\n' "$applied_mapping" |
+	"$GREP_BIN" -Fq "HIDKeyboardModifierMappingDst = $F12_USAGE;" ||
+	die 'the right Command key was not mapped to F12'
 
-printf '%s\n' 'herdr-prefix: Caps Lock is restored; Herdr uses Tab'
+printf '%s\n' 'herdr-prefix: right Command sends F12; Herdr uses F12'

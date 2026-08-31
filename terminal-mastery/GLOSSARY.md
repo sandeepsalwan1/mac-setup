@@ -63,7 +63,8 @@ _Avoid_: split, terminal
 
 **Prefix**:
 The keystroke that tells Herdr the next key is for Herdr, not for the program inside
-the pane. Configured here as <kbd>Tab</kbd>.
+the pane. Configured here as <kbd>Right ⌘</kbd>, which macOS remaps to F12 so the
+terminal has something it can send; that is why the same key works over ssh.
 _Avoid_: escape key, modifier
 
 **Detach**:

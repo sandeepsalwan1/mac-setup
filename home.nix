@@ -112,6 +112,18 @@ in
       RunAtLoad = true;
     };
   };
+  # The HID remap behind Herdr's one-key prefix is per-boot session state, not a
+  # file, so login has to reassert it or the right Command key silently goes back
+  # to being a modifier after every restart. jq comes from the store because a
+  # launchd agent gets none of the login shell's PATH.
+  launchd.agents.herdr-prefix = {
+    enable = true;
+    config = {
+      ProgramArguments = [ "${dotfiles}/scripts/apply-herdr-prefix" ];
+      EnvironmentVariables.JQ_BIN = "${pkgs.jq}/bin/jq";
+      RunAtLoad = true;
+    };
+  };
   # Links this machine's untracked material: the workplace-specific skills a pure
   # flake cannot enumerate, and any local dotfile that must not be published from
   # a public repository. Both hooks are optional, so a fresh checkout activates

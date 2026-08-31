@@ -9,7 +9,7 @@ Deliberate decisions in this repo:
 - Before an agent performs macOS or Vault onboarding, use the repository launchers so setup runs under verified direct WezTerm; never infer permission from `TERM_PROGRAM` or assume an unopened TCC category is granted.
 - Browser and Computer Use are proprietary Codex plugins. Do not vendor their code. `computer-use-cli` is only a tracked shell front end to the local official runtime. Keep Browser plugin-managed; `scripts/link-official-codex-skills` exposes only the locally installed Computer Use skill.
 - Managed authored skills are exact snapshots under `skills/`. Home Manager replaces only those named skill directories and preserves every unrelated installed skill.
-- Herdr's prefix is Tab. Keep its config, terminal course, and regression synchronized with any future binding change.
+- Herdr's prefix is the right Command key, remapped to F12 in the HID stack because a terminal cannot transmit a bare modifier; that indirection is what makes the same key work over ssh. Herdr accepts `f13` and then ignores its escape sequence, and its onboarding overlay swallows every key when `onboarding = false` is absent, so any future rebinding must be proved against a running Herdr, not just `config check`. Keep the config, terminal course, and regression synchronized.
 - Keep Pi model context windows truthful; configure earlier compaction independently of provider request capacity.
 - Never commit `.no-mistakes/` validation evidence. The directory is gitignored.
 - Managed Pi packages in `home/.pi/agent/settings.json` are exact npm version pins. Never declare a Pi package from a Git URL; `tests/pi-calm.test.sh` enforces this.

@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Validates the one-key Herdr prefix: right Command, remapped to F12 in the HID
+# stack, bound as Herdr's prefix. See scripts/apply-herdr-prefix for why the
+# keystroke has to change its name on the way down.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
@@ -8,7 +11,8 @@ HERDR_BIN="${HERDR_BIN:-$(command -v herdr 2>/dev/null || true)}"
 [ -n "$HERDR_BIN" ] || HERDR_BIN="$HERDR_FALLBACK_BIN"
 APPLY_PREFIX_BIN="${APPLY_PREFIX_BIN:-$ROOT/scripts/apply-herdr-prefix}"
 HIDUTIL_BIN="${HIDUTIL_BIN:-/usr/bin/hidutil}"
-CAPS_LOCK_USAGE=30064771129
+RIGHT_COMMAND_USAGE=30064771303
+F12_USAGE=30064771141
 
 note() {
 	printf 'herdr-prefix: %s\n' "$1"
@@ -19,23 +23,32 @@ die() {
 	exit 1
 }
 
+# Reports whether the live mapping contains right Command -> F12 as one pair,
+# rather than the two lines happening to appear somewhere in the output.
+right_command_is_mapped() {
+	"$HIDUTIL_BIN" property --get UserKeyMapping 2>/dev/null |
+		awk -v src="$RIGHT_COMMAND_USAGE" -v dst="$F12_USAGE" '
+			/^[[:space:]]*\{/ { s = ""; d = "" }
+			/HIDKeyboardModifierMappingSrc[[:space:]]*=/ { s = $3; gsub(/;/, "", s) }
+			/HIDKeyboardModifierMappingDst[[:space:]]*=/ { d = $3; gsub(/;/, "", d) }
+			/^[[:space:]]*\}/ && s == src && d == dst { found = 1 }
+			END { exit(found ? 0 : 1) }
+		'
+}
+
 [ "$(uname -s)" = Darwin ] || die 'this keybinding check supports macOS only'
 [ -r "$HERDR_CONFIG" ] || die "missing Herdr config: $HERDR_CONFIG"
-grep -Eq '^[[:space:]]*prefix[[:space:]]*=[[:space:]]*"tab"[[:space:]]*$' "$HERDR_CONFIG" ||
-	die 'Herdr prefix must remain tab'
+grep -Eq '^[[:space:]]*prefix[[:space:]]*=[[:space:]]*"f12"[[:space:]]*$' "$HERDR_CONFIG" ||
+	die 'Herdr prefix must remain f12, the key the right Command remap produces'
 [ -x "$HERDR_BIN" ] || die 'Herdr is unavailable after the Homebrew activation'
 [ -x "$HIDUTIL_BIN" ] || die 'hidutil is unavailable'
 HERDR_CONFIG_PATH="$HERDR_CONFIG" "$HERDR_BIN" config check >/dev/null
 
-applied_mapping="$("$HIDUTIL_BIN" property --get UserKeyMapping 2>/dev/null || true)"
-if printf '%s\n' "$applied_mapping" |
-	grep -Fq "HIDKeyboardModifierMappingSrc = $CAPS_LOCK_USAGE;"; then
+# The mapping is per-boot session state, so a missing pair is the normal state
+# after a restart rather than a fault; assert it instead of reporting it.
+if ! right_command_is_mapped; then
 	"$APPLY_PREFIX_BIN" >/dev/null
-	applied_mapping="$("$HIDUTIL_BIN" property --get UserKeyMapping 2>/dev/null || true)"
 fi
-if printf '%s\n' "$applied_mapping" |
-	grep -Fq "HIDKeyboardModifierMappingSrc = $CAPS_LOCK_USAGE;"; then
-	die 'the obsolete Caps Lock mapping is still active'
-fi
+right_command_is_mapped || die 'right Command is not mapped to F12'
 
-note 'Tab is the Herdr prefix and Caps Lock is unmodified'
+note 'right Command sends F12 and F12 is the Herdr prefix'
