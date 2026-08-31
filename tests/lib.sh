@@ -25,23 +25,33 @@ pass() {
 }
 
 # --- self-cleaning temp root -------------------------------------------------
+#
+# Roots are recorded in a file rather than a shell array, and the trap is armed
+# here rather than on first use. Every caller reads the root through
+# TMP=$(dotfiles_test_tmproot ...), which runs the function in a subshell, so an
+# array append or a trap installed inside it is discarded the instant it returns.
+# $$ stays the test's own pid inside that subshell, which is what makes one
+# registry per test process possible.
 
-DOTFILES_TEST_CLEANUP_DIRS=()
+DOTFILES_TEST_REGISTRY="${TMPDIR:-/tmp}/dotfiles-test-roots.$$"
 
 dotfiles_test_cleanup() {
   local d
-  for d in "${DOTFILES_TEST_CLEANUP_DIRS[@]:-}"; do
-    [ -n "$d" ] && rm -rf "$d"
-  done
+  [ -f "$DOTFILES_TEST_REGISTRY" ] || return 0
+  while IFS= read -r d; do
+    [ -n "$d" ] || continue
+    rm -rf "$d"
+  done < "$DOTFILES_TEST_REGISTRY"
+  rm -f "$DOTFILES_TEST_REGISTRY"
+  return 0
 }
+
+trap dotfiles_test_cleanup EXIT
 
 dotfiles_test_tmproot() {
   local prefix=${1:-dotfiles-test} root
   root=$(mktemp -d "${TMPDIR:-/tmp}/${prefix}.XXXXXX")
-  if [ "${#DOTFILES_TEST_CLEANUP_DIRS[@]}" -eq 0 ]; then
-    trap dotfiles_test_cleanup EXIT
-  fi
-  DOTFILES_TEST_CLEANUP_DIRS+=("$root")
+  printf '%s\n' "$root" >> "$DOTFILES_TEST_REGISTRY"
   printf '%s\n' "$root"
 }
 

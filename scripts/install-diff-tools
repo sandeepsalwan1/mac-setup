@@ -1,0 +1,232 @@
+#!/usr/bin/env bash
+# Make a diff readable on this host, whichever host it is.
+#
+# The Mac gets delta, lazygit, fzf and jq from Nix, declared in home.nix, so here
+# it only wires the shared git config and verifies the four are present. A dev
+# desk has no Nix and no package for any of them, so they are fetched as pinned,
+# checksummed release binaries into ~/.local/bin - the same place gh, nvim and the
+# node shims already live, and already on PATH from ~/.zshenv.
+#
+# Idempotent and safe to rerun: an already-correct version is left alone, and the
+# git include line is appended once. Running it is the whole install step on a new
+# host, which is why bootstrap.sh and rebuild.sh both call it.
+
+set -uo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+BIN_DIR="${BIN_DIR:-$HOME/.local/bin}"
+GITCONFIG="${GITCONFIG:-$HOME/.gitconfig}"
+INCLUDE_PATH="$ROOT/home/.config/git/pretty-diff.gitconfig"
+
+PROG=install-diff-tools
+
+note() {
+	printf '%s: %s\n' "$PROG" "$1"
+}
+
+die() {
+	printf '%s: %s\n' "$PROG" "$1" >&2
+	exit 1
+}
+
+# name|url|sha256|path inside the archive
+#
+# Checksums are of the downloaded file, taken from the release each URL pins. An
+# empty archive path means the download is the binary itself. delta is glibc-built
+# for aarch64 because upstream ships no aarch64 musl; the x86_64 dev desk is
+# Amazon Linux 2 with glibc 2.26, far too old for the gnu build, so it takes musl.
+MANIFEST_AARCH64='
+delta|https://github.com/dandavison/delta/releases/download/0.19.2/delta-0.19.2-aarch64-unknown-linux-gnu.tar.gz|0bfce159a5cddd5feb3d6db4a616d883ff51253ce08ac7ec11cb1d208cfaab9e|delta-0.19.2-aarch64-unknown-linux-gnu/delta
+lazygit|https://github.com/jesseduffield/lazygit/releases/download/v0.64.1/lazygit_0.64.1_linux_arm64.tar.gz|8b7ca3b344e60340ad1f89f29b9868ee39bcaba5bb92ee818bbe65476bb8b6e7|lazygit
+fzf|https://github.com/junegunn/fzf/releases/download/v0.74.3/fzf-0.74.3-linux_arm64.tar.gz|4a17a17b46bd0c4873e995533de508995c11572c0be0664a5dbcf13f60463046|fzf
+jq|https://github.com/jqlang/jq/releases/download/jq-1.8.2/jq-linux-arm64|8b85c817833814ddca00a144c33705546355afccf0cf39b188f3cdb48b852309|
+'
+MANIFEST_X86_64='
+delta|https://github.com/dandavison/delta/releases/download/0.19.2/delta-0.19.2-x86_64-unknown-linux-musl.tar.gz|f1ea01ca7728ce3462debc359f39dfc7cbbc1a63224b71fefabf92042864aa1b|delta-0.19.2-x86_64-unknown-linux-musl/delta
+lazygit|https://github.com/jesseduffield/lazygit/releases/download/v0.64.1/lazygit_0.64.1_linux_x86_64.tar.gz|f8ea237c41f194cd799b48505518bfdaae4edf5a2ad6bd3d898e939785ee4532|lazygit
+fzf|https://github.com/junegunn/fzf/releases/download/v0.74.3/fzf-0.74.3-linux_amd64.tar.gz|3501a595e4b5c40a6b047340a0e8f805c46fd4e61ef95ef8a136ba8c61cf6f22|fzf
+jq|https://github.com/jqlang/jq/releases/download/jq-1.8.2/jq-linux-amd64|b1c22172dd303f3be49e935aa56aa48a8b7a46e0bc838b4997d3bb451495870f|
+'
+
+sha256_of() {
+	if command -v sha256sum >/dev/null 2>&1; then
+		sha256sum "$1" | awk '{print $1}'
+	else
+		shasum -a 256 "$1" | awk '{print $1}'
+	fi
+}
+
+# The version a pinned URL promises, read back out of the URL rather than tracked
+# a second time: one pin, so the installed binary and the manifest cannot drift.
+version_in_url() {
+	local url=$1 tag
+	case $url in
+	*/releases/download/*) ;;
+	*)
+		printf '\n'
+		return 0
+		;;
+	esac
+	# The tag sits between download/ and the filename. Upstreams disagree on its
+	# shape - 0.19.2, v0.64.1, jq-1.8.2 - so both prefixes come off.
+	tag=${url#*/releases/download/}
+	tag=${tag%%/*}
+	tag=${tag#v}
+	tag=${tag#jq-}
+	printf '%s\n' "$tag"
+}
+
+installed_version() {
+	local name=$1 out
+	out=$("$BIN_DIR/$name" --version 2>/dev/null | head -n 1) || return 1
+	printf '%s\n' "$out"
+}
+
+install_binary() {
+	local name=$1 url=$2 want_sum=$3 member=$4
+	local want_version download got_sum temp
+
+	want_version=$(version_in_url "$url")
+	if [ -x "$BIN_DIR/$name" ] && [ -n "$want_version" ]; then
+		case "$(installed_version "$name")" in
+		*"$want_version"*)
+			note "$name $want_version is already installed"
+			return 0
+			;;
+		esac
+	fi
+
+	temp=$(mktemp -d "${TMPDIR:-/tmp}/$PROG.XXXXXX") || die 'cannot create a temporary directory'
+	download="$temp/${url##*/}"
+
+	note "downloading $name $want_version"
+	curl --proto '=https' --tlsv1.2 -fsSL "$url" -o "$download" || {
+		rm -rf "$temp"
+		die "could not download $url"
+	}
+
+	got_sum=$(sha256_of "$download")
+	[ "$got_sum" = "$want_sum" ] || {
+		rm -rf "$temp"
+		die "checksum mismatch for ${url##*/}: got $got_sum, expected $want_sum"
+	}
+
+	if [ -n "$member" ]; then
+		tar -xzf "$download" -C "$temp" "$member" || {
+			rm -rf "$temp"
+			die "could not extract $member from ${url##*/}"
+		}
+		install -m 0755 "$temp/$member" "$BIN_DIR/$name"
+	else
+		install -m 0755 "$download" "$BIN_DIR/$name"
+	fi
+
+	rm -rf "$temp"
+	note "installed $name $want_version"
+}
+
+install_linux_tools() {
+	local manifest name url sum member
+
+	case "$(uname -m)" in
+	aarch64 | arm64) manifest=$MANIFEST_AARCH64 ;;
+	x86_64 | amd64) manifest=$MANIFEST_X86_64 ;;
+	*) die "unsupported architecture: $(uname -m)" ;;
+	esac
+
+	mkdir -p "$BIN_DIR" || die "cannot create $BIN_DIR"
+	while IFS='|' read -r name url sum member; do
+		[ -n "${name:-}" ] || continue
+		install_binary "$name" "$url" "$sum" "$member"
+	done <<EOF
+$manifest
+EOF
+}
+
+# On Nix the binaries are declared in home.nix, and installing a second copy into
+# ~/.local/bin would shadow it and go stale silently. Report instead.
+#
+# A note, not a failure: during a first bootstrap this runs before the new profile
+# reaches PATH, so absence here means "not yet", and exiting non-zero would abort
+# a bootstrap that is in fact going fine.
+verify_nix_tools() {
+	local name missing=
+	for name in delta lazygit fzf jq; do
+		command -v "$name" >/dev/null 2>&1 || missing="${missing:+$missing }$name"
+	done
+	if [ -n "$missing" ]; then
+		note "not on PATH yet: $missing - declared in home.nix, present after a rebuild"
+		return 0
+	fi
+	note 'delta, lazygit, fzf and jq are present'
+}
+
+# The two commands worth typing, under the names they are typed as, on every host.
+# On the Mac home.nix owns these links; here they are made only where nothing else
+# does, so the two mechanisms can never fight over the same path.
+link_commands() {
+	local target link
+	mkdir -p "$BIN_DIR" || die "cannot create $BIN_DIR"
+	for target in git-fleet-status:fleet git-fleet-diff:fleet-diff \
+		git-fleet-status:git-fleet-status git-fleet-diff:git-fleet-diff; do
+		link="$BIN_DIR/${target#*:}"
+		if [ -e "$link" ] && [ ! -L "$link" ]; then
+			mv "$link" "$link.pre-mac-setup"
+			note "kept the previous ${target#*:} as ${link##*/}.pre-mac-setup"
+		fi
+		ln -sfn "$ROOT/scripts/${target%%:*}" "$link"
+	done
+	note "linked fleet and fleet-diff into $BIN_DIR"
+}
+
+# Append the include once, at the end, where git's last-wins rule makes it beat
+# whatever core.pager the host already sets.
+wire_git_include() {
+	[ -r "$INCLUDE_PATH" ] || die "missing $INCLUDE_PATH"
+
+	if [ -f "$GITCONFIG" ] && grep -Fq 'pretty-diff.gitconfig' "$GITCONFIG"; then
+		note 'git already includes the shared diff config'
+		return 0
+	fi
+
+	{
+		printf '\n# Readable diffs, shared with every other host. Managed by\n'
+		printf '# mac-setup/scripts/install-diff-tools; edit the included file, not this line.\n'
+		printf '[include]\n\tpath = %s\n' "$INCLUDE_PATH"
+	} >>"$GITCONFIG" || die "cannot append to $GITCONFIG"
+	note "added the shared diff config include to $GITCONFIG"
+}
+
+# delta refuses its own pager options against less older than 530 and prints that
+# refusal on every diff. Amazon Linux 2 ships less 458, so the host that needs a
+# plainer pager says so once, here, instead of in every diff forever. Host-local
+# on purpose: this belongs to one machine's less, not to the shared config.
+adjust_for_old_less() {
+	local version
+	version=$(less --version 2>/dev/null | awk 'NR == 1 { print $2 + 0 }')
+	case ${version:-0} in
+	'' | *[!0-9]*) return 0 ;;
+	esac
+	[ "$version" -lt 530 ] || return 0
+	git config --global delta.pager 'less -R'
+	git config --global delta.navigate false
+	note "less $version predates delta's pager support; pinned delta.pager to less -R"
+}
+
+case "$(uname -s)" in
+Darwin)
+	verify_nix_tools
+	wire_git_include
+	;;
+*)
+	install_linux_tools
+	link_commands
+	# Before the host-local override below, so that `git config --global` writes
+	# its [delta] section above the include and the override still wins.
+	wire_git_include
+	adjust_for_old_less
+	;;
+esac
+
+# Anything that actually went wrong has already exited through die.
+exit 0

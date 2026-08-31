@@ -1,0 +1,335 @@
+#!/usr/bin/env bash
+# Read what changed across every checkout and worktree on this machine.
+#
+# git-fleet-status answers "what changed anywhere". This answers the only
+# question that ever follows it: show me. With no arguments it opens a picker of
+# every changed checkout with that checkout's diff live beside it, and Enter
+# hands the chosen one to lazygit.
+#
+# Agents work in detached-HEAD worktrees under a treehouse root, and neither
+# obvious command works there: a bare `git diff` shows only the uncommitted tail
+# of their work, and `git diff main` invents deletions for every commit the base
+# branch gained meanwhile. So each diff is taken two-dot from the merge base with
+# the checkout's own base branch - the comparison a pull request shows - which
+# folds committed, staged and unstaged work into one stream, with whole new files
+# appended.
+#
+# Read-only, like the scanner: nothing is staged and no index is written.
+# Untracked files render through `git diff --no-index` rather than the usual
+# `git add -N` trick, which would write to the index of a repository an agent is
+# still working in.
+
+set -uo pipefail
+
+export GIT_OPTIONAL_LOCKS=0
+export GIT_TERMINAL_PROMPT=0
+
+PROG=${0##*/}
+# Absolute, because fzf's preview runs this script again by name from a shell
+# whose PATH is not guaranteed to be this one.
+SELF=$(cd -- "$(dirname -- "$0")" && pwd -P)/$(basename -- "$0")
+
+note() {
+	printf '%s: %s\n' "$PROG" "$1" >&2
+}
+
+die() {
+	note "$1"
+	exit 2
+}
+
+usage() {
+	cat <<'EOF'
+Usage: git-fleet-diff [options] [path...]
+
+With no path, opens a picker of every changed checkout and worktree with its
+diff alongside. Each diff is the checkout's whole contribution: commits its base
+branch has not seen, plus staged, unstaged and untracked files.
+
+  enter    open the chosen checkout in lazygit
+  ctrl-d   the full diff in a pager
+  ctrl-e   $EDITOR in the checkout
+  ctrl-/   cycle preview size
+
+Options:
+  -a, --all         print every changed checkout's diff as one stream
+  -s, --stat        summarise as changed files and counts, without contents
+  -p, --print PATH  print one checkout's diff unpaged (what the preview runs)
+  -r, --root DIR    search root, repeatable; passed to git-fleet-status
+  -d, --depth N     maximum search depth; passed to git-fleet-status
+  -h, --help        this message
+
+A path may be any directory inside a checkout. Rendering is delta's, configured
+once in home/.config/git/pretty-diff.gitconfig, so this looks like every other
+diff on the machine.
+EOF
+}
+
+MODE=picker
+STAT=0
+PAGE=1
+SCAN_ARGS=()
+PATHS=()
+
+while [ $# -gt 0 ]; do
+	case $1 in
+	-a | --all) MODE=all ;;
+	-s | --stat) STAT=1 ;;
+	-p | --print)
+		MODE=print
+		PAGE=0
+		;;
+	-r | --root | -d | --depth)
+		flag=$1
+		shift
+		[ $# -gt 0 ] || die "$flag needs a value"
+		SCAN_ARGS+=("$flag" "$1")
+		;;
+	-h | --help)
+		usage
+		exit 0
+		;;
+	-*) die "unknown option: $1" ;;
+	*) PATHS+=("$1") ;;
+	esac
+	shift
+done
+
+[ "$MODE" = print ] && [ ${#PATHS[@]} -ne 1 ] && die '--print takes exactly one path'
+[ "$MODE" = picker ] && [ ${#PATHS[@]} -gt 0 ] && MODE=paths
+
+DELTA=$(command -v delta 2>/dev/null) || DELTA=
+# delta wants the diff uncoloured so it can colour it itself; without delta,
+# git's own colours through a pager are still perfectly readable.
+if [ -n "$DELTA" ]; then
+	DIFF_COLOR=--no-color
+else
+	DIFF_COLOR=--color=always
+fi
+
+DIFF_OPTS=("$DIFF_COLOR")
+[ "$STAT" -eq 1 ] && DIFF_OPTS+=(--stat)
+
+# ------------------------------------------------------------------ rendering
+
+# Width drives two decisions, so it is measured once. Inside fzf the preview pane
+# is narrower than the terminal and only fzf knows by how much.
+term_width() {
+	local w=${FZF_PREVIEW_COLUMNS:-}
+	[ -n "$w" ] || w=$(tput cols 2>/dev/null) || w=
+	case ${w:-} in
+	'' | *[!0-9]*) printf '0\n' ;;
+	*) printf '%s\n' "$w" ;;
+	esac
+}
+
+render() {
+	local width args=()
+	width=$(term_width)
+
+	if [ -z "$DELTA" ]; then
+		if [ "$PAGE" -eq 1 ] && [ -t 1 ]; then less -R; else cat; fi
+		return
+	fi
+
+	# Side-by-side only once there is room for two readable columns. Below that it
+	# wraps every line into noise, and 80 columns is what an ssh window opens at.
+	[ "$width" -ge 160 ] && args+=(--side-by-side)
+	[ "$width" -gt 0 ] && args+=(--width "$width")
+	if [ "$PAGE" -eq 0 ]; then
+		# In a preview pane stdout is a pipe, which is normally delta's cue to drop
+		# colour; fzf renders the ANSI itself, so force it.
+		args+=(--paging=never)
+		CLICOLOR_FORCE=1 "$DELTA" "${args[@]+"${args[@]}"}"
+		return
+	fi
+	"$DELTA" "${args[@]+"${args[@]}"}"
+}
+
+# -------------------------------------------------------------- one checkout
+
+# Best local base to measure a checkout's contribution against, without any
+# network call. Mirrors git-fleet-status's own base_ref preference order so the
+# scan's "unique commits" column and this diff describe the same range;
+# tests/git-fleet-diff.test.sh asserts the two agree.
+base_ref() {
+	git -C "$1" for-each-ref --format='%(refname)' \
+		refs/remotes/origin/HEAD refs/remotes/origin/main refs/remotes/origin/master \
+		refs/heads/main refs/heads/master 2>/dev/null |
+		awk '
+    { seen[$0] = 1 }
+    END {
+      n = split("refs/remotes/origin/HEAD refs/remotes/origin/main " \
+                "refs/remotes/origin/master refs/heads/main refs/heads/master", p, " ")
+      for (i = 1; i <= n; i++) if (p[i] in seen) { print p[i]; exit }
+    }
+  '
+}
+
+toplevel() {
+	git -C "$1" rev-parse --show-toplevel 2>/dev/null
+}
+
+HOME_PHYS=$(cd -- "$HOME" 2>/dev/null && pwd -P) || HOME_PHYS=$HOME
+
+# shellcheck disable=SC2088 # display text, never a path to expand
+abbrev() {
+	case $1 in
+	"$HOME"/*) printf '~/%s\n' "${1#"$HOME"/}" ;;
+	"$HOME_PHYS"/*) printf '~/%s\n' "${1#"$HOME_PHYS"/}" ;;
+	*) printf '%s\n' "$1" ;;
+	esac
+}
+
+# Whole new files, as new-file diffs, without touching the index.
+#
+# --no-index implies --exit-code, so every file it prints "fails" with status 1.
+# Under pipefail that would make the whole stream look like an error, hence the
+# explicit success: printing a diff is this function succeeding.
+untracked_body() {
+	local repo=$1 file
+	while IFS= read -r -d '' file; do
+		# A directory symlink or a file deleted since the scan makes this fail; that
+		# is a stale entry, not something to report, so it is dropped.
+		git -C "$repo" diff --no-index "${DIFF_OPTS[@]}" -- /dev/null "$file" 2>/dev/null
+	done < <(git -C "$repo" ls-files -o --exclude-standard -z 2>/dev/null)
+	return 0
+}
+
+diff_body() {
+	local repo=$1 head base merge_base
+
+	head=$(git -C "$repo" rev-parse -q --verify HEAD 2>/dev/null) || head=
+	if [ -n "$head" ]; then
+		base=$(base_ref "$repo")
+		merge_base=
+		[ -n "$base" ] &&
+			{ merge_base=$(git -C "$repo" merge-base "$base" HEAD 2>/dev/null) || merge_base=; }
+		# A checkout with no base branch to compare against still has an honest
+		# answer: its working tree against its own HEAD.
+		git -C "$repo" diff "${DIFF_OPTS[@]}" "${merge_base:-HEAD}" 2>/dev/null
+	fi
+
+	untracked_body "$repo"
+}
+
+# The stream concatenates many checkouts and delta has no idea where one ends, so
+# each gets a banner. Box-drawing on purpose: a line starting with - or + inside
+# a diff stream means something else.
+banner() {
+	local repo=$1 branch
+	branch=$(git -C "$repo" symbolic-ref -q --short HEAD 2>/dev/null) ||
+		branch="detached $(git -C "$repo" rev-parse -q --short HEAD 2>/dev/null)"
+	printf '\n──────── %s  [%s]\n\n' "$(abbrev "$repo")" "${branch:-no commits}"
+}
+
+# ------------------------------------------------------------------- scanning
+
+resolve_scanner() {
+	local candidate
+	for candidate in \
+		"${GIT_FLEET_STATUS:-}" \
+		"$(command -v git-fleet-status 2>/dev/null)" \
+		"$HOME/.dotfiles/scripts/git-fleet-status" \
+		"$HOME/mac-setup/scripts/git-fleet-status"; do
+		[ -n "$candidate" ] && [ -x "$candidate" ] && {
+			printf '%s\n' "$candidate"
+			return 0
+		}
+	done
+	return 1
+}
+
+SCANNER=$(resolve_scanner) ||
+	die 'git-fleet-status not found; set GIT_FLEET_STATUS or install the dotfiles'
+
+# path<TAB>row per changed checkout, reusing the row the scanner already rendered
+# so the picker and the `fleet` table read identically rather than merely alike.
+scan_rows() {
+	command -v jq >/dev/null 2>&1 ||
+		die 'jq is required; run scripts/install-diff-tools'
+	"$SCANNER" --json "${SCAN_ARGS[@]+"${SCAN_ARGS[@]}"}" |
+		jq -r 'select(.type == "repo") | [.path, .row] | @tsv'
+}
+
+scan_paths() {
+	"$SCANNER" --paths "${SCAN_ARGS[@]+"${SCAN_ARGS[@]}"}"
+}
+
+stream() {
+	local repo top
+	for repo in "$@"; do
+		top=$(toplevel "$repo") || top=
+		[ -n "$top" ] || {
+			note "not a git checkout: $repo"
+			continue
+		}
+		banner "$top"
+		diff_body "$top"
+	done
+}
+
+stream_all() {
+	local -a repos=()
+	while IFS= read -r repo; do
+		[ -n "$repo" ] && repos+=("$repo")
+	done < <(scan_paths)
+	[ ${#repos[@]} -gt 0 ] || {
+		printf 'Nothing changed anywhere.\n'
+		return 0
+	}
+	stream "${repos[@]}"
+}
+
+# --------------------------------------------------------------------- picker
+
+picker() {
+	local rows out key sel path
+
+	if ! command -v fzf >/dev/null 2>&1; then
+		note 'fzf is not installed; showing every changed checkout instead'
+		stream_all | render
+		return
+	fi
+
+	rows=$(scan_rows) || return 1
+	[ -n "$rows" ] || {
+		printf 'Nothing changed anywhere.\n'
+		return 0
+	}
+
+	out=$(
+		printf '%s\n' "$rows" |
+			fzf --ansi --no-sort --layout=reverse --border \
+				--delimiter=$'\t' --with-nth=2 \
+				--preview="$SELF --print {1}" \
+				--preview-window='right,62%,border-left' \
+				--bind='ctrl-/:change-preview-window(right,80%|down,75%|right,62%)' \
+				--header='enter lazygit · ctrl-d full diff · ctrl-e editor · ctrl-/ resize' \
+				--expect=ctrl-d,ctrl-e
+	) || return 0
+
+	key=$(printf '%s\n' "$out" | sed -n 1p)
+	sel=$(printf '%s\n' "$out" | sed -n 2p)
+	[ -n "$sel" ] || return 0
+	path=${sel%%"$(printf '\t')"*}
+
+	case $key in
+	ctrl-e) (cd -- "$path" && exec "${EDITOR:-nvim}" .) ;;
+	ctrl-d) stream "$path" | render ;;
+	*)
+		if command -v lazygit >/dev/null 2>&1; then
+			lazygit --path "$path"
+		else
+			stream "$path" | render
+		fi
+		;;
+	esac
+}
+
+case $MODE in
+print) stream "${PATHS[0]}" | render ;;
+paths) stream "${PATHS[@]}" | render ;;
+all) stream_all | render ;;
+picker) picker ;;
+esac

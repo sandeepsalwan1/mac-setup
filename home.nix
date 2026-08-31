@@ -52,6 +52,10 @@ in
 
   home.packages = with pkgs; [
     bun
+    # Renders every diff on this machine, wired in by
+    # home/.config/git/pretty-diff.gitconfig. On a dev desk the same version
+    # arrives as a pinned release binary from scripts/install-diff-tools.
+    delta
     fd
     fzf
     gitleaks
@@ -193,8 +197,10 @@ in
       # `rm -rf ~/.claude/skills` first, which also destroyed every link this
       # repo does not own.
       sync-skills = "${dotfiles}/scripts/link-portable-skills";
-      # Fleet-wide git status, the shell half of :GitFleet in Neovim.
-      fleet = "git-fleet-status";
+      # `fleet` and `fleet-diff` are deliberately not aliases: they are symlinks in
+      # ~/.local/bin below, so the same two words work in a non-interactive shell,
+      # inside :! from Neovim and over ssh on a dev desk, where no alias of this
+      # repo's making exists.
     };
   };
 
@@ -222,6 +228,24 @@ in
     # was hand-copied there once, and it is the entire install step on a new host.
     ".local/bin/git-fleet-status" = {
       source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/scripts/git-fleet-status";
+      force = true;
+    };
+    # Reads the diff of whatever the scan above found changed. Same reasoning, and
+    # the fzf preview re-runs it by absolute path, so PATH resolution has to land
+    # on the repository copy rather than a stale one.
+    ".local/bin/git-fleet-diff" = {
+      source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/scripts/git-fleet-diff";
+      force = true;
+    };
+    # The short names, which are what actually gets typed. Links rather than shell
+    # aliases so they also work from a script, from :! in Neovim, and identically
+    # on a dev desk, where scripts/install-diff-tools makes the same two links.
+    ".local/bin/fleet" = {
+      source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/scripts/git-fleet-status";
+      force = true;
+    };
+    ".local/bin/fleet-diff" = {
+      source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/scripts/git-fleet-diff";
       force = true;
     };
     ".config/wezterm".source =

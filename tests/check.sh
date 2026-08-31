@@ -8,6 +8,8 @@ shellcheck -x \
 	"$ROOT/rebuild.sh" \
 	"$ROOT/home/bin/learn" \
 	"$ROOT/scripts/git-fleet-status" \
+	"$ROOT/scripts/git-fleet-diff" \
+	"$ROOT/scripts/install-diff-tools" \
 	"$ROOT/scripts/install-agent-tools" \
 	"$ROOT/scripts/install-tools" \
 	"$ROOT/scripts/link-official-codex-skills" \
@@ -27,6 +29,7 @@ shellcheck -x \
 	"$ROOT/tests/computer-use-cli.test.sh" \
 	"$ROOT/tests/context-keeper.test.sh" \
 	"$ROOT/tests/git-fleet-status.test.sh" \
+	"$ROOT/tests/git-fleet-diff.test.sh" \
 	"$ROOT/tests/global-agents.test.sh" \
 	"$ROOT/tests/homebrew-config.test.sh" \
 	"$ROOT/tests/herdr-prefix.test.sh" \
@@ -46,6 +49,8 @@ shfmt -d \
 	"$ROOT/rebuild.sh" \
 	"$ROOT/home/bin/learn" \
 	"$ROOT/scripts/git-fleet-status" \
+	"$ROOT/scripts/git-fleet-diff" \
+	"$ROOT/scripts/install-diff-tools" \
 	"$ROOT/scripts/install-agent-tools" \
 	"$ROOT/scripts/install-tools" \
 	"$ROOT/scripts/link-official-codex-skills" \
@@ -65,6 +70,7 @@ shfmt -d \
 	"$ROOT/tests/computer-use-cli.test.sh" \
 	"$ROOT/tests/context-keeper.test.sh" \
 	"$ROOT/tests/git-fleet-status.test.sh" \
+	"$ROOT/tests/git-fleet-diff.test.sh" \
 	"$ROOT/tests/global-agents.test.sh" \
 	"$ROOT/tests/homebrew-config.test.sh" \
 	"$ROOT/tests/herdr-prefix.test.sh" \
@@ -84,6 +90,7 @@ shfmt -d \
 "$ROOT/tests/computer-use-cli.test.sh"
 "$ROOT/tests/context-keeper.test.sh"
 "$ROOT/tests/git-fleet-status.test.sh"
+"$ROOT/tests/git-fleet-diff.test.sh"
 "$ROOT/tests/global-agents.test.sh"
 "$ROOT/tests/homebrew-config.test.sh"
 "$ROOT/tests/herdr-prefix.test.sh"

@@ -1,0 +1,35 @@
+# Readable diffs on every host, included from ~/.gitconfig.
+#
+# One tracked file rather than three hand-edited configs: the Mac and both dev
+# desks include this same path, so a diff looks identical wherever it is read and
+# there is one place to change it. delta does the rendering, and everything that
+# shells out to git inherits it - a bare `git diff`, `git show`, lazygit,
+# git-fleet-diff - which is the point.
+#
+# The include line goes at the END of ~/.gitconfig on purpose. Both dev desks
+# already set `core.pager = less -FMRiX` and the Mac had an empty `core.pager`
+# that disabled paging outright; git keeps the last value it reads, so appending
+# is what makes this win without rewriting lines this repository does not own.
+
+[core]
+	pager = delta
+
+[interactive]
+	diffFilter = delta --color-only
+
+[delta]
+	line-numbers = true
+	# n and N jump between files instead of scrolling to find the next header,
+	# which is the difference between reading a 40-file agent diff and giving up.
+	navigate = true
+	# Unified, not side-by-side. A dev desk ssh window opens at 80 columns and
+	# side-by-side there wraps every line into noise; git-fleet-diff turns it on
+	# per invocation once it measures a wide enough terminal.
+	side-by-side = false
+	# Generated lockfiles and minified bundles otherwise stall the pager on a
+	# single line. Longer than any line worth reading, short enough to stay fast.
+	max-line-length = 4096
+	# delta's file headers already carry the path; git's own decoration above them
+	# is redundant once every hunk is boxed.
+	file-decoration-style = blue ul
+	hunk-header-decoration-style = none

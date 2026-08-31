@@ -46,7 +46,7 @@ The Homebrew baseline is deliberately small:
 - WezTerm
 
 Nix supplies Bun, `uv`, Node.js, Python, Git, Neovim, ripgrep, fd, fzf, jq,
-lazygit, ShellCheck, shfmt, Gitleaks, TruffleHog, and Hack Nerd Font.
+lazygit, delta, ShellCheck, shfmt, Gitleaks, TruffleHog, and Hack Nerd Font.
 
 This repository is public, so anything specific to one workplace stays out of it
 and the checkout is built to work without it. Every skill in `skills/` is exposed,
@@ -243,6 +243,17 @@ nix flake check --no-build
 nix build .#darwinConfigurations.mac.system --dry-run
 ./tests/check.sh
 ```
+
+Work spread over many checkouts and worktrees reads as two commands, on the Mac
+and on a dev desk alike:
+
+```sh
+fleet         # what changed anywhere
+fleet-diff    # show me, one picker with the diff alongside
+```
+
+See [docs/git-fleet.md](docs/git-fleet.md), which also covers what each diff is
+measured against and how delta is wired in on every host.
 
 For an Intel Mac, change `nixpkgs.hostPlatform` in `configuration.nix` to
 `x86_64-darwin` before the first bootstrap.
