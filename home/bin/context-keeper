@@ -176,6 +176,24 @@ def parse_pi(path):
 PARSERS = {"codex": parse_codex, "claude": parse_claude, "pi": parse_pi}
 
 
+def is_subagent_transcript(path, root):
+    # Claude Code files subagent and workflow transcripts under the parent session's
+    # directory (`<uuid>/subagents/...`, sometimes `subagents/workflows/wf_*/`) and stamps
+    # every one of them with the *parent* sessionId. Since a session key is derived from
+    # that id, a session that delegated N times produces N+1 files claiming one key, and
+    # each poll cycle summarizes whichever file sorted first, rewriting the same wiki
+    # pages back and forth forever. A subagent transcript is derivative anyway: the parent
+    # records what it was asked and what it returned.
+    #
+    # Match only below the provider root: an absolute path can pick up a `subagents`
+    # component from the user's own directory names, and skipping every transcript would
+    # look like the tool simply doing nothing.
+    try:
+        return "subagents" in path.relative_to(root).parts
+    except ValueError:
+        return False
+
+
 def default_config():
     return {
         "vault": str(DEFAULT_VAULT),
@@ -348,7 +366,7 @@ Preserve compact, verified knowledge from coding sessions without storing raw tr
         for provider, root in local.items():
             if root.exists():
                 for path in root.rglob("*.jsonl"):
-                    if path.stat().st_mtime >= cutoff:
+                    if path.stat().st_mtime >= cutoff and not is_subagent_transcript(path, root):
                         sources.append(("local", provider, path))
         remote_root = self.state / "remote"
         if remote_root.exists():
@@ -360,7 +378,7 @@ Preserve compact, verified knowledge from coding sessions without storing raw tr
                     if not root.exists():
                         continue
                     for path in root.rglob("*.jsonl"):
-                        if path.stat().st_mtime >= cutoff:
+                        if path.stat().st_mtime >= cutoff and not is_subagent_transcript(path, root):
                             sources.append((host_dir.name, provider, path))
         return sorted(sources, key=lambda item: item[2].stat().st_mtime, reverse=True)
 
@@ -799,7 +817,10 @@ tags:
             ]
             result = subprocess.run(command, capture_output=True, text=True, timeout=600)
             if result.returncode != 0:
-                self.log(f"KB promotion failed for {key}: exit {result.returncode}")
+                self.log(
+                    f"KB promotion failed for {key}: exit {result.returncode}: "
+                    f"{result.stderr[-500:]}"
+                )
                 continue
             metadata["promoted_hash"] = metadata.get("durable_hash")
             promoted += 1
@@ -835,14 +856,66 @@ tags:
         atomic_write(self.manifest_path, json.dumps(self.manifest, indent=2) + "\n")
         return {"processed": processed, "promoted": promoted, "last_cycle": iso_now()}
 
-    def brief(self, cwd):
-        project = slug(Path(cwd).resolve().name)
-        note = self.context_dir / "Projects" / f"{project}.md"
-        if not note.exists():
+    def project_for_cwd(self, cwd):
+        # Project notes are named from the model's project label, not from the
+        # directory, so matching the directory name alone almost never hits. Score
+        # every summarized session by how closely its cwd relates to this one and
+        # take the most recent winner. Same-basename scores because worktrees
+        # (`.treehouse/<repo>-<hash>/<n>/<repo>`) share it with the real checkout.
+        #
+        # An enclosing directory counts, but the home directory does not: it encloses
+        # everything and has dozens of sessions, so allowing it would answer every
+        # unknown directory with whatever was worked on last. Returning nothing beats
+        # briefing the wrong project.
+        try:
+            target = Path(cwd).resolve()
+        except OSError:
             return ""
-        content = note.read_text()
-        body = content.split("---", 2)[-1].strip() if content.startswith("---") else content
-        return body[:5000].strip()
+        home = Path.home().resolve()
+        too_generic = {home, *home.parents}
+        best = None
+        for path in (self.state / "summaries").glob("*.json"):
+            record = load_json(path)
+            if not isinstance(record, dict) or not record.get("project"):
+                continue
+            recorded = record.get("cwd") or ""
+            if not recorded:
+                continue
+            try:
+                # Resolve both sides: recorded values are inconsistent about symlinked
+                # prefixes (`/tmp` vs `/private/tmp`), so raw comparison misses.
+                candidate = Path(recorded).resolve()
+            except OSError:
+                continue
+            if candidate == target:
+                score = 3
+            elif target in candidate.parents:
+                score = 2
+            elif candidate in target.parents and candidate not in too_generic:
+                score = 2
+            elif candidate.name and candidate.name == target.name:
+                score = 1
+            else:
+                continue
+            rank = (score, record.get("updated", ""))
+            if best is None or rank > best[0]:
+                best = (rank, record["project"])
+        return best[1] if best else ""
+
+    def brief(self, cwd):
+        names = [self.project_for_cwd(cwd), Path(cwd).name]
+        for name in names:
+            if not name:
+                continue
+            note = self.context_dir / "Projects" / f"{slug(name)}.md"
+            if not note.exists():
+                continue
+            content = note.read_text()
+            body = (
+                content.split("---", 2)[-1].strip() if content.startswith("---") else content
+            )
+            return body[:5000].strip()
+        return ""
 
 
 def lock(state, blocking=False):
