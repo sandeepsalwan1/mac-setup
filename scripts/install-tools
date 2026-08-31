@@ -6,6 +6,20 @@ NPM_GLOBALS_FILE="${NPM_GLOBALS_FILE:-$ROOT/home/npm-globals.txt}"
 NPM_PREFIX="${NPM_PREFIX:-$HOME/.local/share/npm}"
 NO_MISTAKES_VERSION="${NO_MISTAKES_VERSION:-v1.60.2}"
 
+# Global, not a local, because the EXIT trap below runs after the function that
+# creates the directory has returned: a local is out of scope by then, which under
+# `set -u` turns cleanup into "temp_dir: unbound variable" and leaks the directory
+# it meant to remove. The explicit success matters for the same reason - a failed
+# test as the last command in an EXIT trap becomes the script's exit status.
+TEMP_DIR=''
+
+cleanup_temp_dir() {
+	[ -n "${TEMP_DIR:-}" ] && rm -rf "$TEMP_DIR"
+	return 0
+}
+
+trap cleanup_temp_dir EXIT
+
 note() {
 	printf 'install-tools: %s\n' "$1"
 }
@@ -156,7 +170,7 @@ cleanup_chrome_devtools_hooks() {
 
 install_no_mistakes() {
 	local existing_version architecture filename expected_checksum url
-	local temp_dir archive actual_checksum install_dir install_bin link_dir link_path
+	local archive actual_checksum install_dir install_bin link_dir link_path
 
 	if [ "${MAC_SETUP_SKIP_NO_MISTAKES:-0}" = "1" ]; then
 		note 'no-mistakes installation skipped by environment'
@@ -190,9 +204,8 @@ install_no_mistakes() {
 
 	filename="no-mistakes-${NO_MISTAKES_VERSION}-darwin-${architecture}.tar.gz"
 	url="https://github.com/kunchenguid/no-mistakes/releases/download/${NO_MISTAKES_VERSION}/${filename}"
-	temp_dir="$(mktemp -d "${TMPDIR:-/tmp}/mac-setup-tools.XXXXXX")"
-	archive="$temp_dir/$filename"
-	trap 'rm -rf "$temp_dir"' EXIT
+	TEMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/mac-setup-tools.XXXXXX")"
+	archive="$TEMP_DIR/$filename"
 
 	note "downloading no-mistakes $NO_MISTAKES_VERSION"
 	curl --proto '=https' --tlsv1.2 -fsSL "$url" -o "$archive"
@@ -200,13 +213,13 @@ install_no_mistakes() {
 	[ "$actual_checksum" = "$expected_checksum" ] ||
 		die "checksum mismatch for $filename"
 
-	tar -xzf "$archive" -C "$temp_dir"
+	tar -xzf "$archive" -C "$TEMP_DIR"
 	install_dir="$HOME/.no-mistakes/bin"
 	install_bin="$install_dir/no-mistakes"
 	link_dir="$HOME/.local/bin"
 	link_path="$link_dir/no-mistakes"
 	mkdir -p "$install_dir" "$link_dir"
-	install -m 0755 "$temp_dir/no-mistakes" "$install_bin"
+	install -m 0755 "$TEMP_DIR/no-mistakes" "$install_bin"
 
 	if [ -e "$link_path" ] && [ ! -L "$link_path" ]; then
 		mv "$link_path" "$link_path.pre-mac-setup"
