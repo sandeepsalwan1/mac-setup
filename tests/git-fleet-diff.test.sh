@@ -111,6 +111,65 @@ assert_contains "$ALL" '────' 'the fleet stream has no per-checkout bann
 assert_not_contains "$ALL" 'fleet/clean' 'the fleet stream included a clean checkout'
 pass '--all streams every changed checkout, banners included, clean ones skipped'
 
+# --- one file at a time ---------------------------------------------------------
+#
+# The default view is a file, not a checkout, so a file has to be renderable on
+# its own: from the same merge-base range when git tracks it, and from nothing
+# when it is new. Both carry a line naming the checkout and branch, because seven
+# worktrees hold the same filename and the row alone cannot say which is which.
+
+ONE=$(PATH="$PLAIN_PATH" "$SCRIPT" --print "$REPO" shared.txt 2>/dev/null)
+assert_contains "$ONE" 'agent edited this' 'a single tracked file lost its own change'
+assert_contains "$ONE" 'shared.txt' 'a single tracked file diff does not name the file'
+assert_not_contains "$ONE" 'committed.txt' 'a single file diff leaked another file'
+assert_contains "$ONE" 'detached' 'a single file diff does not say which checkout it came from'
+pass 'one tracked file renders on its own, in context'
+
+NEW=$(PATH="$PLAIN_PATH" "$SCRIPT" --print "$REPO" untracked.txt 2>/dev/null)
+assert_contains "$NEW" 'agent never added this' 'a single untracked file lost its contents'
+assert_not_contains "$NEW" 'shared.txt' 'an untracked file diff leaked another file'
+pass 'one untracked file renders on its own'
+
+# --- the rows the picker is given ----------------------------------------------
+#
+# fzf is stubbed rather than driven: what matters is the list handed to it, which
+# is the thing the eye reads. A nested checkout is the interesting case - git
+# reports it as a directory, and a directory has no diff, so a row for it would
+# open an empty pane.
+
+dotfiles_git_init_commit "$FLEET/one/nested"
+
+STUB="$TMP/bin"
+mkdir -p "$STUB"
+cat >"$STUB/fzf" <<EOF
+#!/usr/bin/env bash
+cat > "$TMP/rows"
+EOF
+chmod +x "$STUB/fzf"
+
+# GIT_FLEET_STATUS explicitly: HOME is the fixture here, so the script cannot find
+# the scanner where it normally lives.
+HOME="$TMP" GIT_FLEET_STATE_DIR="$TMP/state" PATH="$STUB:$PLAIN_PATH" \
+	GIT_FLEET_STATUS="$ROOT/scripts/git-fleet-status" \
+	"$SCRIPT" -r "$FLEET" -d 3 >/dev/null 2>"$TMP/picker.err" ||
+	fail "the picker exited $?: $(cat "$TMP/picker.err")"
+[ -f "$TMP/rows" ] || fail 'the picker handed fzf nothing at all'
+ROWS=$(cat "$TMP/rows")
+
+assert_contains "$ROWS" 'untracked.txt' 'the picker offers no row for a new file'
+assert_contains "$ROWS" 'staged.txt' 'the picker offers no row for staged work'
+assert_contains "$ROWS" 'committed.txt' 'the picker offers no row for committed work'
+assert_not_contains "$ROWS" 'mainline.txt' \
+	'the picker offers a row for a base-branch commit, so it is not measured from the merge base'
+assert_not_contains "$ROWS" 'nested/' \
+	'the picker offers a row for a nested checkout, which has no diff to show'
+# The physical path, because that is what `git rev-parse --show-toplevel` returns
+# and macOS reaches its temporary directories through a symlinked /var.
+FLEET_PHYS=$(cd -- "$FLEET" && pwd -P)
+assert_contains "$ROWS" "$FLEET_PHYS/one	untracked.txt	" \
+	'a row does not carry the checkout and the repo-relative file as its first two fields'
+pass 'the picker lists every changed file and nothing that cannot be shown'
+
 # --- the installer wires the shared config in, once ----------------------------
 
 grep -q '^\[core\]' "$SHARED_CONFIG" || fail 'the shared config sets no pager'

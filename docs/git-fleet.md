@@ -39,20 +39,41 @@ Neovim view and `fleet-diff` reuse it instead of reimplementing it.
 ## fleet-diff
 
 `scripts/git-fleet-diff`. With no arguments it opens a picker of every changed
-checkout with that checkout's diff live beside it.
+**file** across every checkout, with that file's diff live beside it:
 
 ```
-enter    open the chosen checkout in lazygit
-ctrl-d   the full diff in a pager
-ctrl-e   $EDITOR in the checkout
-ctrl-/   cycle preview size
+?  …/firstmate-8bf1b0/5/firstmate  AGENTS.md          │ ~/.treehouse/…/5/firstmate  [fm/pi-adapter]
+M  …/firstmate-8bf1b0/5/firstmate  bin/fm-spawn.sh    │ Δ AGENTS.md
+M  ~/mac-setup                     scripts/install    │ ───────────────────────────
+                                                      │ 196⋮196│## 4. Harness and runtime dispatch
 ```
 
-The rows are the ones `fleet` prints, verbatim, so the table and the picker read
-identically rather than merely alike.
+```
+enter             read this file's diff, full screen
+ctrl-r            the whole checkout's diff, full screen
+ctrl-g            open the checkout in lazygit
+ctrl-e            open the file in $EDITOR
+ctrl-d / ctrl-u   scroll the diff
+ctrl-/            cycle preview size
+esc               done
+```
+
+Every key comes back to the list, so reading a whole fleet is arrow keys and
+Enter and nothing else, and nothing is a dead end.
+
+One file is the unit on purpose. A worktree's whole diff runs to thousands of
+lines and a scroll-only preview pane is the wrong shape for it, whereas a file is
+something the eye takes in at once. Typing filters across checkout and filename
+together, so every changed `.nix` anywhere is four keystrokes. The status column
+is git's: `M` changed, `A` added, `D` deleted, `R` renamed, and `?` for a file
+git has not been told about yet.
+
+The line above each diff names the checkout and its branch. Seven worktrees hold
+the same `AGENTS.md`, and the branch is what says whose work this one is.
 
 ```sh
-fleet-diff                # pick a checkout, see its diff
+fleet-diff                # pick a file, read its diff
+fleet-diff --repos        # pick a whole checkout instead
 fleet-diff --all          # every changed checkout as one stream
 fleet-diff --stat         # changed files and counts, without contents
 fleet-diff ~/some/repo    # one or more specific checkouts
@@ -61,7 +82,9 @@ fleet-diff ~/some/repo    # one or more specific checkouts
 ### Which diff
 
 A checkout's diff is its whole contribution: every commit its base branch has not
-seen, plus staged, unstaged and untracked work, in one stream.
+seen, plus staged, unstaged and untracked work, in one stream. A file's diff is
+that same range narrowed to the one path, so the file view and the checkout view
+never disagree.
 
 That is not what either obvious command gives you in an agent's worktree. A bare
 `git diff` shows only the uncommitted tail of the work and hides everything the
@@ -81,6 +104,31 @@ Whole new files are appended as new-file diffs via `git diff --no-index`, not th
 usual `git add -N` trick, which would write to the index of a repository an agent
 is still working in. Nothing here stages anything or writes an index; the test
 asserts the index hash is unchanged.
+
+A checkout nested inside another one is skipped in the file view. git reports it
+as a directory rather than as files, and a directory has no diff, so the row would
+only ever open an empty pane. The scan lists it in its own right when it is within
+the search roots.
+
+### Keeping the noise out
+
+The scan is only as useful as it is short, so two kinds of directory are pruned
+before it starts. `PRUNE_NAMES` in `scripts/git-fleet-status` holds the portable
+ones - dependency and build trees, and this repository's own `.no-mistakes` and
+`.scout-validation` scratch, each run of which leaves throwaway checkouts that
+would otherwise be the loudest rows in the table.
+
+Anything specific to one machine or one workplace goes in that host's shell
+environment instead, because this repository is public:
+
+```sh
+export GIT_FLEET_PRUNE="brazil-pkg-cache .brazil .toolbox"   # more directory names
+export GIT_FLEET_EXCLUDE="$HOME/some/backup-tree"            # whole path prefixes
+```
+
+`GIT_FLEET_EXCLUDE` is the one to reach for when a backup or archive holds copies
+of real checkouts: they are genuinely changed relative to their own bases, so no
+prune name can tell them apart from the work they were copied from.
 
 ## Rendering
 

@@ -29,6 +29,10 @@ PRUNE_NAMES=(
 	.terraform .gradle .m2 .cargo .rustup .pyenv .nvm .bundle .tox
 	build dist target out coverage .next .nuxt .pytest_cache __pycache__
 	.nix-defexpr .nix-profile .local .terraform.d .vscode-server .cursor-server
+	# This repository's own validation scratch. Each run leaves throwaway checkouts
+	# of the thing under test, which the scan would otherwise report as hundreds of
+	# untracked files - the loudest rows in the table and none of them work.
+	.no-mistakes .scout-validation
 )
 # Space-separated on purpose: each word is one more directory name to prune.
 read -r -a extra_prune <<<"${GIT_FLEET_PRUNE:-}"

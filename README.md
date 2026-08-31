@@ -272,11 +272,15 @@ and on a dev desk alike:
 
 ```sh
 fleet         # what changed anywhere
-fleet-diff    # show me, one picker with the diff alongside
+fleet-diff    # show me: every changed file, its diff alongside
 ```
 
-See [docs/git-fleet.md](docs/git-fleet.md), which also covers what each diff is
-measured against and how delta is wired in on every host.
+`fleet-diff` lists one row per changed file across every checkout and worktree,
+with that file's diff beside it. Arrow keys move, typing filters on checkout and
+filename together, Enter reads the diff full screen, and every key returns to the
+list. See [docs/git-fleet.md](docs/git-fleet.md), which also covers what each diff
+is measured against, how delta is wired in on every host, and the two environment
+variables that keep machine-specific noise out of the scan.
 
 For an Intel Mac, change `nixpkgs.hostPlatform` in `configuration.nix` to
 `x86_64-darwin` before the first bootstrap.

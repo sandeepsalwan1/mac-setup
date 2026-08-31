@@ -3,8 +3,15 @@
 #
 # git-fleet-status answers "what changed anywhere". This answers the only
 # question that ever follows it: show me. With no arguments it opens a picker of
-# every changed checkout with that checkout's diff live beside it, and Enter
-# hands the chosen one to lazygit.
+# every changed *file* across every checkout, with that one file's diff beside
+# it, and every key returns to the list, so reading a whole fleet is arrow keys
+# and Enter and nothing else.
+#
+# One file is the unit on purpose. A worktree's whole diff can be thousands of
+# lines, and a scroll-only preview pane is the wrong shape for it; a file is
+# something the eye can take in, and typing filters across repository and
+# filename at once, so "every .nix that changed anywhere" is four keystrokes.
+# --repos keeps the coarser view for "what is this worktree doing overall".
 #
 # Agents work in detached-HEAD worktrees under a treehouse root, and neither
 # obvious command works there: a bare `git diff` shows only the uncommitted tail
@@ -25,8 +32,8 @@ export GIT_OPTIONAL_LOCKS=0
 export GIT_TERMINAL_PROMPT=0
 
 PROG=${0##*/}
-# Absolute, because fzf's preview runs this script again by name from a shell
-# whose PATH is not guaranteed to be this one.
+# Absolute, because fzf's preview and its key bindings run this script again by
+# name from a shell whose PATH is not guaranteed to be this one.
 SELF=$(cd -- "$(dirname -- "$0")" && pwd -P)/$(basename -- "$0")
 
 note() {
@@ -42,19 +49,25 @@ usage() {
 	cat <<'EOF'
 Usage: git-fleet-diff [options] [path...]
 
-With no path, opens a picker of every changed checkout and worktree with its
-diff alongside. Each diff is the checkout's whole contribution: commits its base
-branch has not seen, plus staged, unstaged and untracked files.
+With no path, opens a picker of every changed file across every checkout and
+worktree, with that file's diff alongside. Each diff is measured against the
+checkout's own base branch, so it covers commits that branch has not seen plus
+staged, unstaged and untracked work.
 
-  enter    open the chosen checkout in lazygit
-  ctrl-d   the full diff in a pager
-  ctrl-e   $EDITOR in the checkout
-  ctrl-/   cycle preview size
+  enter             read this file's diff, full screen
+  ctrl-r            the whole checkout's diff, full screen
+  ctrl-g            open the checkout in lazygit
+  ctrl-e            open the file in $EDITOR
+  ctrl-d / ctrl-u   scroll the diff
+  ctrl-/            cycle preview size
+  esc               done
+
+Every key comes back to the list, so nothing is a dead end.
 
 Options:
+  -R, --repos       pick a whole checkout instead of a file
   -a, --all         print every changed checkout's diff as one stream
   -s, --stat        summarise as changed files and counts, without contents
-  -p, --print PATH  print one checkout's diff unpaged (what the preview runs)
   -r, --root DIR    search root, repeatable; passed to git-fleet-status
   -d, --depth N     maximum search depth; passed to git-fleet-status
   -h, --help        this message
@@ -65,7 +78,7 @@ diff on the machine.
 EOF
 }
 
-MODE=picker
+MODE=files
 STAT=0
 PAGE=1
 SCAN_ARGS=()
@@ -73,11 +86,19 @@ PATHS=()
 
 while [ $# -gt 0 ]; do
 	case $1 in
+	-R | --repos) MODE=repos ;;
 	-a | --all) MODE=all ;;
 	-s | --stat) STAT=1 ;;
+	# --print renders into a preview pane, --show onto a real screen. Both take a
+	# checkout and optionally one file inside it; they are how the picker calls
+	# back into this script, and are equally usable by hand.
 	-p | --print)
 		MODE=print
 		PAGE=0
+		;;
+	--show)
+		MODE=show
+		PAGE=1
 		;;
 	-r | --root | -d | --depth)
 		flag=$1
@@ -95,8 +116,17 @@ while [ $# -gt 0 ]; do
 	shift
 done
 
-[ "$MODE" = print ] && [ ${#PATHS[@]} -ne 1 ] && die '--print takes exactly one path'
-[ "$MODE" = picker ] && [ ${#PATHS[@]} -gt 0 ] && MODE=paths
+case $MODE in
+print | show)
+	case ${#PATHS[@]} in
+	1 | 2) ;;
+	*) die "$MODE takes a checkout and optionally one file inside it" ;;
+	esac
+	;;
+files)
+	[ ${#PATHS[@]} -gt 0 ] && MODE=paths
+	;;
+esac
 
 DELTA=$(command -v delta 2>/dev/null) || DELTA=
 # delta wants the diff uncoloured so it can colour it itself; without delta,
@@ -166,6 +196,21 @@ base_ref() {
   '
 }
 
+# The single revision every tracked diff here is taken against. Fails, rather
+# than defaulting, when there are no commits at all, because then there is no
+# tracked side to show. A checkout with commits but no base branch to compare
+# against still has an honest answer: its working tree against its own HEAD.
+range_of() {
+	local repo=$1 head base merge_base
+	head=$(git -C "$repo" rev-parse -q --verify HEAD 2>/dev/null) || return 1
+	[ -n "$head" ] || return 1
+	base=$(base_ref "$repo")
+	merge_base=
+	[ -n "$base" ] &&
+		{ merge_base=$(git -C "$repo" merge-base "$base" HEAD 2>/dev/null) || merge_base=; }
+	printf '%s\n' "${merge_base:-HEAD}"
+}
+
 toplevel() {
 	git -C "$1" rev-parse --show-toplevel 2>/dev/null
 }
@@ -197,30 +242,48 @@ untracked_body() {
 }
 
 diff_body() {
-	local repo=$1 head base merge_base
-
-	head=$(git -C "$repo" rev-parse -q --verify HEAD 2>/dev/null) || head=
-	if [ -n "$head" ]; then
-		base=$(base_ref "$repo")
-		merge_base=
-		[ -n "$base" ] &&
-			{ merge_base=$(git -C "$repo" merge-base "$base" HEAD 2>/dev/null) || merge_base=; }
-		# A checkout with no base branch to compare against still has an honest
-		# answer: its working tree against its own HEAD.
-		git -C "$repo" diff "${DIFF_OPTS[@]}" "${merge_base:-HEAD}" 2>/dev/null
-	fi
-
+	local repo=$1 range
+	range=$(range_of "$repo") && git -C "$repo" diff "${DIFF_OPTS[@]}" "$range" 2>/dev/null
 	untracked_body "$repo"
+}
+
+# One file, from whichever side it lives on. The index decides: a path git knows
+# about diffs against the range even when the working tree no longer has it,
+# which is what shows a deletion; anything else is new and has no other side to
+# compare against than nothing.
+file_body() {
+	local repo=$1 file=$2 range
+	if git -C "$repo" ls-files --error-unmatch -- "$file" >/dev/null 2>&1; then
+		range=$(range_of "$repo") &&
+			git -C "$repo" diff "${DIFF_OPTS[@]}" "$range" -- "$file" 2>/dev/null
+	else
+		git -C "$repo" diff --no-index "${DIFF_OPTS[@]}" -- /dev/null "$file" 2>/dev/null
+	fi
+	return 0
+}
+
+branch_of() {
+	local repo=$1 branch
+	branch=$(git -C "$repo" symbolic-ref -q --short HEAD 2>/dev/null) ||
+		branch="detached $(git -C "$repo" rev-parse -q --short HEAD 2>/dev/null)"
+	printf '%s\n' "${branch:-no commits}"
 }
 
 # The stream concatenates many checkouts and delta has no idea where one ends, so
 # each gets a banner. Box-drawing on purpose: a line starting with - or + inside
 # a diff stream means something else.
 banner() {
-	local repo=$1 branch
-	branch=$(git -C "$repo" symbolic-ref -q --short HEAD 2>/dev/null) ||
-		branch="detached $(git -C "$repo" rev-parse -q --short HEAD 2>/dev/null)"
-	printf '\n──────── %s  [%s]\n\n' "$(abbrev "$repo")" "${branch:-no commits}"
+	printf '\n──────── %s  [%s]\n\n' "$(abbrev "$1")" "$(branch_of "$1")"
+}
+
+# Above a single file's diff, where the rule would be noise in a narrow pane. The
+# picker row already carries the path; the branch is the part that says whose work
+# this is, which is the whole question when seven worktrees hold the same file.
+#
+# No trailing blank line: delta opens its own output with one, and two of the
+# thirty lines a preview pane has are too many to spend on nothing.
+context() {
+	printf '%s  [%s]\n' "$(abbrev "$1")" "$(branch_of "$1")"
 }
 
 # ------------------------------------------------------------------- scanning
@@ -243,11 +306,15 @@ resolve_scanner() {
 SCANNER=$(resolve_scanner) ||
 	die 'git-fleet-status not found; set GIT_FLEET_STATUS or install the dotfiles'
 
+require_jq() {
+	command -v jq >/dev/null 2>&1 ||
+		die 'jq is required; run scripts/install-diff-tools'
+}
+
 # path<TAB>row per changed checkout, reusing the row the scanner already rendered
 # so the picker and the `fleet` table read identically rather than merely alike.
 scan_rows() {
-	command -v jq >/dev/null 2>&1 ||
-		die 'jq is required; run scripts/install-diff-tools'
+	require_jq
 	"$SCANNER" --json "${SCAN_ARGS[@]+"${SCAN_ARGS[@]}"}" |
 		jq -r 'select(.type == "repo") | [.path, .row] | @tsv'
 }
@@ -281,12 +348,123 @@ stream_all() {
 	stream "${repos[@]}"
 }
 
+# ---------------------------------------------------------------- file rows
+
+# checkout<TAB>file<TAB>status<TAB>label, one line per changed file anywhere.
+#
+# Renames arrive from --name-status as status, old, new; the new name is the one
+# worth showing and the only one a later `git diff -- <path>` accepts. Untracked
+# files are marked ? rather than A, because git has not been told about them and
+# the distinction is the difference between reviewed and merely present.
+file_rows() {
+	local repo top label range status old new path
+	while IFS= read -r repo; do
+		[ -n "$repo" ] || continue
+		top=$(toplevel "$repo") || continue
+		[ -n "$top" ] || continue
+		label=$(abbrev "$top")
+
+		if range=$(range_of "$top"); then
+			while IFS=$'\t' read -r status old new; do
+				[ -n "${status:-}" ] || continue
+				path=${new:-$old}
+				printf '%s\t%s\t%s\t%s\n' "$top" "$path" "${status:0:1}" "$label"
+			done < <(git -C "$top" diff --name-status "$range" 2>/dev/null)
+		fi
+
+		while IFS= read -r -d '' path; do
+			# git reports a nested checkout as its directory, with a trailing slash.
+			# Its contents belong to that repository, which the scan lists in its own
+			# right when it is in scope, and there is no single file here to diff - so
+			# the row would render an empty pane. Drop it rather than show a dead end.
+			case $path in */) continue ;; esac
+			printf '%s\t%s\t?\t%s\n' "$top" "$path" "$label"
+		done < <(git -C "$top" ls-files -o --exclude-standard -z 2>/dev/null)
+	done < <(scan_paths)
+}
+
+# status, checkout and file as three aligned columns, with the two hidden fields
+# fzf needs kept in front. The checkout column is padded to the widest label so
+# filenames line up down the page, capped so one deep worktree path cannot push
+# every filename off screen; a capped label keeps its tail, which is the part
+# that identifies it.
+#
+# Padding counts bytes, so the multi-byte ellipsis is paid for explicitly. Every
+# other character in a path here is ASCII, where bytes and columns agree.
+format_rows() {
+	awk -F'\t' '
+    { rows[NR] = $0; if (length($4) > width) width = length($4) }
+    END {
+      cap = 30
+      if (width > cap) width = cap
+      colour["M"] = "\033[33m"; colour["A"] = "\033[32m"; colour["?"] = "\033[32m"
+      colour["D"] = "\033[31m"; colour["R"] = "\033[36m"; colour["C"] = "\033[36m"
+      for (i = 1; i <= NR; i++) {
+        n = split(rows[i], f, "\t")
+        if (n < 4) continue
+        label = f[4]
+        pad = width
+        if (length(label) > width) {
+          label = "…" substr(label, length(label) - width + 2)
+          pad = width + 2
+        }
+        c = (f[3] in colour) ? colour[f[3]] : ""
+        printf "%s\t%s\t%s%s\033[0m  \033[2m%s\033[0m  %s\n", \
+          f[1], f[2], c, f[3], sprintf("%-" pad "s", label), f[2]
+      }
+    }
+  '
+}
+
 # --------------------------------------------------------------------- picker
 
-picker() {
-	local rows out key sel path
+have() {
+	command -v "$1" >/dev/null 2>&1
+}
 
-	if ! command -v fzf >/dev/null 2>&1; then
+# Actions are execute() bindings rather than --expect, so reading a diff returns
+# to the list instead of ending the session. Browsing a fleet is the point; every
+# key being a dead end was the thing that made it feel like work.
+file_picker() {
+	local rows binds=()
+
+	if ! have fzf; then
+		note 'fzf is not installed; showing every changed checkout instead'
+		stream_all | render
+		return
+	fi
+
+	# The column width comes from the widest label, so the rows are collected before
+	# any of them can be shown. That is a few seconds across a whole fleet, and a
+	# terminal that says nothing for a few seconds reads as a hang.
+	note 'scanning every checkout…'
+	rows=$(file_rows | format_rows)
+	[ -n "$rows" ] || {
+		printf 'Nothing changed anywhere.\n'
+		return 0
+	}
+
+	binds+=("enter:execute($SELF --show {1} {2})")
+	binds+=("ctrl-r:execute($SELF --show {1})")
+	binds+=("ctrl-e:execute(cd -- {1} && ${EDITOR:-nvim} -- {2})")
+	binds+=('ctrl-d:preview-half-page-down' 'ctrl-u:preview-half-page-up')
+	binds+=('ctrl-/:change-preview-window(right,80%|down,75%|right,60%)')
+	have lazygit && binds+=("ctrl-g:execute(lazygit --path {1})")
+
+	printf '%s\n' "$rows" |
+		fzf --ansi --layout=reverse --border --cycle --info=inline --scroll-off=3 \
+			--delimiter=$'\t' --with-nth=3 \
+			--preview="$SELF --print {1} {2}" \
+			--preview-window='right,60%,border-left' \
+			--header='enter read · ctrl-r whole repo · ctrl-g lazygit · ctrl-e edit · ctrl-d/u scroll' \
+			"${binds[@]/#/--bind=}" >/dev/null
+	return 0
+}
+
+repo_picker() {
+	local rows binds=()
+
+	if ! have fzf; then
 		note 'fzf is not installed; showing every changed checkout instead'
 		stream_all | render
 		return
@@ -298,38 +476,42 @@ picker() {
 		return 0
 	}
 
-	out=$(
-		printf '%s\n' "$rows" |
-			fzf --ansi --no-sort --layout=reverse --border \
-				--delimiter=$'\t' --with-nth=2 \
-				--preview="$SELF --print {1}" \
-				--preview-window='right,62%,border-left' \
-				--bind='ctrl-/:change-preview-window(right,80%|down,75%|right,62%)' \
-				--header='enter lazygit · ctrl-d full diff · ctrl-e editor · ctrl-/ resize' \
-				--expect=ctrl-d,ctrl-e
-	) || return 0
+	binds+=("enter:execute($SELF --show {1})")
+	binds+=("ctrl-e:execute(cd -- {1} && ${EDITOR:-nvim} .)")
+	binds+=('ctrl-d:preview-half-page-down' 'ctrl-u:preview-half-page-up')
+	binds+=('ctrl-/:change-preview-window(right,80%|down,75%|right,62%)')
+	have lazygit && binds+=("ctrl-g:execute(lazygit --path {1})")
 
-	key=$(printf '%s\n' "$out" | sed -n 1p)
-	sel=$(printf '%s\n' "$out" | sed -n 2p)
-	[ -n "$sel" ] || return 0
-	path=${sel%%"$(printf '\t')"*}
+	printf '%s\n' "$rows" |
+		fzf --ansi --no-sort --layout=reverse --border --cycle --info=inline \
+			--delimiter=$'\t' --with-nth=2 \
+			--preview="$SELF --print {1}" \
+			--preview-window='right,62%,border-left' \
+			--header='enter full diff · ctrl-g lazygit · ctrl-e editor · ctrl-d/u scroll' \
+			"${binds[@]/#/--bind=}" >/dev/null
+	return 0
+}
 
-	case $key in
-	ctrl-e) (cd -- "$path" && exec "${EDITOR:-nvim}" .) ;;
-	ctrl-d) stream "$path" | render ;;
-	*)
-		if command -v lazygit >/dev/null 2>&1; then
-			lazygit --path "$path"
-		else
-			stream "$path" | render
-		fi
-		;;
-	esac
+# ----------------------------------------------------------------- dispatch
+
+one() {
+	local repo top
+	repo=${PATHS[0]}
+	top=$(toplevel "$repo") || top=
+	[ -n "$top" ] || die "not a git checkout: $repo"
+	if [ ${#PATHS[@]} -eq 2 ]; then
+		context "$top"
+		file_body "$top" "${PATHS[1]}"
+	else
+		banner "$top"
+		diff_body "$top"
+	fi
 }
 
 case $MODE in
-print) stream "${PATHS[0]}" | render ;;
+print | show) one | render ;;
 paths) stream "${PATHS[@]}" | render ;;
 all) stream_all | render ;;
-picker) picker ;;
+repos) repo_picker ;;
+files) file_picker ;;
 esac
