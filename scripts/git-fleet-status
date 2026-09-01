@@ -1009,8 +1009,12 @@ if [ "$FORMAT" = json ]; then
 		printf '{"type":"cleared","path":"%s","label":"%s","branch":"%s","head":"%s",' \
 			"$(json_escape "$old_top")" "$(json_escape "$(abbrev "$old_top")")" \
 			"$(json_escape "$old_branch")" "$(json_escape "$old_head")"
-		printf '"base":"%s","activity":"cleared","activityVerb":"gone",' \
-			"$(json_escape "$old_base")"
+		# name, same as a live record carries: an agent worktree that finished still
+		# belongs in the journal as "proj #4". Without it a consumer falls back to the
+		# path, and six worktrees of one repository under .treehouse then read as six
+		# identical rows - the one place the slot number is the whole answer.
+		printf '"name":"%s","base":"%s","activity":"cleared","activityVerb":"gone",' \
+			"$(json_escape "$(short_label "$old_top")")" "$(json_escape "$old_base")"
 		printf '"activityDetail":"%s","activityRow":"%s"}\n' \
 			"$(json_escape "${CLEARED_DETAILS[$i]}")" \
 			"$(json_escape "${CLEARED_ROWS[$i]}")"

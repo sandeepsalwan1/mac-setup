@@ -147,9 +147,17 @@ assert_not_contains "$second" 'new work in flight' 'the journal still describes 
 # the list with no explanation of where it went.
 git -C "$JW" checkout -q -- README.md
 git -C "$JW" reset -q --hard main
-third="$("$SCRIPT" --root "$JRN")"
+third="$("$SCRIPT" --root "$JRN" --no-save)"
 assert_contains "$third" 'gone' 'the journal does not report a worktree that went clean'
 assert_contains "$third" 'nothing left to show' 'the journal does not say why the worktree went away'
+
+# And it is named the same way after it goes as it was while it ran. A consumer with
+# only the path shows six worktrees of one repository as six identical rows, which is
+# exactly where the slot number is the entire answer.
+cleared_json="$("$SCRIPT" --root "$JRN" --json)"
+assert_contains "$cleared_json" '"type":"cleared"' 'the JSON has no record for a worktree that went clean'
+assert_contains "$cleared_json" '"name":"proj #2"' \
+	'a cleared worktree does not carry the short label the journal shows it under'
 
 # --- --no-save, so that reading the fleet does not consume the journal -------
 #
