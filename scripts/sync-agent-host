@@ -1,0 +1,134 @@
+#!/usr/bin/env bash
+# Bring an ssh host's agent setup up to this Mac's: the dotfiles commits, the
+# skill links made from them, and a report on the knowledge-base mirror.
+#
+# Why this exists rather than `git pull` on the host: origin is a public GitHub
+# repository and local commits are deliberately never pushed there, so a host
+# cannot fetch them. The gap used to be closed by hand-copying, which is exactly
+# how a host ended up missing three skills entirely while looking correctly
+# configured (see scripts/link-portable-skills). A self-contained bundle carried
+# over ssh moves the commits with no publication and no second source of truth.
+#
+# Hosts come from context-keeper's `remote_hosts`, so adding a desktop to the
+# knowledge-base mirror also adds it here - one place to edit, not two. Pass ssh
+# targets as arguments to override that.
+#
+# Idempotent, and read-mostly on the host: it fast-forwards or refuses. It never
+# force-updates a ref, never merges non-linearly, and never touches origin.
+
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+CONFIG="${CONTEXT_KEEPER_CONFIG:-$HOME/.config/context-keeper/config.json}"
+BRANCH=main
+REMOTE_KB=".local/state/context-keeper/kb"
+
+note() {
+	printf 'sync-agent-host: %s\n' "$1"
+}
+
+die() {
+	printf 'sync-agent-host: %s\n' "$1" >&2
+	exit 1
+}
+
+hosts_from_config() {
+	[ -f "$CONFIG" ] || return 0
+	command -v jq >/dev/null || die "jq is required to read $CONFIG"
+	jq -r '.remote_hosts // [] | .[] | select(.ssh) | .ssh' "$CONFIG"
+}
+
+# Built with a read loop rather than `mapfile`, which macOS's /bin/bash 3.2 does
+# not have. This script is only ever run by hand from a shell whose PATH resolves
+# a modern bash, but a launcher with a bare PATH would not, and the loop is free.
+HOSTS=()
+if [ "$#" -gt 0 ]; then
+	HOSTS=("$@")
+else
+	while IFS= read -r line; do
+		[ -n "$line" ] && HOSTS+=("$line")
+	done < <(hosts_from_config)
+fi
+
+[ "${#HOSTS[@]}" -gt 0 ] || die "no hosts given and none listed in $CONFIG"
+
+git -C "$ROOT" rev-parse --verify "$BRANCH" >/dev/null 2>&1 ||
+	die "$ROOT has no $BRANCH branch"
+
+TIP="$(git -C "$ROOT" rev-parse "$BRANCH")"
+WORK="$(mktemp -d)"
+trap 'rm -rf "$WORK"' EXIT
+BUNDLE="$WORK/mac-setup-$BRANCH.bundle"
+
+# Self-contained rather than thin. A thin bundle records prerequisites the target
+# must already have, and whether it can supply them is not knowable from here;
+# the whole history is 2M, so the guesswork is not worth the saving.
+git -C "$ROOT" bundle create "$BUNDLE" "$BRANCH" >/dev/null 2>&1
+note "bundled $BRANCH at ${TIP:0:8} ($(du -h "$BUNDLE" | cut -f1))"
+
+failed=0
+
+for host in "${HOSTS[@]}"; do
+	note "--- $host"
+
+	if ! ssh -o ConnectTimeout=15 -o BatchMode=yes "$host" true 2>/dev/null; then
+		note "unreachable, skipped"
+		failed=$((failed + 1))
+		continue
+	fi
+
+	# Brace the variable. In zsh `"$host:path"` parses `:p` as a history modifier
+	# and eats the colon, which turns the copy into a silent local-to-local one
+	# that still exits 0. Bash does not, but the habit costs nothing.
+	scp -q "$BUNDLE" "${host}:/tmp/mac-setup-sync.bundle"
+
+	# Fetch into a throwaway ref and fast-forward from it. `merge --ff-only`
+	# refuses a diverged host instead of rewriting its history, and leaves an
+	# unrelated dirty file alone as long as the merge does not touch it.
+	if ! ssh -o BatchMode=yes "$host" '
+		set -eu
+		cd "$HOME/mac-setup"
+		git fetch --quiet /tmp/mac-setup-sync.bundle main:refs/heads/mac-sync-tmp --force
+		if git merge-base --is-ancestor refs/heads/mac-sync-tmp HEAD; then
+			echo "already current"
+		else
+			git merge --ff-only refs/heads/mac-sync-tmp
+		fi
+		git branch -q -D mac-sync-tmp
+		rm -f /tmp/mac-setup-sync.bundle
+	'; then
+		note "fast-forward refused or failed; host left untouched"
+		failed=$((failed + 1))
+		continue
+	fi
+
+	# Verify by ref tip. A transfer that reports success and lands nothing is the
+	# documented failure mode here, so confirm the commit is actually present.
+	remote_tip="$(ssh -o BatchMode=yes "$host" 'git -C "$HOME/mac-setup" rev-parse HEAD')"
+	if [ "$remote_tip" != "$TIP" ]; then
+		note "HEAD is ${remote_tip:0:8}, expected ${TIP:0:8}"
+		failed=$((failed + 1))
+		continue
+	fi
+
+	ssh -o BatchMode=yes "$host" '"$HOME"/mac-setup/scripts/link-portable-skills'
+
+	ssh -o BatchMode=yes "$host" "
+		set -eu
+		printf 'sync-agent-host:   HEAD %s\n' \"\$(git -C \"\$HOME/mac-setup\" rev-parse --short HEAD)\"
+		printf 'sync-agent-host:   skills %s linked\n' \"\$(ls \"\$HOME/.claude/skills\" | wc -l | tr -d ' ')\"
+		if [ -f \"\$HOME/$REMOTE_KB/index.md\" ]; then
+			printf 'sync-agent-host:   kb mirror %s topics, %s entities\n' \
+				\"\$(ls \"\$HOME/$REMOTE_KB/wiki/topics\" 2>/dev/null | wc -l | tr -d ' ')\" \
+				\"\$(ls \"\$HOME/$REMOTE_KB/wiki/entities\" 2>/dev/null | wc -l | tr -d ' ')\"
+		else
+			printf 'sync-agent-host:   kb mirror absent - add this host to remote_hosts in %s\n' '$CONFIG'
+		fi
+	"
+done
+
+if [ "$failed" -gt 0 ]; then
+	die "$failed of ${#HOSTS[@]} hosts did not sync"
+fi
+
+note "${#HOSTS[@]} host(s) match ${TIP:0:8}"

@@ -16,6 +16,7 @@ shellcheck -x \
 	"$ROOT/scripts/link-official-codex-skills" \
 	"$ROOT/scripts/read-flake-user" \
 	"$ROOT/scripts/link-portable-skills" \
+	"$ROOT/scripts/sync-agent-host" \
 	"$ROOT/scripts/apply-herdr-prefix" \
 	"$ROOT/scripts/check-herdr-prefix" \
 	"$ROOT/scripts/add-vault-secret" \
@@ -42,6 +43,7 @@ shellcheck -x \
 	"$ROOT/tests/pi-runtime.test.sh" \
 	"$ROOT/tests/pi-compaction.test.sh" \
 	"$ROOT/tests/setup-vault.test.sh" \
+	"$ROOT/tests/sync-agent-host.test.sh" \
 	"$ROOT/tests/terminal-mastery.test.sh" \
 	"$ROOT/tests/vault-access.test.sh"
 
@@ -58,6 +60,7 @@ shfmt -d \
 	"$ROOT/scripts/link-official-codex-skills" \
 	"$ROOT/scripts/read-flake-user" \
 	"$ROOT/scripts/link-portable-skills" \
+	"$ROOT/scripts/sync-agent-host" \
 	"$ROOT/scripts/apply-herdr-prefix" \
 	"$ROOT/scripts/check-herdr-prefix" \
 	"$ROOT/scripts/add-vault-secret" \
@@ -84,6 +87,7 @@ shfmt -d \
 	"$ROOT/tests/pi-runtime.test.sh" \
 	"$ROOT/tests/pi-compaction.test.sh" \
 	"$ROOT/tests/setup-vault.test.sh" \
+	"$ROOT/tests/sync-agent-host.test.sh" \
 	"$ROOT/tests/terminal-mastery.test.sh" \
 	"$ROOT/tests/vault-access.test.sh"
 
@@ -104,6 +108,7 @@ shfmt -d \
 "$ROOT/tests/pi-runtime.test.sh"
 "$ROOT/tests/pi-compaction.test.sh"
 "$ROOT/tests/setup-vault.test.sh"
+"$ROOT/tests/sync-agent-host.test.sh"
 "$ROOT/tests/terminal-mastery.test.sh"
 "$ROOT/tests/vault-access.test.sh"
 "$ROOT/tests/pi-calm.test.sh"
