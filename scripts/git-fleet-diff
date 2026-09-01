@@ -753,7 +753,7 @@ button:hover { background: #30363d }
    its own detail out of line with every other row's. */
 .journal div {
   display: grid; align-items: baseline; gap: 0 1rem; padding: .1rem 0;
-  grid-template-columns: 4.5rem minmax(11rem, 21rem) 1fr;
+  grid-template-columns: 4.5rem minmax(16rem, 30rem) 1fr;
 }
 .journal .verb { color: #7ee787 }
 /* The journal names the same checkouts, so it truncates them the same way. Both
@@ -771,30 +771,24 @@ button:hover { background: #30363d }
    columns land in the same place on every row. An auto-sized last column is the
    subtle version of this bug: +9/-3 and +1485/-13447 size their own track, and
    then no two rows' line counts line up. */
+/* The name takes the slack, because it is the column that runs out of room: a
+   Brazil workspace path is sixty characters and a "what" is never more than about
+   twenty-five. The old layout gave the slack to "what" instead, which left
+   "1 commit, 4 edited, 1 new" wrapping to two lines beside an empty half-column. */
 .row > summary {
   display: grid; align-items: baseline; gap: 0 1.1rem; cursor: pointer;
-  grid-template-columns: 1rem minmax(11rem, 21rem) minmax(6rem, 11rem) 1fr 12rem;
+  grid-template-columns: 1rem minmax(16rem, 1fr) minmax(6rem, 12rem) 14rem 8rem;
   padding: .4rem .5rem; border-radius: 5px; list-style: none;
 }
 .row > summary::-webkit-details-marker { display: none }
 .row > summary::before { content: "\25b8"; color: #6e7681; font-size: .78em }
 .row[open] > summary::before { content: "\25be" }
 .row > summary:hover, .row[open] > summary { background: #161b22 }
-.br { overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
-/* A path is truncated from the middle, never the end. `~/workplace/Ws/src/Pkg`
-   clipped at the column edge reads as "~/workplace/Ws/sr…", which is the one part
-   of the path that identifies nothing: the leading directories are shared by every
-   row and the name at the end is the answer. The tail shrinks last, so the name
-   survives until there is no room for it either. */
-.nm { display: flex; min-width: 0; overflow: hidden; color: #e6edf3; font-weight: 500 }
-.nm > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
-/* The head absorbs every pixel of shrinkage because the tail refuses to shrink at
-   all; max-width is the only thing that ever clips the name, and only once the
-   name alone is wider than the column. A shrink factor on the head instead of a
-   flat refusal on the tail splits the loss between them, and then both ends of the
-   path are damaged rather than just the shared one. */
-.nm > .head { flex: 0 1 auto }
-.nm > .tail { flex: 0 0 auto; max-width: 100% }
+/* html_name() has already elided the label from the left, at a character count.
+   This is the backstop for a proportional font making 54 characters wider than the
+   column: it clips rather than pushing the branch out of line. */
+.nm, .br { overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.nm { color: #e6edf3; font-weight: 500 }
 .br { color: #d2a8ff }
 .sz {
   color: #8b949e; white-space: nowrap; text-align: right;
@@ -880,17 +874,19 @@ html_section() {
 	return 0
 }
 
-# A label split where the CSS above needs it: everything up to the last slash,
-# then the name itself. An agent worktree's label ("proj #7") has no slash and
-# comes back as one piece, which the same flex row lays out unchanged.
+# The label as the column can hold it, elided from the left - the same decision the
+# terminal table makes, for the same reason. Rows in a fleet share their leading
+# directories, and this desk's dominant shape is a Brazil workspace: six rows read
+# `~/lineage-ws-lineage-cr2-…/src/AWSGlueLineageAppConfigCDK`, identical in both the
+# first characters and the last, and told apart only by the end of the workspace
+# name in the middle. Keeping the end keeps that. The whole path stays on the row's
+# title attribute, so hovering answers anything this drops.
+HTML_LABEL_CAP=54
+
 html_name() {
-	local label=$1 head=${1%/*}
-	if [ "$head" = "$label" ]; then
-		printf '<span class="tail">%s</span>' "$(esc_html "$label")"
-	else
-		printf '<span class="head">%s/</span><span class="tail">%s</span>' \
-			"$(esc_html "$head")" "$(esc_html "${label##*/}")"
-	fi
+	local label=$1
+	[ ${#label} -le "$HTML_LABEL_CAP" ] || label="…${label: -$((HTML_LABEL_CAP - 1))}"
+	esc_html "$label"
 }
 
 # The anchor of a checkout's row, so a journal entry can jump straight to it. A

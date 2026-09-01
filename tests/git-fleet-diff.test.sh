@@ -225,6 +225,15 @@ mkdir -p "${AGENT%/*}"
 cp -R "$REPO" "$AGENT"
 printf '<script>alert("pwned")</script>\n' >"$AGENT/markup.html"
 
+# A checkout whose label is too long for the column, in the shape this desk is full
+# of: a Brazil workspace, `~/<workspace>/src/<Package>`. Six of these differ only in
+# the middle - the leading directories are identical and so is the package name at
+# the end - which is why the label is elided from the left rather than clipped at
+# the right, the same decision the terminal table makes.
+LONG="$FLEET/lineage-ws-lineage-cr2-20260828-abcdef/src/AWSGlueLineageAppConfigCDK"
+mkdir -p "${LONG%/*}"
+cp -R "$REPO" "$LONG"
+
 # delta and jq where the script expects to find them. The whole point of the ANSI
 # conversion is that delta's own rendering survives the trip into HTML, so the
 # renderer that is installed on this machine is the one under test.
@@ -260,11 +269,19 @@ assert_contains "$HTML" 'untracked.txt' 'the report lost a changed file'
 assert_not_contains "$HTML" 'fleet/clean' 'the report included a clean checkout'
 pass 'the report sorts every changed checkout into mine and the agents'
 
-# A long path is clipped in the middle, not at the end. Every row in a fleet shares
-# its leading directories and differs in the last segment, so an end-clipped label
-# hides the only part that answers "which checkout is this".
-assert_contains "$HTML" '<span class="tail">one</span>' \
-	'a checkout path is not split so the name at its end survives truncation'
+# A label too long for the column loses its start, never its end: every row in a
+# fleet shares its leading directories, and this desk's dominant shape shares the
+# trailing package name too, so what tells two rows apart is the end of the middle.
+assert_contains "$HTML" '/src/AWSGlueLineageAppConfigCDK</span>' \
+	'a long label was clipped at the end, hiding the part that says which checkout it is'
+assert_contains "$HTML" '…' 'a clipped label does not show that anything was dropped'
+assert_not_contains "$HTML" '>~/fleet/lineage-ws' \
+	'a label too long for the column was printed whole, so the row runs past its column'
+
+# The whole path is still on the row, so hovering answers anything the elision drops.
+assert_contains "$HTML" "title=\"$(cd "$FLEET" && pwd -P)/lineage-ws-lineage-cr2-20260828-abcdef/src/AWSGlueLineageAppConfigCDK\"" \
+	'an elided label carries no title, so the dropped part of the path is unrecoverable'
+pass 'a label too long for its column keeps the end that identifies the checkout'
 
 assert_not_contains "$HTML" '<script>alert' 'a diff containing markup was rendered as markup'
 
