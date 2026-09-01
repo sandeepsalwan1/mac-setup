@@ -104,6 +104,106 @@ assert_not_contains "$single" '1 commits' 'a lone commit is reported as plural'
 assert_not_contains "$single" '+0/-0' 'committed lines are not counted toward the total'
 assert_contains "$single" '+3/-0' 'the committed line counts are wrong'
 
+# --- the journal says what happened, not which state field moved -------------
+#
+# The since-you-last-looked block is the answer to "what did the agents do while
+# I was away", so it is asserted in the words a reader uses. It used to print
+# git's own state transitions - "ahead 0 -> 1; unique 1 -> 2; unstaged 0 -> 1" -
+# which is arithmetic homework handed back, and on a machine running a dozen
+# agents it filled the screen before the table below it got a line.
+
+commit_in() {
+	git -C "$1" -c user.name=t -c user.email=t@e.invalid commit -qam "$2"
+}
+
+JRN="$TMP/journal"
+JW="$JRN/.treehouse/proj-abc123/2/proj"
+mkdir -p "$JRN/.treehouse/proj-abc123/2"
+dotfiles_git_init_commit "$JW"
+git -C "$JW" branch -M main
+git -C "$JW" checkout -q -b fm/task
+printf 'one\n' >>"$JW/README.md"
+commit_in "$JW" 'agent work'
+
+first="$("$SCRIPT" --root "$JRN")"
+assert_contains "$first" 'Baseline saved' 'the first scan does not say it saved a baseline'
+
+# The agent commits again and leaves an edit behind, which is the ordinary case.
+printf 'two\n' >>"$JW/README.md"
+commit_in "$JW" 'more agent work'
+printf 'three\n' >>"$JW/README.md"
+
+second="$("$SCRIPT" --root "$JRN")"
+assert_contains "$second" 'SINCE YOU LAST LOOKED' 'the journal has no heading a reader can parse'
+assert_contains "$second" 'changed  proj #2' 'the journal does not name what happened to the worktree'
+assert_contains "$second" '1 more commit' 'the journal does not report a gained commit as a gain'
+assert_contains "$second" 'now 2 commits, 1 edited' \
+	'the journal does not say where the change left the worktree'
+assert_not_contains "$second" 'UPDATED' 'the journal still shouts a state name'
+assert_not_contains "$second" 'unstaged 0 -> 1' 'the journal still prints git state transitions'
+assert_not_contains "$second" 'new work in flight' 'the journal still describes new work in jargon'
+
+# Work that finishes has to be reported too, or a worktree simply vanishes from
+# the list with no explanation of where it went.
+git -C "$JW" checkout -q -- README.md
+git -C "$JW" reset -q --hard main
+third="$("$SCRIPT" --root "$JRN")"
+assert_contains "$third" 'gone' 'the journal does not report a worktree that went clean'
+assert_contains "$third" 'nothing left to show' 'the journal does not say why the worktree went away'
+
+# --- long lists stop at one screen, and say so -------------------------------
+#
+# A machine running a dozen agents has 87 changed checkouts. Printing all of them
+# pushed everything worth reading off the top of the terminal - the same
+# unreadability this output exists to fix, by volume instead of by vocabulary.
+
+CAPS="$TMP/caps"
+for n in 01 02 03 04 05 06 07 08 09 10 11 12 13 14; do
+	W="$CAPS/.treehouse/proj-abc123/$n/proj"
+	mkdir -p "$(dirname "$W")"
+	dotfiles_git_init_commit "$W"
+	git -C "$W" branch -M main
+	git -C "$W" checkout -q -b "fm/w$n"
+	# Distinct sizes, so which rows a cap keeps is decided rather than incidental.
+	i=0
+	while [ "$i" -lt "$((10#$n))" ]; do
+		printf 'line\n' >>"$W/README.md"
+		i=$((i + 1))
+	done
+	commit_in "$W" "work $n"
+done
+
+capped="$("$SCRIPT" --root "$CAPS")"
+assert_contains "$capped" 'AGENT WORKTREES (14)' 'the section heading does not carry the true total'
+assert_contains "$capped" 'and 2 more, all smaller than these' \
+	'a capped list does not say how many rows it held back'
+assert_contains "$capped" 'fm/w14' 'the cap dropped the biggest diff'
+assert_not_contains "$capped" 'fm/w01' 'the cap kept the smallest diff instead of dropping it'
+
+uncapped="$("$SCRIPT" --root "$CAPS" --all)"
+assert_contains "$uncapped" 'fm/w01' '--all still held rows back'
+assert_not_contains "$uncapped" 'all smaller than these' '--all still printed a cap notice'
+
+# Columns are sized to the rows on screen. A hidden row is not on screen, so
+# letting one set the width pads every visible row out to a column nothing
+# occupies - which is exactly the misalignment the two-section layout exists to
+# avoid. The widest label here belongs to a repository the cap drops.
+LONG="$CAPS/.treehouse/proj-abc123/1/a-very-long-repository-name-indeed"
+mkdir -p "$(dirname "$LONG")"
+dotfiles_git_init_commit "$LONG"
+git -C "$LONG" branch -M main
+git -C "$LONG" checkout -q -b fm/tiny
+printf 'line\n' >>"$LONG/README.md"
+commit_in "$LONG" 'one line'
+
+# The table only: the journal above it names this worktree on purpose, because it
+# is new since the previous scan, and that is the one place it should appear.
+narrow="$("$SCRIPT" --root "$CAPS" | sed -n '/AGENT WORKTREES/,$p')"
+assert_not_contains "$narrow" 'a-very-long-repository-name-indeed' \
+	'the widest label was not the row the cap drops, so this proves nothing'
+assert_contains "$narrow" 'proj #14  fm/w14  1 commit' \
+	'a row the cap hid was measured for column width, so every visible row is padded too wide'
+
 # --- the file must parse under bash 3.2 --------------------------------------
 #
 # `#!/usr/bin/env bash` resolves to /bin/bash on a stock macOS, which is still

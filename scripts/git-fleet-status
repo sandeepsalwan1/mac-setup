@@ -56,10 +56,14 @@ ones you edit yourself, AGENT WORKTREES for the detached worktrees agents are
 given. Biggest diff first in each. Line totals cover committed work as well as
 staged, unstaged and new files, so they match what git-fleet-diff renders.
 
+Long lists stop at one screen and say how many rows they stopped short of; since
+the order is biggest-first, what they hold back is always the quietest work.
+
 Run git-fleet-diff (fleet-diff) afterwards to read any of it.
 
 Options:
-  -a, --all           include repositories with no changes (hidden by default)
+  -a, --all           hold nothing back: repositories with no changes, and every
+                      row of every list rather than one screen of each
   -r, --root DIR      search root; repeatable (default: $HOME)
   -d, --depth N       maximum search depth below each root (default: 7)
       --pr            look up PR state (network; cached ~15min; "?" on failure)
@@ -544,6 +548,92 @@ if [ "$FORMAT" = paths ]; then
 	exit 0
 fi
 
+# -------------------------------------------------------- naming and phrasing
+#
+# Shared by both surfaces below - the since-you-last-looked journal and the table
+# - so one worktree is named the same way and its work described in the same
+# words wherever it appears. Defined up here because the journal is computed
+# before the table is rendered, and a function has to exist before it is called.
+
+# ~/.treehouse/mac-setup-cadbea/2/mac-setup -> "mac-setup #2". The pool hash and
+# the repeated repository name carry nothing a reader needs; the slot number is
+# the only part that distinguishes one agent's worktree from the next.
+agent_label() {
+	local path=$1 slot repo
+	repo=${path##*/}
+	slot=${path%/*}
+	slot=${slot##*/}
+	case $slot in
+	'' | *[!0-9]*) printf '%s\n' "$(abbrev "$path")" ;;
+	*) printf '%s #%s\n' "$repo" "$slot" ;;
+	esac
+}
+
+# The shortest honest name for a checkout, wherever it lives.
+short_label() {
+	case $1 in
+	*/.treehouse/*) agent_label "$1" ;;
+	*) abbrev "$1" ;;
+	esac
+}
+
+plural() {
+	[ "$1" -eq 1 ] && printf '%s\n' "$2" || printf '%ss\n' "$2"
+}
+
+# A count that can be arithmetic. Both commit counts are "?" when a checkout has
+# no base branch to compare against, and "?" in an integer context is a fatal
+# error, not a zero.
+num() {
+	case ${1:-} in
+	'' | *[!0-9]*) printf '0\n' ;;
+	*) printf '%s\n' "$1" ;;
+	esac
+}
+
+# Only the parts that are non-zero, so a row never spends width saying "0".
+#
+# "commits to push" and "commits" are different facts and both matter: the first
+# is work an upstream has not seen, the second work the base branch has not seen.
+# An agent worktree has no upstream at all, so it only ever reports the second;
+# reporting neither - which an earlier draft did whenever ahead was exactly 0 -
+# printed "up to date" over a branch holding unmerged commits.
+what_changed() {
+	local ahead=$1 uniq=$2 sf=$3 uf=$4 nf=$5 out=
+	local pushable unmerged
+	pushable=$(num "$ahead")
+	unmerged=$(num "$uniq")
+
+	if [ "$pushable" -gt 0 ]; then
+		out="$pushable $(plural "$pushable" commit) to push"
+	elif [ "$unmerged" -gt 0 ]; then
+		out="$unmerged $(plural "$unmerged" commit)"
+	fi
+	[ "$sf" -gt 0 ] && out="${out:+$out, }$sf staged"
+	[ "$uf" -gt 0 ] && out="${out:+$out, }$uf edited"
+	[ "$nf" -gt 0 ] && out="${out:+$out, }$nf new"
+	printf '%s\n' "${out:-up to date}"
+}
+
+# A path is capped rather than only measured, because one deep checkout -
+# ~/DataZoneServiceMeta/src/DataZoneServiceBrazilMetaRepo - is long enough to push
+# every other row's columns out of line on its own. The tail is the half that
+# identifies a checkout, so that is the half kept.
+#
+# The marker is ASCII ".." rather than a prettier "…" so that every string in
+# these tables has one byte per column. awk's printf pads to a count of bytes, so
+# a single three-byte ellipsis would leave its row two columns short of every
+# other row - which is exactly the misalignment the table exists to avoid.
+LABEL_CAP=40
+fit_label() {
+	local label=$1
+	[ ${#label} -le "$LABEL_CAP" ] && {
+		printf '%s\n' "$label"
+		return 0
+	}
+	printf '..%s\n' "${label: -$((LABEL_CAP - 2))}"
+}
+
 # ---------------------------------------------------------- previous snapshot
 
 # Each scan scope gets its own history. A fixture root, a shallow focused scan
@@ -613,52 +703,90 @@ state_record() {
 		"$sf" "$uf" "$nf" "$add" "$del" "$fingerprint"
 }
 
+# What moved on one checkout, in the words a person would use out loud.
+#
+# This used to print git's own state transitions - "ahead 0 -> 1; unique 14 -> 17;
+# staged 0 -> 0; lines +0/-0 -> +13316/-2960" - which is arithmetic homework handed
+# back to the reader. What they came to find out is what the work did, so a gained
+# commit count is reported as a gain, and uncommitted work as it stands now.
 updated_detail() {
 	local old=$1 current=$2
-	local obranch ofull_head obase oahead ouniq osf ouf onf oadd odel ofingerprint
+	local obranch ofull_head obase ouniq osf ouf onf oadd odel ofingerprint
 	local top branch ahead uniq sf uf nf add del val pr full_head base fingerprint
-	local -a parts=()
+	local -a moved=()
 
-	IFS=$'\t' read -r _ obranch ofull_head obase oahead ouniq osf ouf onf oadd odel ofingerprint <<<"$old"
+	IFS=$'\t' read -r _ obranch ofull_head obase _ ouniq osf ouf onf oadd odel ofingerprint <<<"$old"
 	IFS=$'\t' read -r top branch ahead uniq sf uf nf add del val pr full_head base fingerprint <<<"$current"
 
-	[ "$obranch" = "$branch" ] || parts+=("branch $obranch -> $branch")
-	if [ "$ofull_head" != "$full_head" ]; then
-		parts+=("HEAD ${ofull_head:0:7} -> ${full_head:0:7}")
-	fi
-	[ "$oahead" = "$ahead" ] || parts+=("ahead $oahead -> $ahead")
-	[ "$ouniq" = "$uniq" ] || parts+=("unique $ouniq -> $uniq")
-	[ "$osf" = "$sf" ] || parts+=("staged $osf -> $sf")
-	[ "$ouf" = "$uf" ] || parts+=("unstaged $ouf -> $uf")
-	[ "$onf" = "$nf" ] || parts+=("untracked $onf -> $nf")
-	if [ "$oadd" != "$add" ] || [ "$odel" != "$del" ]; then
-		parts+=("lines +$oadd/-$odel -> +$add/-$del")
-	fi
-	if [ ${#parts[@]} -eq 0 ] && [ "$ofingerprint" != "$fingerprint" ]; then
-		parts+=("diff content changed")
-	fi
-	if [ ${#parts[@]} -eq 0 ] && [ "$obase" != "$base" ]; then
-		parts+=("comparison base changed")
+	[ "$obranch" = "$branch" ] || moved+=("moved to $branch")
+
+	local was now gained
+	was=$(num "$ouniq")
+	now=$(num "$uniq")
+	gained=$((now - was))
+	if [ "$gained" -gt 0 ]; then
+		moved+=("$gained more $(plural "$gained" commit)")
+	elif [ "$gained" -lt 0 ]; then
+		# Fewer commits than last time means a rebase or a reset, not work thrown
+		# away, and "-3 commits" would say the opposite.
+		moved+=('history rewritten')
+	elif [ "$ofull_head" != "$full_head" ]; then
+		moved+=('recommitted')
 	fi
 
+	# Every count can match while the work is different - the same line edited
+	# twice, or a rebase onto a base that moved. Say so rather than say nothing.
+	if [ ${#moved[@]} -eq 0 ] &&
+		[ "$osf" = "$sf" ] && [ "$ouf" = "$uf" ] && [ "$onf" = "$nf" ] &&
+		[ "$oadd" = "$add" ] && [ "$odel" = "$del" ]; then
+		if [ "$ofingerprint" != "$fingerprint" ]; then
+			moved+=('same counts, different content')
+		elif [ "$obase" != "$base" ]; then
+			moved+=("compared against $base now")
+		else
+			moved+=('changed')
+		fi
+	fi
+
+	# What moved, then where that left it - in the same words the table uses, and
+	# behind one "now" so a total is never misread as a difference. "+4/-0" on its
+	# own is the whole diff, not four lines added since the last look.
+	local state
+	state=$(what_changed "$ahead" "$uniq" "$sf" "$uf" "$nf")
+	[ $((add + del)) -gt 0 ] && state="$state, +$add/-$del"
+
 	local detail='' part
-	for part in "${parts[@]}"; do
-		[ -z "$detail" ] || detail="$detail; "
+	for part in ${moved[@]+"${moved[@]}"}; do
+		[ -z "$detail" ] || detail="$detail, "
 		detail="$detail$part"
 	done
-	printf '%s\n' "${detail:-state changed}"
+	printf '%s\n' "${detail:+$detail; }now $state"
 }
 
 new_detail() {
 	local current=$1
 	local top branch ahead uniq sf uf nf add del val pr full_head base fingerprint
+	local detail
 	IFS=$'\t' read -r top branch ahead uniq sf uf nf add del val pr full_head base fingerprint <<<"$current"
-	printf 'new work in flight: %s staged, %s unstaged, %s untracked, +%s/-%s lines, %s unique commits\n' \
-		"$sf" "$uf" "$nf" "$add" "$del" "$uniq"
+	detail=$(what_changed "$ahead" "$uniq" "$sf" "$uf" "$nf")
+	[ $((add + del)) -gt 0 ] && detail="$detail, +$add/-$del"
+	printf '%s\n' "$detail"
+}
+
+# "NEW", "UPDATED" and "CLEARED" name a state in a data structure. These name
+# what happened to the work, which is the same information and needs no decoding.
+journal_verb() {
+	case $1 in
+	new) printf 'started\n' ;;
+	updated) printf 'changed\n' ;;
+	cleared) printf 'gone\n' ;;
+	*) printf '%s\n' "$1" ;;
+	esac
 }
 
 ACTIVITY=()
 ACTIVITY_DETAILS=()
+ACTIVITY_LABELS=()
 ACTIVITY_ROWS=()
 ACTIVITY_COUNT=0
 
@@ -666,7 +794,7 @@ for rec in ${RECORDS[@]+"${RECORDS[@]}"}; do
 	IFS=$'\t' read -r top _ <<<"$rec"
 	activity=baseline
 	detail=
-	activity_row=
+	label=
 	if [ "$HAS_PREVIOUS" -eq 1 ]; then
 		old=$(previous_for_path "$top") || old=
 		if [ -z "$old" ]; then
@@ -682,34 +810,59 @@ for rec in ${RECORDS[@]+"${RECORDS[@]}"}; do
 			fi
 		fi
 		if [ "$activity" = new ] || [ "$activity" = updated ]; then
-			activity_row=$(printf '%-8s %s  %s' "$(printf '%s' "$activity" | tr '[:lower:]' '[:upper:]')" \
-				"$(abbrev "$top")" "$detail")
+			label=$(fit_label "$(short_label "$top")")
 			ACTIVITY_COUNT=$((ACTIVITY_COUNT + 1))
 		fi
 	fi
 	ACTIVITY+=("$activity")
 	ACTIVITY_DETAILS+=("$detail")
-	ACTIVITY_ROWS+=("$activity_row")
+	ACTIVITY_LABELS+=("$label")
+	ACTIVITY_ROWS+=('')
 done
 
 CLEARED_RECORDS=()
 CLEARED_DETAILS=()
+CLEARED_LABELS=()
 CLEARED_ROWS=()
 if [ "$HAS_PREVIOUS" -eq 1 ]; then
 	for old in ${PREVIOUS_RECORDS[@]+"${PREVIOUS_RECORDS[@]}"}; do
 		IFS=$'\t' read -r old_top old_branch _ <<<"$old"
 		current_has_path "$old_top" && continue
 		if git -C "$old_top" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-			detail="no work remains (was $old_branch)"
+			detail="nothing left to show (was $old_branch)"
 		else
-			detail="checkout no longer found (was $old_branch)"
+			detail="checkout no longer there (was $old_branch)"
 		fi
 		CLEARED_RECORDS+=("$old")
 		CLEARED_DETAILS+=("$detail")
-		CLEARED_ROWS+=("$(printf '%-8s %s  %s' CLEARED "$(abbrev "$old_top")" "$detail")")
+		CLEARED_LABELS+=("$(fit_label "$(short_label "$old_top")")")
+		CLEARED_ROWS+=('')
 		ACTIVITY_COUNT=$((ACTIVITY_COUNT + 1))
 	done
 fi
+
+# Rows are built in a second pass because the name column is sized to the widest
+# name in the journal, and that is not known until every entry has been named.
+W_JOURNAL=4
+for label in ${ACTIVITY_LABELS[@]+"${ACTIVITY_LABELS[@]}"} ${CLEARED_LABELS[@]+"${CLEARED_LABELS[@]}"}; do
+	[ ${#label} -gt "$W_JOURNAL" ] && W_JOURNAL=${#label}
+done
+
+i=0
+for activity in ${ACTIVITY[@]+"${ACTIVITY[@]}"}; do
+	if [ -n "${ACTIVITY_LABELS[$i]}" ]; then
+		ACTIVITY_ROWS[i]=$(printf '  %-7s  %-*s  %s' "$(journal_verb "$activity")" \
+			"$W_JOURNAL" "${ACTIVITY_LABELS[$i]}" "${ACTIVITY_DETAILS[$i]}")
+	fi
+	i=$((i + 1))
+done
+
+i=0
+for label in ${CLEARED_LABELS[@]+"${CLEARED_LABELS[@]}"}; do
+	CLEARED_ROWS[i]=$(printf '  %-7s  %-*s  %s' "$(journal_verb cleared)" \
+		"$W_JOURNAL" "$label" "${CLEARED_DETAILS[$i]}")
+	i=$((i + 1))
+done
 
 # Save only after a successful complete scan. The rename is atomic, so two
 # editor/terminal scans can race without ever leaving a partial snapshot.
@@ -806,21 +959,40 @@ if [ "$FORMAT" = json ]; then
 	exit 0
 fi
 
-printf 'SINCE LAST RUN'
+# One screen, not one scroll.
+#
+# A machine running a dozen agents has 87 changed checkouts, and printing all of
+# them pushed everything worth reading off the top of the terminal - which is the
+# same unreadability this output exists to fix, just by volume instead of by
+# vocabulary. So each list stops, and says plainly how many it stopped short of.
+# The table's lists are ordered loudest-first, so what a cap hides there is always
+# the quietest work; --all holds nothing back anywhere.
+JOURNAL_CAP=8
+SECTION_CAP=12
+if [ "$SHOW_ALL" -eq 1 ]; then
+	JOURNAL_CAP=0
+	SECTION_CAP=0
+fi
+
+printf 'SINCE YOU LAST LOOKED'
 if [ "$HAS_PREVIOUS" -eq 1 ]; then
 	printf ' (%s)\n' "$PREVIOUS_AT"
 	if [ "$ACTIVITY_COUNT" -eq 0 ]; then
-		printf '%s\n' "No fleet changes since the previous scan."
+		printf '%s\n' '  Nothing has changed anywhere since then.'
 	else
-		for activity_row in ${ACTIVITY_ROWS[@]+"${ACTIVITY_ROWS[@]}"}; do
-			[ -n "$activity_row" ] && printf '%s\n' "$activity_row"
-		done
-		for activity_row in ${CLEARED_ROWS[@]+"${CLEARED_ROWS[@]}"}; do
+		shown=0
+		for activity_row in ${ACTIVITY_ROWS[@]+"${ACTIVITY_ROWS[@]}"} \
+			${CLEARED_ROWS[@]+"${CLEARED_ROWS[@]}"}; do
+			[ -n "$activity_row" ] || continue
+			[ "$JOURNAL_CAP" -gt 0 ] && [ "$shown" -ge "$JOURNAL_CAP" ] && break
 			printf '%s\n' "$activity_row"
+			shown=$((shown + 1))
 		done
+		[ "$ACTIVITY_COUNT" -gt "$shown" ] &&
+			printf '  and %d more (--all shows every one).\n' "$((ACTIVITY_COUNT - shown))"
 	fi
 else
-	printf '\n%s\n' "Baseline saved. The next run will show what changed since this scan."
+	printf '\n%s\n' '  Baseline saved. Next time, this will say what changed since now.'
 fi
 
 if [ ${#RECORDS[@]} -eq 0 ]; then
@@ -849,70 +1021,8 @@ fi
 # The aligned ROW above is untouched and still what --json carries, so the
 # Neovim picker and every script keep the format they were written against.
 
-# ~/.treehouse/mac-setup-cadbea/2/mac-setup -> "mac-setup #2". The pool hash and
-# the repeated repository name carry nothing a reader needs; the slot number is
-# the only part that distinguishes one agent's worktree from the next.
-agent_label() {
-	local path=$1 slot repo
-	repo=${path##*/}
-	slot=${path%/*}
-	slot=${slot##*/}
-	case $slot in
-	'' | *[!0-9]*) printf '%s\n' "$(abbrev "$path")" ;;
-	*) printf '%s #%s\n' "$repo" "$slot" ;;
-	esac
-}
-
-# Only the parts that are non-zero, so a row never spends width saying "0".
-#
-# "commits to push" and "commits" are different facts and both matter: the first
-# is work an upstream has not seen, the second work the base branch has not seen.
-# An agent worktree has no upstream at all, so it only ever reports the second;
-# reporting neither - which an earlier draft did whenever ahead was exactly 0 -
-# printed "up to date" over a branch holding unmerged commits.
-what_changed() {
-	local ahead=$1 uniq=$2 sf=$3 uf=$4 nf=$5 out=
-	local pushable=0 unmerged=0
-	case $ahead in '' | *[!0-9]*) : ;; *) pushable=$ahead ;; esac
-	case $uniq in '' | *[!0-9]*) : ;; *) unmerged=$uniq ;; esac
-
-	if [ "$pushable" -gt 0 ]; then
-		out="$pushable $(plural "$pushable" commit) to push"
-	elif [ "$unmerged" -gt 0 ]; then
-		out="$unmerged $(plural "$unmerged" commit)"
-	fi
-	[ "$sf" -gt 0 ] && out="${out:+$out, }$sf staged"
-	[ "$uf" -gt 0 ] && out="${out:+$out, }$uf edited"
-	[ "$nf" -gt 0 ] && out="${out:+$out, }$nf new"
-	printf '%s\n' "${out:-up to date}"
-}
-
-plural() {
-	[ "$1" -eq 1 ] && printf '%s\n' "$2" || printf '%ss\n' "$2"
-}
-
 # sortkey<TAB>label<TAB>branch<TAB>what<TAB>lines, split by section. The sort key
 # is total lines touched, so `sort -rn` alone puts the loudest row on top.
-#
-# A path is capped here rather than only measured, because one deep checkout -
-# ~/DataZoneServiceMeta/src/DataZoneServiceBrazilMetaRepo - is long enough to push
-# every other row's columns out of line on its own. The tail is the half that
-# identifies a checkout, so that is the half kept.
-#
-# The marker is ASCII ".." rather than a prettier "…" so that every string in
-# this table has one byte per column. awk's printf pads to a count of bytes, so a
-# single three-byte ellipsis would leave its row two columns short of every other
-# row - which is exactly the misalignment this table exists to avoid.
-LABEL_CAP=40
-fit_label() {
-	local label=$1
-	[ ${#label} -le "$LABEL_CAP" ] && {
-		printf '%s\n' "$label"
-		return 0
-	}
-	printf '..%s\n' "${label: -$((LABEL_CAP - 2))}"
-}
-
 MINE=()
 AGENTS=()
 for rec in ${RECORDS[@]+"${RECORDS[@]}"}; do
@@ -940,32 +1050,63 @@ for rec in ${RECORDS[@]+"${RECORDS[@]}"}; do
 	esac
 done
 
-# Width is measured across both sections so the two line up as one page.
-print_section() {
-	local title=$1 count=$2
-	shift 2
-	[ "$count" -gt 0 ] || return 0
-	printf '\n%s (%d)\n' "$title" "$count"
-	printf '%s\n' "$@" | sort -t$'\t' -k1,1rn | awk -F'\t' \
-		-v w1="$W_LABEL" -v w2="$W_BRANCH" -v w3="$W_WHAT" '
-    { printf "  %-*s  %-*s  %-*s  %s\n", w1, $2, w2, $3, w3, $4, $5 }
-  '
+# Loudest first, then the cap. Ordering and truncating here rather than at print
+# time is what lets the column widths below be measured against the rows a reader
+# will actually see: measuring a row the cap hides pads every visible row out to a
+# width nothing on screen occupies.
+take_top() {
+	local cap=$1 n=0 row
+	shift
+	while IFS= read -r row; do
+		[ -n "$row" ] || continue
+		[ "$cap" -gt 0 ] && [ "$n" -ge "$cap" ] && break
+		printf '%s\n' "$row"
+		n=$((n + 1))
+	done < <(printf '%s\n' "$@" | sort -t$'\t' -k1,1rn)
 }
 
+MINE_SHOWN=()
+while IFS= read -r entry; do
+	[ -n "$entry" ] && MINE_SHOWN+=("$entry")
+done < <(take_top "$SECTION_CAP" ${MINE[@]+"${MINE[@]}"})
+
+AGENTS_SHOWN=()
+while IFS= read -r entry; do
+	[ -n "$entry" ] && AGENTS_SHOWN+=("$entry")
+done < <(take_top "$SECTION_CAP" ${AGENTS[@]+"${AGENTS[@]}"})
+
 # Every field is ASCII by construction, so a character count is also a byte count
-# and awk's byte padding lands where these widths say it will.
+# and awk's byte padding lands where these widths say it will. Measured across
+# both sections so the two line up as one page rather than as two tables.
 W_LABEL=4
 W_BRANCH=6
 W_WHAT=4
-for entry in ${MINE[@]+"${MINE[@]}"} ${AGENTS[@]+"${AGENTS[@]}"}; do
+for entry in ${MINE_SHOWN[@]+"${MINE_SHOWN[@]}"} ${AGENTS_SHOWN[@]+"${AGENTS_SHOWN[@]}"}; do
 	IFS=$'\t' read -r _ f_label f_branch f_what _ <<<"$entry"
 	[ ${#f_label} -gt "$W_LABEL" ] && W_LABEL=${#f_label}
 	[ ${#f_branch} -gt "$W_BRANCH" ] && W_BRANCH=${#f_branch}
 	[ ${#f_what} -gt "$W_WHAT" ] && W_WHAT=${#f_what}
 done
 
-print_section 'YOUR CHECKOUTS' "${#MINE[@]}" ${MINE[@]+"${MINE[@]}"}
-print_section 'AGENT WORKTREES' "${#AGENTS[@]}" ${AGENTS[@]+"${AGENTS[@]}"}
+print_section() {
+	local title=$1 total=$2 shown=$3
+	shift 3
+	[ "$total" -gt 0 ] || return 0
+	printf '\n%s (%d)\n' "$title" "$total"
+	printf '%s\n' "$@" | awk -F'\t' \
+		-v w1="$W_LABEL" -v w2="$W_BRANCH" -v w3="$W_WHAT" '
+    { printf "  %-*s  %-*s  %-*s  %s\n", w1, $2, w2, $3, w3, $4, $5 }
+  '
+	local hidden=$((total - shown))
+	[ "$hidden" -gt 0 ] &&
+		printf '  and %d more, all smaller than these (--all shows every row).\n' "$hidden"
+	return 0
+}
+
+print_section 'YOUR CHECKOUTS' "${#MINE[@]}" "${#MINE_SHOWN[@]}" \
+	${MINE_SHOWN[@]+"${MINE_SHOWN[@]}"}
+print_section 'AGENT WORKTREES' "${#AGENTS[@]}" "${#AGENTS_SHOWN[@]}" \
+	${AGENTS_SHOWN[@]+"${AGENTS_SHOWN[@]}"}
 
 printf '\n%d changed, +%d/-%d lines total.' "${#RECORDS[@]}" "$T_A" "$T_D"
 [ "$CLEAN_REPOS" -gt 0 ] && printf ' %d clean and hidden (--all shows them).' "$CLEAN_REPOS"
