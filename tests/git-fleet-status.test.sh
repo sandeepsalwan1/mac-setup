@@ -208,6 +208,28 @@ assert_not_contains "$rows" '"row":"proj #2  fm/task  ?' \
 	'the prebuilt row still carries empty columns for tests and PR state'
 pass 'the row and its parts are built once, in the scan, for every surface to show'
 
+# --- two pools of one repository are not the same row -------------------------
+#
+# A repository can have more than one treehouse pool: a leftover beside a live one,
+# or two programs of work at once. Both then hold a slot 3, and "repo #3" names two
+# different worktrees - which on this desk put three identical-looking rows in one
+# table. The pool is only worth showing where it disambiguates, so the ordinary
+# one-pool fleet above must keep its short "proj #4".
+
+POOLS="$TMP/pools"
+for pool in twin-aaa111 twin-bbb222; do
+	W="$POOLS/.treehouse/$pool/3/twin"
+	mkdir -p "$(dirname "$W")"
+	dotfiles_git_init_commit "$W"
+	printf 'work in %s\n' "$pool" >>"$W/README.md"
+done
+twins="$("$SCRIPT" --root "$POOLS")"
+assert_contains "$twins" 'twin-aaa111 #3' 'two pools of one repository are not told apart'
+assert_contains "$twins" 'twin-bbb222 #3' 'only one of two colliding pools is named by its pool'
+assert_not_contains "$twins" ' twin #3' 'a colliding worktree still carries the ambiguous short name'
+assert_contains "$table" 'proj #4' 'the pool crept into a label that was never ambiguous'
+pass 'two pools of one repository are named apart, and a lone pool stays short'
+
 # --- long lists stop at one screen, and say so -------------------------------
 #
 # A machine running a dozen agents has 87 changed checkouts. Printing all of them

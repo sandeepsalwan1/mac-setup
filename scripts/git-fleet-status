@@ -565,16 +565,54 @@ fi
 # words wherever it appears. Defined up here because the journal is computed
 # before the table is rendered, and a function has to exist before it is called.
 
+# One repository can have more than one treehouse pool - a leftover beside a live
+# one, or two programs of work running side by side - and then two worktrees hold
+# the same slot number and the short label names them identically. This desk had
+# three such collisions out of eighty rows. The pool is recorded per repository as
+# the fleet is read, and the pool directory joins the label only for the
+# repositories where it actually tells two rows apart, so an ordinary fleet of one
+# pool per repository keeps the short name.
+POOL_SEEN=
+POOL_SHARED=
+note_pool() {
+	local path=$1 repo pool
+	case $path in */.treehouse/*) ;; *) return 0 ;; esac
+	repo=${path##*/}
+	pool=${path#*/.treehouse/}
+	pool=${pool%%/*}
+	case $POOL_SEEN in
+	*"|$repo=$pool|"*) return 0 ;;
+	*"|$repo="*)
+		case $POOL_SHARED in
+		*"|$repo|"*) ;;
+		*) POOL_SHARED="$POOL_SHARED|$repo|" ;;
+		esac
+		;;
+	esac
+	POOL_SEEN="$POOL_SEEN|$repo=$pool|"
+}
+
 # ~/.treehouse/mac-setup-cadbea/2/mac-setup -> "mac-setup #2". The pool hash and
 # the repeated repository name carry nothing a reader needs; the slot number is
-# the only part that distinguishes one agent's worktree from the next.
+# the only part that distinguishes one agent's worktree from the next - unless the
+# repository has two pools, which is what note_pool above is watching for.
 agent_label() {
-	local path=$1 slot repo
+	local path=$1 slot repo pool
 	repo=${path##*/}
 	slot=${path%/*}
 	slot=${slot##*/}
 	case $slot in
-	'' | *[!0-9]*) printf '%s\n' "$(abbrev "$path")" ;;
+	'' | *[!0-9]*)
+		printf '%s\n' "$(abbrev "$path")"
+		return 0
+		;;
+	esac
+	case $POOL_SHARED in
+	*"|$repo|"*)
+		pool=${path#*/.treehouse/}
+		pool=${pool%%/*}
+		printf '%s #%s\n' "$pool" "$slot"
+		;;
 	*) printf '%s #%s\n' "$repo" "$slot" ;;
 	esac
 }
@@ -793,6 +831,19 @@ journal_verb() {
 	*) printf '%s\n' "$1" ;;
 	esac
 }
+
+# Every path that will be named, before anything is named: both what is here now and
+# what the baseline held, because a live pool and a finished one colliding on a slot
+# number is the common case for this. Nothing below may call short_label until this
+# has run, or the same worktree gets two different labels in one page.
+for rec in ${RECORDS[@]+"${RECORDS[@]}"}; do
+	IFS=$'\t' read -r top _ <<<"$rec"
+	note_pool "$top"
+done
+for old in ${PREVIOUS_RECORDS[@]+"${PREVIOUS_RECORDS[@]}"}; do
+	IFS=$'\t' read -r old_top _ <<<"$old"
+	note_pool "$old_top"
+done
 
 ACTIVITY=()
 ACTIVITY_DETAILS=()
