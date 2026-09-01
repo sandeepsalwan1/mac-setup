@@ -66,6 +66,58 @@ after_objects="$(find "$FLEET/dirty/.git/objects" -type f | wc -l | tr -d ' ')"
 [ "$before_status" = "$after_status" ] || fail 'scanning changed a repository working tree'
 [ "$before_objects" = "$after_objects" ] || fail 'scanning wrote objects into a repository'
 
+# --- the table a person actually reads ---------------------------------------
+#
+# The default output is the surface this tool is used through, so it is asserted
+# on directly: git's own vocabulary (STG, UNS, UNT, UNIQ) was unreadable without
+# decoding it first, and the two kinds of work in a fleet - checkouts edited by
+# hand, and the detached worktrees handed to agents - belong under separate
+# headings rather than interleaved in one alphabetical list.
+
+AGENT_POOL="$FLEET/.treehouse/proj-abc123/4"
+mkdir -p "$AGENT_POOL"
+dotfiles_git_init_commit "$AGENT_POOL/proj"
+printf 'agent line\n' >>"$AGENT_POOL/proj/README.md"
+
+table="$("$SCRIPT" --root "$FLEET")"
+assert_contains "$table" 'YOUR CHECKOUTS' 'the table has no section for the reader own checkouts'
+assert_contains "$table" 'AGENT WORKTREES' 'the table has no section for agent worktrees'
+assert_contains "$table" '1 edited' 'the table does not say in words what changed'
+assert_not_contains "$table" 'UNS' 'the table still prints git shorthand column headings'
+assert_contains "$table" 'proj #4' 'an agent worktree is not labelled by its pool slot'
+assert_contains "$table" 'fleet-diff' 'the table does not name the command that reads a diff'
+
+# Singular and plural are chosen, not glued on: "1 commits" reads as a bug in the
+# tool and invites the reader to distrust the rest of the row.
+one_commit="$TMP/one-commit"
+dotfiles_git_init_commit "$one_commit"
+git -C "$one_commit" checkout -q -b feature
+printf 'first\nsecond\nthird\n' >>"$one_commit/README.md"
+git -C "$one_commit" -c user.name=t -c user.email=t@e.invalid commit -qam 'one commit'
+single="$("$SCRIPT" --root "$one_commit")"
+assert_contains "$single" '1 commit' 'a lone commit is not counted'
+assert_not_contains "$single" '1 commits' 'a lone commit is reported as plural'
+
+# The line totals must include what the commits carry. Agents commit as they work,
+# so counting only the working tree described a finished branch as "+0/-0" - the
+# rows most worth reading, reported as nothing at all.
+assert_not_contains "$single" '+0/-0' 'committed lines are not counted toward the total'
+assert_contains "$single" '+3/-0' 'the committed line counts are wrong'
+
+# --- the file must parse under bash 3.2 --------------------------------------
+#
+# `#!/usr/bin/env bash` resolves to /bin/bash on a stock macOS, which is still
+# 3.2, and its parser rejects a case statement nested inside a `< <( ... )`
+# process substitution - the whole file, not just that line. Nothing about this
+# is visible under the bash 5 on PATH here, so it is asserted explicitly.
+
+if [ -x /bin/bash ]; then
+	/bin/bash -n "$SCRIPT" 2>"$TMP/parse.err" ||
+		fail "git-fleet-status does not parse under $(/bin/bash --version | head -1): $(cat "$TMP/parse.err")"
+	/bin/bash -n "$ROOT/scripts/git-fleet-diff" 2>"$TMP/parse2.err" ||
+		fail "git-fleet-diff does not parse under $(/bin/bash --version | head -1): $(cat "$TMP/parse2.err")"
+fi
+
 # --- the Neovim side finds the script with no environment help ---------------
 #
 # This is the regression guard for the bug that made :GitFleet unusable. The

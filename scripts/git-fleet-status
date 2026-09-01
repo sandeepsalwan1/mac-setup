@@ -50,9 +50,13 @@ usage() {
 	cat <<'EOF'
 Usage: git-fleet-status [options]
 
-Shows what changed since the previous scan first, followed by one dense row per
-current changed repository: path, branch, ahead / unique commits, staged /
-unstaged / untracked file counts, +/- lines, validation and PR state.
+Shows what changed since the previous scan, then every changed checkout in plain
+words - "9 commits to push, 1 edited" - under two headings: YOUR CHECKOUTS for the
+ones you edit yourself, AGENT WORKTREES for the detached worktrees agents are
+given. Biggest diff first in each. Line totals cover committed work as well as
+staged, unstaged and new files, so they match what git-fleet-diff renders.
+
+Run git-fleet-diff (fleet-diff) afterwards to read any of it.
 
 Options:
   -a, --all           include repositories with no changes (hidden by default)
@@ -326,8 +330,19 @@ inspect() {
 	# open them: ls-files also names symlinks to directories, and macOS awk makes
 	# getline on a directory a fatal I/O error, which would abort the whole count
 	# and silently report a dirty repository as clean.
-	local sf sa sd uf ua ud nf na
-	read -r sf sa sd uf ua ud nf na < <(
+	# Whether the commits are worth measuring, decided here rather than inside the
+	# process substitution below: bash 3.2 - still /bin/bash on macOS, and what
+	# `#!/usr/bin/env bash` resolves to under a stripped PATH - cannot parse a case
+	# statement nested inside `< <( ... )` and rejects the whole file. An empty
+	# range means there is nothing new on this HEAD to count.
+	local range=
+	case ${uniq:-0} in
+	'' | 0 | *[!0-9]*) : ;;
+	*) range="$base..HEAD" ;;
+	esac
+
+	local sf sa sd uf ua ud nf na ca cd
+	read -r sf sa sd uf ua ud nf na ca cd < <(
 		{
 			printf '\034S\n'
 			if [ -n "$head" ]; then
@@ -338,6 +353,15 @@ inspect() {
 			fi
 			printf '\034U\n'
 			git diff --numstat 2>/dev/null
+			# Lines the commits carry. Agents commit as they go, so a worktree holding
+			# six finished commits and a clean tree used to report +0/-0 - the work most
+			# worth reading, described as nothing. Counting the range makes the total
+			# agree with what git-fleet-diff renders for the same checkout.
+			#
+			# Only when there is a range to measure: on the mostly-clean fleet this
+			# skips the extra diff for almost every repository.
+			printf '\034C\n'
+			[ -n "$range" ] && git diff --numstat "$range" 2>/dev/null
 			printf '\034N\n'
 			tr '\0' '\n' <"$list"
 			printf '\034L\n'
@@ -348,9 +372,10 @@ inspect() {
       sec == "L" { na++; next }
       { f[sec]++; if ($1 != "-") a[sec] += $1; if ($2 != "-") d[sec] += $2 }
       END {
-        printf "%d %d %d %d %d %d %d %d\n",
+        printf "%d %d %d %d %d %d %d %d %d %d\n",
           f["S"] + 0, a["S"] + 0, d["S"] + 0,
-          f["U"] + 0, a["U"] + 0, d["U"] + 0, nf + 0, na + 0
+          f["U"] + 0, a["U"] + 0, d["U"] + 0, nf + 0, na + 0,
+          a["C"] + 0, d["C"] + 0
       }
     '
 	)
@@ -362,6 +387,8 @@ inspect() {
 	ud=${ud:-0}
 	nf=${nf:-0}
 	na=${na:-0}
+	ca=${ca:-0}
+	cd=${cd:-0}
 
 	# A working tree counts as changed when it has uncommitted work, or commits its
 	# base branch and upstream have not seen. A feature branch whose work is
@@ -402,7 +429,7 @@ inspect() {
 	)
 	rm -f "$list"
 
-	local add=$((sa + ua + na)) del=$((sd + ud))
+	local add=$((sa + ua + na + ca)) del=$((sd + ud + cd))
 	local val='?' pr='?'
 	[ "$WANT_VALIDATE" -eq 1 ] && val=$(validation "$top")
 	[ "$WANT_PR" -eq 1 ] && pr=$(pr_state "$top" "${upstream#*/}" "${head:-none}")
@@ -796,30 +823,151 @@ else
 	printf '\n%s\n' "Baseline saved. The next run will show what changed since this scan."
 fi
 
-printf '\nALL CURRENT CHANGES (%d)\n' "${#RECORDS[@]}"
 if [ ${#RECORDS[@]} -eq 0 ]; then
-	printf '%s\n' "No current changes."
+	printf '\nNOTHING IS CHANGED ANYWHERE\n'
+	if [ "$CLEAN_REPOS" -gt 0 ]; then
+		printf '%s\n' "All $TOTAL_REPOS repositories are clean."
+	else
+		printf '%s\n' "No repositories found below: ${ROOTS[*]}"
+	fi
+	exit 0
 fi
 
-# shellcheck disable=SC2059
-if [ ${#RECORDS[@]} -gt 0 ]; then
-	printf "$ROW\n" REPO BRANCH AHEAD UNIQ STG UNS UNT LINES VALID PR
-fi
-for row in ${ROWS[@]+"${ROWS[@]}"}; do
-	printf '%s\n' "$row"
+# ------------------------------------------------------- plain-language rows
+#
+# The columns this used to print - AHEAD UNIQ STG UNS UNT - are git's words, not
+# a reader's, and a row of five bare integers has to be decoded before it means
+# anything. So each row now says what happened in the words someone would use
+# out loud: "7 commits to push, 3 files edited, 1 new". The numbers are the same
+# ones; only the labelling changed.
+#
+# Two sections, because the fleet holds two unrelated kinds of work and mixing
+# them is what made one list unreadable: checkouts the reader edits themselves,
+# and the detached-HEAD worktrees agents were given. Within each, the biggest
+# diff comes first - the row worth reading is almost never the alphabetical one.
+#
+# The aligned ROW above is untouched and still what --json carries, so the
+# Neovim picker and every script keep the format they were written against.
+
+# ~/.treehouse/mac-setup-cadbea/2/mac-setup -> "mac-setup #2". The pool hash and
+# the repeated repository name carry nothing a reader needs; the slot number is
+# the only part that distinguishes one agent's worktree from the next.
+agent_label() {
+	local path=$1 slot repo
+	repo=${path##*/}
+	slot=${path%/*}
+	slot=${slot##*/}
+	case $slot in
+	'' | *[!0-9]*) printf '%s\n' "$(abbrev "$path")" ;;
+	*) printf '%s #%s\n' "$repo" "$slot" ;;
+	esac
+}
+
+# Only the parts that are non-zero, so a row never spends width saying "0".
+#
+# "commits to push" and "commits" are different facts and both matter: the first
+# is work an upstream has not seen, the second work the base branch has not seen.
+# An agent worktree has no upstream at all, so it only ever reports the second;
+# reporting neither - which an earlier draft did whenever ahead was exactly 0 -
+# printed "up to date" over a branch holding unmerged commits.
+what_changed() {
+	local ahead=$1 uniq=$2 sf=$3 uf=$4 nf=$5 out=
+	local pushable=0 unmerged=0
+	case $ahead in '' | *[!0-9]*) : ;; *) pushable=$ahead ;; esac
+	case $uniq in '' | *[!0-9]*) : ;; *) unmerged=$uniq ;; esac
+
+	if [ "$pushable" -gt 0 ]; then
+		out="$pushable $(plural "$pushable" commit) to push"
+	elif [ "$unmerged" -gt 0 ]; then
+		out="$unmerged $(plural "$unmerged" commit)"
+	fi
+	[ "$sf" -gt 0 ] && out="${out:+$out, }$sf staged"
+	[ "$uf" -gt 0 ] && out="${out:+$out, }$uf edited"
+	[ "$nf" -gt 0 ] && out="${out:+$out, }$nf new"
+	printf '%s\n' "${out:-up to date}"
+}
+
+plural() {
+	[ "$1" -eq 1 ] && printf '%s\n' "$2" || printf '%ss\n' "$2"
+}
+
+# sortkey<TAB>label<TAB>branch<TAB>what<TAB>lines, split by section. The sort key
+# is total lines touched, so `sort -rn` alone puts the loudest row on top.
+#
+# A path is capped here rather than only measured, because one deep checkout -
+# ~/DataZoneServiceMeta/src/DataZoneServiceBrazilMetaRepo - is long enough to push
+# every other row's columns out of line on its own. The tail is the half that
+# identifies a checkout, so that is the half kept.
+#
+# The marker is ASCII ".." rather than a prettier "…" so that every string in
+# this table has one byte per column. awk's printf pads to a count of bytes, so a
+# single three-byte ellipsis would leave its row two columns short of every other
+# row - which is exactly the misalignment this table exists to avoid.
+LABEL_CAP=40
+fit_label() {
+	local label=$1
+	[ ${#label} -le "$LABEL_CAP" ] && {
+		printf '%s\n' "$label"
+		return 0
+	}
+	printf '..%s\n' "${label: -$((LABEL_CAP - 2))}"
+}
+
+MINE=()
+AGENTS=()
+for rec in ${RECORDS[@]+"${RECORDS[@]}"}; do
+	IFS=$'\t' read -r top branch ahead uniq sf uf nf add del val pr full_head base fingerprint <<<"$rec"
+	what=$(what_changed "$ahead" "$uniq" "$sf" "$uf" "$nf")
+	lines='·'
+	[ $((add + del)) -gt 0 ] && lines="+$add/-$del"
+	# Only what was actually looked up. Both are opt-in and report "?" when they
+	# were not asked for, and a column of question marks was most of what made the
+	# old table unreadable - so the unasked answer is simply not shown. It is the
+	# last field on the row, where a variable width costs no alignment.
+	[ "$val" = '?' ] || lines="$lines  tests $val"
+	[ "$pr" = '?' ] || lines="$lines  PR $pr"
+	case $branch in
+	'('*')') branch='detached' ;;
+	esac
+	[ ${#branch} -gt 24 ] && branch="${branch:0:22}.."
+	case $top in
+	*/.treehouse/*)
+		AGENTS+=("$((add + del))"$'\t'"$(fit_label "$(agent_label "$top")")"$'\t'"$branch"$'\t'"$what"$'\t'"$lines")
+		;;
+	*)
+		MINE+=("$((add + del))"$'\t'"$(fit_label "$(abbrev "$top")")"$'\t'"$branch"$'\t'"$what"$'\t'"$lines")
+		;;
+	esac
 done
 
-# shellcheck disable=SC2059
-if [ ${#RECORDS[@]} -gt 0 ]; then
-	printf "$ROW\n" "TOTAL ${#RECORDS[@]} changed" "" "" "" "$T_S" "$T_U" "$T_N" \
-		"+$T_A/-$T_D" "" "" | sed -e 's/[[:space:]]*$//'
-fi
+# Width is measured across both sections so the two line up as one page.
+print_section() {
+	local title=$1 count=$2
+	shift 2
+	[ "$count" -gt 0 ] || return 0
+	printf '\n%s (%d)\n' "$title" "$count"
+	printf '%s\n' "$@" | sort -t$'\t' -k1,1rn | awk -F'\t' \
+		-v w1="$W_LABEL" -v w2="$W_BRANCH" -v w3="$W_WHAT" '
+    { printf "  %-*s  %-*s  %-*s  %s\n", w1, $2, w2, $3, w3, $4, $5 }
+  '
+}
 
-if [ "$CLEAN_REPOS" -gt 0 ]; then
-	printf '%s\n' "$CLEAN_REPOS of $TOTAL_REPOS repositories are clean and hidden; --all shows them."
-elif [ ${#RECORDS[@]} -eq 0 ]; then
-	printf '%s\n' "No repositories found below: ${ROOTS[*]}"
-fi
-if [ "$WANT_PR" -eq 0 ] || [ "$WANT_VALIDATE" -eq 0 ]; then
-	printf '%s\n' "? means not looked up: --pr adds PR state, --validate runs tests/check.sh."
-fi
+# Every field is ASCII by construction, so a character count is also a byte count
+# and awk's byte padding lands where these widths say it will.
+W_LABEL=4
+W_BRANCH=6
+W_WHAT=4
+for entry in ${MINE[@]+"${MINE[@]}"} ${AGENTS[@]+"${AGENTS[@]}"}; do
+	IFS=$'\t' read -r _ f_label f_branch f_what _ <<<"$entry"
+	[ ${#f_label} -gt "$W_LABEL" ] && W_LABEL=${#f_label}
+	[ ${#f_branch} -gt "$W_BRANCH" ] && W_BRANCH=${#f_branch}
+	[ ${#f_what} -gt "$W_WHAT" ] && W_WHAT=${#f_what}
+done
+
+print_section 'YOUR CHECKOUTS' "${#MINE[@]}" ${MINE[@]+"${MINE[@]}"}
+print_section 'AGENT WORKTREES' "${#AGENTS[@]}" ${AGENTS[@]+"${AGENTS[@]}"}
+
+printf '\n%d changed, +%d/-%d lines total.' "${#RECORDS[@]}" "$T_A" "$T_D"
+[ "$CLEAN_REPOS" -gt 0 ] && printf ' %d clean and hidden (--all shows them).' "$CLEAN_REPOS"
+printf '\n'
+printf '%s\n' 'Read any of it:  fleet-diff   (arrow keys, enter to read, esc to quit)'

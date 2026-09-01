@@ -170,6 +170,48 @@ assert_contains "$ROWS" "$FLEET_PHYS/one	untracked.txt	" \
 	'a row does not carry the checkout and the repo-relative file as its first two fields'
 pass 'the picker lists every changed file and nothing that cannot be shown'
 
+# --- --stat on its own is something to read, not something to browse ----------
+#
+# `-s` used to set only the diff option and leave the mode at its interactive
+# default, so it opened the picker. With no terminal - a pipe, a script, an agent -
+# fzf then blocked forever on a tty that was never coming, with nothing on stdout
+# to say why. The stub records being called, so this asserts the absence of the
+# picker rather than merely that some output appeared; fzf stays on PATH, because
+# removing it would take the already-present "fzf is not installed" fallback and
+# prove nothing.
+
+MARKER="$TMP/fzf-was-called"
+cat >"$STUB/fzf" <<EOF
+#!/usr/bin/env bash
+: > "$MARKER"
+cat > /dev/null
+EOF
+chmod +x "$STUB/fzf"
+rm -f "$MARKER"
+
+# A watchdog rather than a bare call: the failure being guarded against is a hang,
+# and a regression should fail this test instead of stalling the whole suite.
+# macOS ships no timeout(1), so the wait is done here.
+HOME="$TMP" GIT_FLEET_STATE_DIR="$TMP/state" PATH="$STUB:$PLAIN_PATH" \
+	GIT_FLEET_STATUS="$ROOT/scripts/git-fleet-status" \
+	"$SCRIPT" -s -r "$FLEET" -d 3 >"$TMP/stat-alone" 2>&1 </dev/null &
+STAT_PID=$!
+WAITED=0
+while kill -0 "$STAT_PID" 2>/dev/null && [ "$WAITED" -lt 120 ]; do
+	sleep 1
+	WAITED=$((WAITED + 1))
+done
+if kill -0 "$STAT_PID" 2>/dev/null; then
+	kill -9 "$STAT_PID" 2>/dev/null || true
+	fail '--stat on its own never finished; it is waiting on an interactive picker'
+fi
+wait "$STAT_PID" || fail "--stat on its own exited nonzero: $(cat "$TMP/stat-alone")"
+
+[ ! -f "$MARKER" ] || fail '--stat on its own opened the interactive picker'
+assert_contains "$(cat "$TMP/stat-alone")" 'committed.txt' \
+	'--stat on its own summarised nothing'
+pass '--stat on its own summarises without opening the picker'
+
 # --- the installer wires the shared config in, once ----------------------------
 
 grep -q '^\[core\]' "$SHARED_CONFIG" || fail 'the shared config sets no pager'

@@ -116,6 +116,16 @@ while [ $# -gt 0 ]; do
 	shift
 done
 
+# --stat asks for a summary "without contents", which is a thing to read, not a
+# thing to browse. On its own it used to leave MODE at its interactive default and
+# open the picker, so `git-fleet-diff -s` with no terminal - a pipe, a script, an
+# agent - blocked forever on an fzf waiting for a tty that was never coming, with
+# nothing on stdout to suggest why. An explicit mode still wins, so `-R -s` and
+# `-a -s` keep summarising inside the mode they name.
+if [ "$STAT" -eq 1 ] && [ "$MODE" = files ]; then
+	MODE=all
+fi
+
 case $MODE in
 print | show)
 	case ${#PATHS[@]} in
