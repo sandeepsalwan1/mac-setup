@@ -14,7 +14,6 @@
   If you see one, even if it is not caused by what you are working on right now, still get it fixed.
 - Before using "dynamic workflows", "ultra code" or any harness feature that immediately spawns a large swarm of subagents, always explain the tradeoffs and ask the user for explicit approval.
 - Project memory and AGENTS.md: when the user corrects recurring behavior, store one terse durable rule so it does not repeat; token-sensitive.
-- Personal memory base: a wiki built from past agent transcripts at `~/Documents/Obsidian Vault/Knowledge/Context Base/personal-context`, mirrored read-only to `~/.local/state/context-keeper/kb` on every ssh host. Read it - `index.md`, then `rg` over `wiki/` - before starting recurring work on a repo, host, or project, and whenever a problem feels already solved. The `personal-context` skill holds the commands. `context-keeper` writes it; agents only read it.
 - Ask the user only when progress requires information, authority, or an action only the user can provide.
 - Plan deviations: while implementing an explicitly discussed plan (e.g. lavish, PRD), if a material deviation is necessary, create local-only `decisions-HH-MM.md` recording the requested plan, the deviation, and the reason.
 - Follow YAGNI principles.
