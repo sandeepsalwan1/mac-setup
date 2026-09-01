@@ -985,6 +985,7 @@ KINDS=()
 NAMES=()
 FITTED=()
 BRANCHES=()
+BRANCH_LABELS=()
 WHATS=()
 SIZES=()
 KEYS=()
@@ -1006,6 +1007,11 @@ for rec in ${RECORDS[@]+"${RECORDS[@]}"}; do
 	case $branch in
 	'('*')') branch='detached' ;;
 	esac
+	# The cap belongs to the terminal column, not to the fact. A page that lays out
+	# its own columns is handed the whole branch name, the same way it is handed the
+	# whole path: `fm/fm-pi-adapter-recor..` and `fm/fm-pi-adapter-recov..` are two
+	# different branches that read as one.
+	branch_label=$branch
 	[ ${#branch} -gt 24 ] && branch="${branch:0:22}.."
 	lines='·'
 	[ $((add + del)) -gt 0 ] && lines="+$add/-$del"
@@ -1021,6 +1027,7 @@ for rec in ${RECORDS[@]+"${RECORDS[@]}"}; do
 	NAMES+=("$name")
 	FITTED+=("$fitted")
 	BRANCHES+=("$branch")
+	BRANCH_LABELS+=("$branch_label")
 	WHATS+=("$what")
 	SIZES+=("$lines")
 	[ ${#fitted} -gt "$W_NAME" ] && W_NAME=${#fitted}
@@ -1053,13 +1060,14 @@ if [ "$FORMAT" = json ]; then
 		# lays out its own columns - the HTML report - rather than printing "row".
 		# name is uncapped here: the cap exists to keep a terminal table aligned and
 		# costs a reader the head of a long path for nothing anywhere else.
-		# branchLabel is the branch as the table says it: a detached HEAD reads
+		# branchLabel is the branch in the words the table uses: a detached HEAD reads
 		# "detached" rather than "(c70f8c2)", which is the same fact and the one an
-		# agent worktree's reader can act on. The raw "branch" above stays as git
-		# reported it, for a consumer that wants the hash.
+		# agent worktree's reader can act on. Uncapped, like name and for the same
+		# reason. The raw "branch" above stays as git reported it, for a consumer that
+		# wants the hash.
 		printf '"kind":"%s","name":"%s","branchLabel":"%s","what":"%s","lines":"%s",' \
 			"${KINDS[$i]}" "$(json_escape "$(short_label "$top")")" \
-			"$(json_escape "${BRANCHES[$i]}")" \
+			"$(json_escape "${BRANCH_LABELS[$i]}")" \
 			"$(json_escape "${WHATS[$i]}")" "${SIZES[$i]}"
 		printf '"base":"%s","ahead":"%s","unique":"%s",' \
 			"$(json_escape "$base")" "$ahead" "$uniq"

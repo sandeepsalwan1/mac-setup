@@ -233,6 +233,10 @@ printf '<script>alert("pwned")</script>\n' >"$AGENT/markup.html"
 LONG="$FLEET/lineage-ws-lineage-cr2-20260828-abcdef/src/AWSGlueLineageAppConfigCDK"
 mkdir -p "${LONG%/*}"
 cp -R "$REPO" "$LONG"
+# On a branch too long for the terminal's column, which the page has room to show
+# whole: these branches differ in their last few characters, so a capped one names
+# the wrong work.
+git_quiet "$LONG" checkout -q -b fm/lineage-three-patch-reconciliation
 
 # delta and jq where the script expects to find them. The whole point of the ANSI
 # conversion is that delta's own rendering survives the trip into HTML, so the
@@ -277,6 +281,12 @@ assert_contains "$HTML" '/src/AWSGlueLineageAppConfigCDK</span>' \
 assert_contains "$HTML" '…' 'a clipped label does not show that anything was dropped'
 assert_not_contains "$HTML" '>~/fleet/lineage-ws' \
 	'a label too long for the column was printed whole, so the row runs past its column'
+
+# A branch is not capped to the terminal's column width either. Two fm/ branches on
+# one machine differ in their last few characters, so a page that shows
+# "fm/fm-pi-adapter-recor.." names two different pieces of work the same.
+assert_contains "$HTML" 'fm/lineage-three-patch-reconciliation' \
+	'the page shows the branch capped to the width of a terminal column'
 
 # The whole path is still on the row, so hovering answers anything the elision drops.
 assert_contains "$HTML" "title=\"$(cd "$FLEET" && pwd -P)/lineage-ws-lineage-cr2-20260828-abcdef/src/AWSGlueLineageAppConfigCDK\"" \
@@ -346,7 +356,8 @@ assert_contains "$CUT" 'more lines. Read all of it with:  fleet-diff' \
 # An explicit cap is the escape hatch and outranks the budget, or there would be no
 # way to ask for a whole diff on a machine running many agents.
 PINNED=$(GIT_FLEET_HTML_BUDGET=12 GIT_FLEET_HTML_MAX_LINES=4000 html_run --stdout 2>/dev/null)
-assert_not_contains "$PINNED" 'shown to' 'an explicit per-row cap did not override the budget'
+assert_not_contains "$PINNED" 'lines with this many changed' \
+	'an explicit per-row cap did not override the budget'
 pass 'the page divides one line budget across the changed checkouts, and says when it cut'
 
 # --- reading the fleet must not consume the record of what changed --------------

@@ -204,6 +204,17 @@ assert_contains "$rows" '"activityVerb":"changed"' \
 assert_contains "$rows" '"what":"' '--json does not carry what changed as its own field'
 assert_contains "$rows" '"lines":"+' '--json does not carry the line counts as their own field'
 assert_contains "$rows" '"row":"proj #2' 'the prebuilt row does not lead with the label'
+
+# The branch is capped for the terminal column and whole in the JSON, the same split
+# the name already has: a consumer laying out its own columns has room the table
+# does not, and two fm/ branches that differ in their last characters read as one
+# when they arrive pre-shortened.
+git -C "$JW" checkout -q -b fm/lineage-three-patch-reconciliation
+wide="$("$SCRIPT" --root "$JRN" --no-save)"
+wide_json="$("$SCRIPT" --root "$JRN" --no-save --json)"
+assert_contains "$wide" 'fm/lineage-three-patch..' 'the table does not cap a long branch to its column'
+assert_contains "$wide_json" '"branchLabel":"fm/lineage-three-patch-reconciliation"' \
+	'the JSON hands out the branch already shortened for a terminal'
 assert_not_contains "$rows" '"row":"proj #2  fm/task  ?' \
 	'the prebuilt row still carries empty columns for tests and PR state'
 pass 'the row and its parts are built once, in the scan, for every surface to show'
