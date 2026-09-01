@@ -75,20 +75,65 @@ Options:
 A path may be any directory inside a checkout. Rendering is delta's, configured
 once in home/.config/git/pretty-diff.gitconfig, so this looks like every other
 diff on the machine.
+
+One page in a browser instead, for reading over a lot of work at once:
+
+  fleet-html                  every changed checkout, each diff one click away
+  fleet-html --host DESK      that machine's fleet, in this machine's browser
+  fleet-html -2               diffs side by side, old on the left, new on the right
+  fleet-html ~/some/checkout  just this one
+
+  -w, --html        write the page (implied by the fleet-html name)
+  -2, --side-by-side  render the diffs in two columns
+  -o, --output FILE   write it here instead of the default cache path
+      --stdout        write it to stdout, and open nothing
+  -H, --host HOST     render HOST's fleet over ssh and open it here
+
+The page is one self-contained file with no server behind it and nothing loaded
+from the network, which is what makes --host a plain ssh pipe rather than a
+forwarded port. It is a snapshot: rerun for a newer one.
 EOF
 }
 
 MODE=files
 STAT=0
 PAGE=1
+SIDE=0
+OUTPUT=
+HOST=
 SCAN_ARGS=()
 PATHS=()
+
+# Installed under a second name as well, because "the browser one" is a different
+# thing to reach for than "the picker one" and remembering a flag is one more step
+# between wondering what the agents did and seeing it.
+case $PROG in
+fleet-html | git-fleet-html) MODE=html ;;
+esac
 
 while [ $# -gt 0 ]; do
 	case $1 in
 	-R | --repos) MODE=repos ;;
 	-a | --all) MODE=all ;;
 	-s | --stat) STAT=1 ;;
+	-w | --html) MODE=html ;;
+	-2 | --side-by-side) SIDE=1 ;;
+	--stdout)
+		MODE=html
+		OUTPUT=-
+		;;
+	-o | --output)
+		MODE=html
+		shift
+		[ $# -gt 0 ] || die '--output needs a file'
+		OUTPUT=$1
+		;;
+	-H | --host)
+		MODE=html
+		shift
+		[ $# -gt 0 ] || die '--host needs a machine to ask'
+		HOST=$1
+		;;
 	# --print renders into a preview pane, --show onto a real screen. Both take a
 	# checkout and optionally one file inside it; they are how the picker calls
 	# back into this script, and are equally usable by hand.
@@ -115,6 +160,12 @@ while [ $# -gt 0 ]; do
 	esac
 	shift
 done
+
+# Reading is not looking away. Every scan the scanner performs saves a new baseline,
+# which is what lets the next one open with what changed while you were gone - so a
+# scan run to show something else has to leave that baseline alone, or opening one
+# diff quietly answers and discards the question "what happened overnight".
+SCAN_ARGS+=(--no-save)
 
 # --stat asks for a summary "without contents", which is a thing to read, not a
 # thing to browse. On its own it used to leave MODE at its interactive default and
@@ -502,6 +553,493 @@ repo_picker() {
 	return 0
 }
 
+# --------------------------------------------------------------- html report
+#
+# The terminal answers "show me this one file" well and "let me look over
+# everything a dozen agents did" badly: a pager holds one diff at a time and an
+# fzf preview pane is thirty lines tall. A browser is the right shape for the
+# second question - every checkout on one page, each one folded shut until you
+# want it, ordinary scrolling, ordinary find-in-page - so this renders the same
+# rows `fleet` prints, with each row's whole diff hidden underneath it.
+#
+# One self-contained file: no server, no port to forward, no network at load time.
+# delta already renders every diff on this machine, so its own output is converted
+# to HTML rather than a second renderer being installed to disagree with it. That
+# is also what makes reading a dev desk's fleet from the Mac a single ssh pipe -
+# the file arrives whole, over the connection that is already open.
+
+HTML_MAX_LINES=${GIT_FLEET_HTML_MAX_LINES:-4000}
+HTML_WIDTH=176
+
+esc_html() {
+	local s=$1
+	s=${s//&/&amp;}
+	s=${s//</&lt;}
+	s=${s//>/&gt;}
+	s=${s//\"/&quot;}
+	printf '%s' "$s"
+}
+
+# delta's colours, as HTML.
+#
+# Every diff on this machine is already delta's, and the page has to look like the
+# terminal rather than like a different tool, so what is converted is delta's ANSI
+# rather than git's plain patch. Handles the escapes delta actually emits: 24-bit
+# and 256-colour foreground and background, the eight basic pairs, bold, dim,
+# italic, underline and reverse. Cursor movement and OSC hyperlinks are dropped -
+# they mean nothing on a page.
+ansi_to_html() {
+	awk -v repo="$1" -v maxlines="$HTML_MAX_LINES" '
+    function esc(s) {
+      gsub(/&/, "\\&amp;", s); gsub(/</, "\\&lt;", s); gsub(/>/, "\\&gt;", s)
+      return s
+    }
+    function rgb(r, g, b) { return sprintf("#%02x%02x%02x", r, g, b) }
+    function xterm(v,   c) {
+      if (v < 16) return basic[v]
+      if (v > 231) { c = 8 + (v - 232) * 10; return rgb(c, c, c) }
+      v -= 16
+      return rgb(cube[int(v / 36) % 6 + 1], cube[int(v / 6) % 6 + 1], cube[v % 6 + 1])
+    }
+    function reset() { fg = ""; bg = ""; bold = 0; dim = 0; ital = 0; und = 0; rev = 0 }
+    function style(   s, f, b, t) {
+      s = ""; f = fg; b = bg
+      # Reverse video is a swap, and delta uses it for the file header, so a
+      # missing side has to fall back to the page colour or the text vanishes.
+      if (rev) { t = f; f = (b == "" ? "#0d1117" : b); b = (t == "" ? "#c9d1d9" : t) }
+      if (f != "") s = s "color:" f ";"
+      if (b != "") s = s "background:" b ";"
+      if (bold) s = s "font-weight:600;"
+      if (dim) s = s "opacity:.6;"
+      if (ital) s = s "font-style:italic;"
+      if (und) s = s "text-decoration:underline;"
+      return s
+    }
+    function sgr(params,   n, p, j, v, c) {
+      if (params == "") { reset(); return }
+      n = split(params, p, ";")
+      for (j = 1; j <= n; j++) {
+        v = p[j] + 0
+        if (v == 0) reset()
+        else if (v == 1) bold = 1
+        else if (v == 2) dim = 1
+        else if (v == 3) ital = 1
+        else if (v == 4) und = 1
+        else if (v == 7) rev = 1
+        else if (v == 22) { bold = 0; dim = 0 }
+        else if (v == 23) ital = 0
+        else if (v == 24) und = 0
+        else if (v == 27) rev = 0
+        else if (v == 39) fg = ""
+        else if (v == 49) bg = ""
+        else if (v >= 30 && v <= 37) fg = basic[v - 30]
+        else if (v >= 40 && v <= 47) bg = basic[v - 40]
+        else if (v >= 90 && v <= 97) fg = basic[v - 82]
+        else if (v >= 100 && v <= 107) bg = basic[v - 92]
+        else if (v == 38 || v == 48) {
+          # 38;2;r;g;b or 38;5;n, and the parameters belong to this code alone.
+          if (p[j + 1] + 0 == 2) { c = rgb(p[j + 2] + 0, p[j + 3] + 0, p[j + 4] + 0); j += 4 }
+          else if (p[j + 1] + 0 == 5) { c = xterm(p[j + 2] + 0); j += 2 }
+          else continue
+          if (v == 38) fg = c; else bg = c
+        }
+      }
+    }
+    BEGIN {
+      ESC = sprintf("%c", 27); BEL = sprintf("%c", 7)
+      split("#484f58 #ff7b72 #7ee787 #e3b341 #79c0ff #d2a8ff #56d4dd #b1bac4 " \
+            "#6e7681 #ffa198 #56d364 #f0d478 #a5d6ff #e2c5ff #76e3ea #f0f6fc", pal, " ")
+      for (k = 0; k < 16; k++) basic[k] = pal[k + 1]
+      split("0 95 135 175 215 255", cube, " ")
+      reset()
+    }
+    {
+      if (count >= maxlines) { cut++; next }
+      count++
+      line = $0
+      gsub(/\r/, "", line)
+      gsub(ESC "\\][^" BEL ESC "]*(" BEL "|" ESC "\\\\)", "", line)
+      # Colour carries across a line break in a terminal, so the span is reopened
+      # at the start of every line rather than left dangling across one.
+      st = style()
+      if (st != "") { out = "<span style=\"" st "\">"; open = 1 } else { out = ""; open = 0 }
+      n = split(line, seg, ESC "\\[")
+      out = out esc(seg[1])
+      for (k = 2; k <= n; k++) {
+        s = seg[k]
+        if (match(s, /^[0-9;:]*[@-~]/)) {
+          code = substr(s, RSTART, RLENGTH)
+          term = substr(code, RLENGTH, 1)
+          rest = substr(s, RSTART + RLENGTH)
+          if (term == "m") {
+            sgr(substr(code, 1, RLENGTH - 1))
+            if (open) { out = out "</span>"; open = 0 }
+            st = style()
+            if (st != "") { out = out "<span style=\"" st "\">"; open = 1 }
+          }
+          out = out esc(rest)
+        } else {
+          out = out esc(s)
+        }
+      }
+      if (open) { out = out "</span>"; open = 0 }
+      print out
+    }
+    END {
+      if (cut > 0)
+        printf "\n<span class=\"cut\">.. and %d more lines. Read all of it with:  " \
+               "fleet-diff %s</span>\n", cut, esc(repo)
+    }
+  '
+}
+
+html_body() {
+	local repo=$1
+	local -a args=(--paging=never --true-color=always --width "$HTML_WIDTH")
+	[ "$SIDE" -eq 1 ] && args+=(--side-by-side)
+	if [ -n "$DELTA" ]; then
+		diff_body "$repo" | CLICOLOR_FORCE=1 "$DELTA" "${args[@]}" 2>/dev/null |
+			ansi_to_html "$(abbrev "$repo")"
+	else
+		diff_body "$repo" | ansi_to_html "$(abbrev "$repo")"
+	fi
+}
+
+html_style() {
+	cat <<'CSS'
+:root { color-scheme: dark }
+* { box-sizing: border-box }
+body {
+  margin: 0; padding: 2.2rem 2.4rem 6rem;
+  background: #0d1117; color: #c9d1d9;
+  font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: #79c0ff; text-decoration: none }
+a:hover { text-decoration: underline }
+h1 { margin: 0; font-size: 1.05rem; font-weight: 600 }
+h1 .dim { color: #6e7681; font-weight: 400 }
+.sub { margin: .35rem 0 1.5rem; color: #8b949e; font-size: 13px }
+h2 { margin: 2.2rem 0 .5rem; font-size: .72rem; font-weight: 600;
+     letter-spacing: .14em; text-transform: uppercase; color: #8b949e }
+h2 .count { color: #6e7681; font-weight: 400; letter-spacing: .05em }
+.bar { display: flex; gap: .5rem }
+button { font: inherit; font-size: 12px; color: #c9d1d9; background: #21262d;
+         border: 1px solid #30363d; border-radius: 6px; padding: .2rem .65rem; cursor: pointer }
+button:hover { background: #30363d }
+.journal { font-size: 13px; border-left: 2px solid #21262d; padding-left: .95rem }
+/* Columns, not padded inline blocks: one long worktree name would otherwise push
+   its own detail out of line with every other row's. */
+.journal div {
+  display: grid; align-items: baseline; gap: 0 1rem; padding: .1rem 0;
+  grid-template-columns: 4.5rem minmax(11rem, 21rem) 1fr;
+}
+.journal .verb { color: #7ee787 }
+/* The journal names the same checkouts, so it truncates them the same way. Both
+   colours are restated because .nm sets one of its own, and only the row that has
+   somewhere to jump to may look like a link. */
+.journal .name { font-weight: 400 }
+.journal a.name { color: #79c0ff }
+.journal span.name { color: #c9d1d9 }
+.journal .changed { color: #e3b341 }
+.journal .gone { color: #6e7681 }
+.journal .detail { color: #8b949e }
+.row { border-top: 1px solid #161b22 }
+.rows .row:last-child { border-bottom: 1px solid #161b22 }
+/* Every track is a fixed length or a fraction, none of them content-sized, so the
+   columns land in the same place on every row. An auto-sized last column is the
+   subtle version of this bug: +9/-3 and +1485/-13447 size their own track, and
+   then no two rows' line counts line up. */
+.row > summary {
+  display: grid; align-items: baseline; gap: 0 1.1rem; cursor: pointer;
+  grid-template-columns: 1rem minmax(11rem, 21rem) minmax(6rem, 11rem) 1fr 12rem;
+  padding: .4rem .5rem; border-radius: 5px; list-style: none;
+}
+.row > summary::-webkit-details-marker { display: none }
+.row > summary::before { content: "\25b8"; color: #6e7681; font-size: .78em }
+.row[open] > summary::before { content: "\25be" }
+.row > summary:hover, .row[open] > summary { background: #161b22 }
+.br { overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+/* A path is truncated from the middle, never the end. `~/workplace/Ws/src/Pkg`
+   clipped at the column edge reads as "~/workplace/Ws/sr…", which is the one part
+   of the path that identifies nothing: the leading directories are shared by every
+   row and the name at the end is the answer. The tail shrinks last, so the name
+   survives until there is no room for it either. */
+.nm { display: flex; min-width: 0; overflow: hidden; color: #e6edf3; font-weight: 500 }
+.nm > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+/* The head absorbs every pixel of shrinkage because the tail refuses to shrink at
+   all; max-width is the only thing that ever clips the name, and only once the
+   name alone is wider than the column. A shrink factor on the head instead of a
+   flat refusal on the tail splits the loss between them, and then both ends of the
+   path are damaged rather than just the shared one. */
+.nm > .head { flex: 0 1 auto }
+.nm > .tail { flex: 0 0 auto; max-width: 100% }
+.br { color: #d2a8ff }
+.sz {
+  color: #8b949e; white-space: nowrap; text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+pre { margin: 0; padding: .75rem .9rem 1rem; overflow-x: auto;
+      background: #010409; border-top: 1px solid #161b22;
+      font: 12px/1.45 ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace }
+.cut { color: #e3b341 }
+.none { color: #8b949e; font-size: 13px }
+footer { margin-top: 3.2rem; color: #6e7681; font-size: 12px; line-height: 1.8 }
+code { background: #161b22; border-radius: 4px; padding: .1rem .35rem;
+       font: 12px ui-monospace, SFMono-Regular, Menlo, monospace }
+CSS
+}
+
+html_script() {
+	cat <<'JS'
+(function () {
+  function reveal() {
+    var id = location.hash.slice(1);
+    var el = id ? document.getElementById(id) : null;
+    if (el && el.tagName === 'DETAILS') {
+      el.open = true;
+      el.scrollIntoView({ block: 'center' });
+    }
+  }
+  addEventListener('hashchange', reveal);
+  reveal();
+  var buttons = document.querySelectorAll('button[data-all]');
+  for (var i = 0; i < buttons.length; i++) {
+    buttons[i].addEventListener('click', function () {
+      var want = this.getAttribute('data-all') === 'open';
+      var rows = document.querySelectorAll('details.row');
+      for (var j = 0; j < rows.length; j++) rows[j].open = want;
+    });
+  }
+})();
+JS
+}
+
+# The scan, taken apart into parallel arrays. Deliberately not local: the section
+# printers below read them, and one report is rendered per run.
+H_PATH=()
+H_KIND=()
+H_NAME=()
+H_BRANCH=()
+H_WHAT=()
+H_SIZE=()
+
+# Every row of one section, each one a fold holding its own diff. Rendering the
+# diff inside the row rather than on a separate page is the whole reason this is
+# nicer than the terminal: the list stays put and the answer opens under the
+# question, so reading twenty checkouts never loses the reader's place.
+html_section() {
+	local want=$1 title=$2 total=0 i=0
+	while [ "$i" -lt ${#H_PATH[@]} ]; do
+		[ "${H_KIND[$i]}" = "$want" ] && total=$((total + 1))
+		i=$((i + 1))
+	done
+	[ "$total" -gt 0 ] || return 0
+
+	printf '<h2>%s <span class="count">(%d)</span></h2>\n' "$(esc_html "$title")" "$total"
+	# Wrapped, so each section's list closes with its own rule. Without it the
+	# rule belongs to the last row on the page and one section ends mid-air.
+	printf '<div class="rows">\n'
+	i=0
+	while [ "$i" -lt ${#H_PATH[@]} ]; do
+		if [ "${H_KIND[$i]}" = "$want" ]; then
+			note "rendering ${H_NAME[$i]}"
+			printf '<details class="row" id="d%d"><summary><span class="nm" title="%s">%s</span>' \
+				"$i" "$(esc_html "${H_PATH[$i]}")" "$(html_name "${H_NAME[$i]}")"
+			printf '<span class="br">%s</span><span class="wh">%s</span><span class="sz">%s</span>' \
+				"$(esc_html "${H_BRANCH[$i]}")" "$(esc_html "${H_WHAT[$i]}")" \
+				"$(esc_html "${H_SIZE[$i]}")"
+			printf '</summary><pre>'
+			html_body "${H_PATH[$i]}"
+			printf '</pre></details>\n'
+		fi
+		i=$((i + 1))
+	done
+	printf '</div>\n'
+	return 0
+}
+
+# A label split where the CSS above needs it: everything up to the last slash,
+# then the name itself. An agent worktree's label ("proj #7") has no slash and
+# comes back as one piece, which the same flex row lays out unchanged.
+html_name() {
+	local label=$1 head=${1%/*}
+	if [ "$head" = "$label" ]; then
+		printf '<span class="tail">%s</span>' "$(esc_html "$label")"
+	else
+		printf '<span class="head">%s/</span><span class="tail">%s</span>' \
+			"$(esc_html "$head")" "$(esc_html "${label##*/}")"
+	fi
+}
+
+# The anchor of a checkout's row, so a journal entry can jump straight to it. A
+# checkout that went clean has no row to jump to, which is why this can fail.
+html_anchor() {
+	local want=$1 i=0
+	while [ "$i" -lt ${#H_PATH[@]} ]; do
+		[ "${H_PATH[$i]}" = "$want" ] && {
+			printf 'd%d\n' "$i"
+			return 0
+		}
+		i=$((i + 1))
+	done
+	return 1
+}
+
+html_report() {
+	local snapshot host now has_previous previous_at total_lines
+	local path kind name branch what size verb detail anchor
+	local -a scan=(${SCAN_ARGS[@]+"${SCAN_ARGS[@]}"})
+
+	require_jq
+	host=$(hostname -f 2>/dev/null) || host=
+	[ -n "$host" ] || host=$(uname -n 2>/dev/null) || host=this machine
+	now=$(date '+%Y-%m-%d %H:%M %Z')
+
+	# A path names one checkout to report on. Resolving it to its toplevel first is
+	# what lets it be any directory inside one, and handing it to the scanner as a
+	# root keeps every row's wording identical to a whole-fleet report.
+	if [ ${#PATHS[@]} -gt 0 ]; then
+		local given top
+		for given in "${PATHS[@]}"; do
+			top=$(toplevel "$given") || top=
+			[ -n "$top" ] || die "not a git checkout: $given"
+			scan+=(--root "$top")
+		done
+		scan+=(--depth 1)
+	fi
+
+	snapshot=$(mktemp "${TMPDIR:-/tmp}/git-fleet-html.XXXXXX") ||
+		die 'cannot create a temporary file'
+	note 'scanning every checkout…'
+	"$SCANNER" --json "${scan[@]}" >"$snapshot" || {
+		rm -f "$snapshot"
+		die 'the scan failed'
+	}
+
+	while IFS=$'\t' read -r path kind name branch what size; do
+		[ -n "$path" ] || continue
+		# The branch as the table says it, not as git spells it: an agent worktree is
+		# on a detached HEAD, and "(c70f8c2)" in this column is a hash where a name
+		# belongs.
+		H_PATH+=("$path")
+		H_KIND+=("$kind")
+		H_NAME+=("$name")
+		H_BRANCH+=("$branch")
+		H_WHAT+=("$what")
+		H_SIZE+=("$size")
+	done < <(jq -r 'select(.type == "repo")
+		| [.path, .kind, .name, .branchLabel, .what, .lines] | @tsv' "$snapshot")
+
+	has_previous=$(jq -r 'select(.type == "meta") | .hasPrevious' "$snapshot")
+	previous_at=$(jq -r 'select(.type == "meta") | .previousAt' "$snapshot")
+	total_lines=$(jq -rs 'map(select(.type == "repo"))
+		| "+\(map(.added) | add // 0)/-\(map(.deleted) | add // 0)"' "$snapshot")
+
+	printf '<!doctype html>\n<html lang="en"><head><meta charset="utf-8">\n'
+	printf '<meta name="viewport" content="width=device-width,initial-scale=1">\n'
+	printf '<title>fleet - %s</title>\n<style>\n' "$(esc_html "$host")"
+	html_style
+	printf '</style></head><body>\n'
+	printf '<h1>fleet <span class="dim">%s &middot; %s</span></h1>\n' \
+		"$(esc_html "$host")" "$(esc_html "$now")"
+	printf '<p class="sub">%d changed, %s lines. ' "${#H_PATH[@]}" "$(esc_html "$total_lines")"
+	printf 'Click any row to read its diff.</p>\n'
+	printf '<div class="bar"><button data-all="open">expand all</button>'
+	printf '<button data-all="close">collapse all</button></div>\n'
+
+	# The journal, in the scanner's own words: it formats these rows for the
+	# terminal already, and rewording them here is how two views of one fleet start
+	# telling a reader different things.
+	if [ "$has_previous" = true ]; then
+		printf '<h2>Since you last looked <span class="count">(%s)</span></h2>\n' \
+			"$(esc_html "$previous_at")"
+		printf '<div class="journal">\n'
+		local any=0
+		while IFS=$'\t' read -r verb name detail path; do
+			[ -n "$verb" ] || continue
+			any=1
+			printf '<div><span class="verb %s">%s</span>' \
+				"$(esc_html "$verb")" "$(esc_html "$verb")"
+			if anchor=$(html_anchor "$path"); then
+				printf '<a class="nm name" href="#%s">%s</a>' "$anchor" "$(html_name "$name")"
+			else
+				printf '<span class="nm name">%s</span>' "$(html_name "$name")"
+			fi
+			printf '<span class="detail">%s</span></div>\n' "$(esc_html "$detail")"
+		done < <(jq -r 'select((.type == "repo"
+				and (.activity == "new" or .activity == "updated")) or .type == "cleared")
+			| [.activityVerb, (.name // .label), .activityDetail, .path] | @tsv' "$snapshot")
+		[ "$any" -eq 1 ] || printf '<div class="none">Nothing has changed anywhere since then.</div>\n'
+		printf '</div>\n'
+	fi
+
+	if [ ${#H_PATH[@]} -eq 0 ]; then
+		printf '<h2>Nothing is changed anywhere</h2>\n'
+		printf '<p class="none">Every checkout below the search roots is clean.</p>\n'
+	else
+		html_section mine 'Your checkouts'
+		html_section agent 'Agent worktrees'
+	fi
+
+	printf '<footer>Every diff is measured from the merge base with the checkout&rsquo;s own '
+	printf 'base branch, so it covers committed, staged, unstaged and new work - the same '
+	printf 'range a pull request shows.<br>Made by <code>fleet-html</code> on %s. ' \
+		"$(esc_html "$host")"
+	printf 'Rerun it for a fresh one; nothing here updates on its own.</footer>\n'
+	printf '<script>\n'
+	html_script
+	printf '</script>\n</body></html>\n'
+
+	rm -f "$snapshot"
+	return 0
+}
+
+# Where the page goes, and how it gets in front of a pair of eyes.
+#
+# A dev desk has no browser, so the useful thing to print there is not the path
+# but the one command that renders it on the Mac: the report crosses the ssh
+# connection that is already open, as a whole file, needing no forwarded port.
+html_destination() {
+	local dir=${GIT_FLEET_HTML_DIR:-$HOME/.cache/fleet}
+	mkdir -p "$dir" 2>/dev/null || die "cannot create $dir"
+	printf '%s/%s.html\n' "$dir" "${1:-$(hostname -s 2>/dev/null || printf 'fleet')}"
+}
+
+html_open() {
+	local file=$1
+	case $(uname -s) in
+	Darwin)
+		open -- "$file" >/dev/null 2>&1 && return 0
+		;;
+	*)
+		if [ -n "${DISPLAY:-}" ] && have xdg-open; then
+			xdg-open "$file" >/dev/null 2>&1 && return 0
+		fi
+		note "no browser here. From the Mac:  fleet-html --host $(hostname -f 2>/dev/null || hostname)"
+		;;
+	esac
+	printf '%s\n' "$file"
+	return 0
+}
+
+# Another machine's fleet, in this machine's browser. Just the report over ssh:
+# it is one self-contained file, so there is nothing to serve and nothing to mount.
+html_remote() {
+	local host=$1 out=$2
+	note "rendering $host's fleet over ssh"
+	# shellcheck disable=SC2029 # deliberately expanded here; there are no arguments
+	ssh -- "$host" 'fleet-html --stdout' >"$out" || {
+		rm -f "$out"
+		die "could not run fleet-html on $host - is the dotfiles checkout installed there?"
+	}
+	[ -s "$out" ] || {
+		rm -f "$out"
+		die "$host produced an empty report"
+	}
+	html_open "$out"
+}
+
 # ----------------------------------------------------------------- dispatch
 
 one() {
@@ -518,10 +1056,37 @@ one() {
 	fi
 }
 
+html() {
+	local out=$OUTPUT
+
+	if [ "$out" = - ]; then
+		[ -z "$HOST" ] || die '--host and --stdout ask for opposite things'
+		html_report
+		return 0
+	fi
+
+	[ -n "$out" ] || out=$(html_destination "${HOST:-}")
+
+	if [ -n "$HOST" ]; then
+		html_remote "$HOST" "$out"
+		return 0
+	fi
+
+	# Written whole and then moved into place, so a page open in a browser is never
+	# a half-written one after a reload.
+	html_report >"$out.part" || {
+		rm -f "$out.part"
+		die 'the report failed'
+	}
+	mv -f "$out.part" "$out" || die "could not write $out"
+	html_open "$out"
+}
+
 case $MODE in
 print | show) one | render ;;
 paths) stream "${PATHS[@]}" | render ;;
 all) stream_all | render ;;
 repos) repo_picker ;;
 files) file_picker ;;
+html) html ;;
 esac

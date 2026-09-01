@@ -261,12 +261,19 @@ in
     };
     # The short names, which are what actually gets typed. Links rather than shell
     # aliases so they also work from a script, from :! in Neovim, and identically
-    # on a dev desk, where scripts/install-diff-tools makes the same two links.
+    # on a dev desk, where scripts/install-diff-tools makes the same links.
     ".local/bin/fleet" = {
       source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/scripts/git-fleet-status";
       force = true;
     };
     ".local/bin/fleet-diff" = {
+      source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/scripts/git-fleet-diff";
+      force = true;
+    };
+    # Same script under a third name, because reaching for the browser view is a
+    # different intent than reaching for the picker and should not require
+    # remembering a flag. `fleet-html --host <desk>` runs this same name over ssh.
+    ".local/bin/fleet-html" = {
       source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/scripts/git-fleet-diff";
       force = true;
     };

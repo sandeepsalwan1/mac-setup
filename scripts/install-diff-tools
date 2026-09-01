@@ -161,13 +161,17 @@ verify_nix_tools() {
 	note 'delta, lazygit, fzf and jq are present'
 }
 
-# The two commands worth typing, under the names they are typed as, on every host.
+# The commands worth typing, under the names they are typed as, on every host.
 # On the Mac home.nix owns these links; here they are made only where nothing else
 # does, so the two mechanisms can never fight over the same path.
+#
+# fleet-html has to exist here even though a dev desk has no browser: `fleet-html
+# --host <desk>` runs exactly this name over ssh and reads the page on the Mac.
 link_commands() {
 	local target link
 	mkdir -p "$BIN_DIR" || die "cannot create $BIN_DIR"
 	for target in git-fleet-status:fleet git-fleet-diff:fleet-diff \
+		git-fleet-diff:fleet-html \
 		git-fleet-status:git-fleet-status git-fleet-diff:git-fleet-diff; do
 		link="$BIN_DIR/${target#*:}"
 		if [ -e "$link" ] && [ ! -L "$link" ]; then
@@ -176,7 +180,7 @@ link_commands() {
 		fi
 		ln -sfn "$ROOT/scripts/${target%%:*}" "$link"
 	done
-	note "linked fleet and fleet-diff into $BIN_DIR"
+	note "linked fleet, fleet-diff and fleet-html into $BIN_DIR"
 }
 
 # Append the include once, at the end, where git's last-wins rule makes it beat

@@ -43,6 +43,7 @@ SHOW_ALL=0
 WANT_PR=0
 WANT_VALIDATE=0
 FORMAT=table
+SAVE=1
 ROOTS=()
 NET_TIMEOUT=6
 
@@ -70,10 +71,18 @@ Options:
       --validate      run each dirty repository's tests/check.sh ("?" without)
       --json          JSON Lines for the Neovim picker and scripts
       --paths         print only the changed repository paths
+      --no-save       leave the baseline alone, so the next plain run still
+                      reports everything that has happened since it was set
   -h, --help          this message
 
 Default output is offline and read-only. Snapshots are stored below
 $XDG_STATE_HOME (default: ~/.local/state); repositories are never written.
+
+Every run saves a new baseline, which is what makes the next one able to say what
+changed. That makes each scan destructive to the journal, so anything that scans
+in order to show something else - git-fleet-diff, a report, a script - passes
+--no-save: otherwise merely reading one diff silently consumes the answer to
+"what did the agents do while I was away".
 
 Environment:
   GIT_FLEET_EXCLUDE   colon-separated path prefixes to skip entirely, for backup
@@ -106,6 +115,7 @@ while [ $# -gt 0 ]; do
 	--validate) WANT_VALIDATE=1 ;;
 	--json) FORMAT=json ;;
 	--paths) FORMAT=paths ;;
+	--no-save) SAVE=0 ;;
 	-h | --help)
 		usage
 		exit 0
@@ -866,7 +876,9 @@ done
 
 # Save only after a successful complete scan. The rename is atomic, so two
 # editor/terminal scans can race without ever leaving a partial snapshot.
-if mkdir -p "$STATE_DIR" 2>/dev/null; then
+if [ "$SAVE" -eq 0 ]; then
+	:
+elif mkdir -p "$STATE_DIR" 2>/dev/null; then
 	state_tmp="$STATE_DIR/.$STATE_SCOPE.$$.tmp"
 	if (
 		umask 077
@@ -887,39 +899,68 @@ else
 	printf '%s: could not create snapshot directory %s\n' "$PROG" "$STATE_DIR" >&2
 fi
 
-# Path column is sized to the actual result set so every row stays aligned.
-WIDTH=4
-for rec in ${RECORDS[@]+"${RECORDS[@]}"}; do
-	label=$(abbrev "${rec%%$'\t'*}")
-	[ ${#label} -gt "$WIDTH" ] && WIDTH=${#label}
-done
-[ "$WIDTH" -gt 64 ] && WIDTH=64
-
-ROW="%-${WIDTH}s  %-22s %5s %5s  %3s %3s %3s  %14s  %-5s %s"
-
-# Rows are rendered exactly once, here, and then either printed as the table or
-# carried verbatim in the JSON "row" field. The Neovim picker displays that field
-# rather than formatting its own, which is what keeps the two surfaces identical
-# instead of merely similar.
-ROWS=()
-T_S=0
-T_U=0
-T_N=0
+# ----------------------------------------------------------- one row per record
+#
+# Named, described and measured once, because four surfaces show the same rows and
+# any of them formatting its own is how two views of one fleet start disagreeing:
+# the table below, the JSON "row" field that the Neovim picker and
+# git-fleet-diff --repos display verbatim, and the HTML report. What a reader sees
+# is plain words - "9 commits to push, 1 edited" - and the raw counts stay
+# available beside them as their own JSON fields for anything that computes.
+KINDS=()
+NAMES=()
+FITTED=()
+BRANCHES=()
+WHATS=()
+SIZES=()
+KEYS=()
+W_NAME=4
+W_WHAT=4
 T_A=0
 T_D=0
 for rec in ${RECORDS[@]+"${RECORDS[@]}"}; do
 	IFS=$'\t' read -r top branch ahead uniq sf uf nf add del val pr full_head base fingerprint <<<"$rec"
-	label=$(abbrev "$top")
-	[ ${#label} -gt "$WIDTH" ] && label="…${label: -$((WIDTH - 1))}"
-	[ ${#branch} -gt 22 ] && branch="${branch:0:21}…"
-	# shellcheck disable=SC2059
-	ROWS+=("$(printf "$ROW" "$label" "$branch" "$ahead" "$uniq" "$sf" "$uf" "$nf" \
-		"+$add/-$del" "$val" "$pr")")
-	T_S=$((T_S + sf))
-	T_U=$((T_U + uf))
-	T_N=$((T_N + nf))
+	# The two unrelated kinds of work in a fleet, decided here so no other surface
+	# has to know what a treehouse path looks like.
+	case $top in
+	*/.treehouse/*) KINDS+=(agent) ;;
+	*) KINDS+=(mine) ;;
+	esac
+	what=$(what_changed "$ahead" "$uniq" "$sf" "$uf" "$nf")
+	# A detached HEAD arrives as its own abbreviated sha in brackets, which is noise
+	# in a column: the fact worth a reader's attention is that there is no branch.
+	case $branch in
+	'('*')') branch='detached' ;;
+	esac
+	[ ${#branch} -gt 24 ] && branch="${branch:0:22}.."
+	lines='·'
+	[ $((add + del)) -gt 0 ] && lines="+$add/-$del"
+	# Only what was actually looked up. Both are opt-in and report "?" when they
+	# were not asked for, and a column of question marks was most of what made the
+	# old table unreadable - so the unasked answer is simply not shown. It is the
+	# last field on the row, where a variable width costs no alignment.
+	[ "$val" = '?' ] || lines="$lines  tests $val"
+	[ "$pr" = '?' ] || lines="$lines  PR $pr"
+	name=$(short_label "$top")
+	fitted=$(fit_label "$name")
+	KEYS+=("$((add + del))")
+	NAMES+=("$name")
+	FITTED+=("$fitted")
+	BRANCHES+=("$branch")
+	WHATS+=("$what")
+	SIZES+=("$lines")
+	[ ${#fitted} -gt "$W_NAME" ] && W_NAME=${#fitted}
+	[ ${#what} -gt "$W_WHAT" ] && W_WHAT=${#what}
 	T_A=$((T_A + add))
 	T_D=$((T_D + del))
+done
+
+ROWS=()
+i=0
+while [ "$i" -lt ${#FITTED[@]} ]; do
+	ROWS+=("$(printf '%-*s  %-24s  %-*s  %s' \
+		"$W_NAME" "${FITTED[$i]}" "${BRANCHES[$i]}" "$W_WHAT" "${WHATS[$i]}" "${SIZES[$i]}")")
+	i=$((i + 1))
 done
 
 if [ "$FORMAT" = json ]; then
@@ -934,12 +975,29 @@ if [ "$FORMAT" = json ]; then
 		printf '{"type":"repo","path":"%s","label":"%s","branch":"%s","head":"%s",' \
 			"$(json_escape "$top")" "$(json_escape "$(abbrev "$top")")" \
 			"$(json_escape "$branch")" "$(json_escape "$full_head")"
+		# kind, name, what and lines are the row taken apart, for a consumer that
+		# lays out its own columns - the HTML report - rather than printing "row".
+		# name is uncapped here: the cap exists to keep a terminal table aligned and
+		# costs a reader the head of a long path for nothing anywhere else.
+		# branchLabel is the branch as the table says it: a detached HEAD reads
+		# "detached" rather than "(c70f8c2)", which is the same fact and the one an
+		# agent worktree's reader can act on. The raw "branch" above stays as git
+		# reported it, for a consumer that wants the hash.
+		printf '"kind":"%s","name":"%s","branchLabel":"%s","what":"%s","lines":"%s",' \
+			"${KINDS[$i]}" "$(json_escape "$(short_label "$top")")" \
+			"$(json_escape "${BRANCHES[$i]}")" \
+			"$(json_escape "${WHATS[$i]}")" "${SIZES[$i]}"
 		printf '"base":"%s","ahead":"%s","unique":"%s",' \
 			"$(json_escape "$base")" "$ahead" "$uniq"
 		printf '"staged":%d,"unstaged":%d,"untracked":%d,"added":%d,"deleted":%d,' \
 			"$sf" "$uf" "$nf" "$add" "$del"
-		printf '"validation":"%s","pr":"%s","activity":"%s",' \
-			"$(json_escape "$val")" "$(json_escape "$pr")" "${ACTIVITY[$i]}"
+		# activity is the state; activityVerb is what happened, in the word the table
+		# uses. Carried here so a consumer laying out its own journal says "started"
+		# where this one does, instead of keeping a second copy of the mapping that
+		# can drift into calling the same event something else.
+		printf '"validation":"%s","pr":"%s","activity":"%s","activityVerb":"%s",' \
+			"$(json_escape "$val")" "$(json_escape "$pr")" "${ACTIVITY[$i]}" \
+			"$(journal_verb "${ACTIVITY[$i]}")"
 		printf '"activityDetail":"%s","activityRow":"%s","row":"%s"}\n' \
 			"$(json_escape "${ACTIVITY_DETAILS[$i]}")" "$(json_escape "${ACTIVITY_ROWS[$i]}")" \
 			"$(json_escape "${ROWS[$i]}")"
@@ -951,8 +1009,10 @@ if [ "$FORMAT" = json ]; then
 		printf '{"type":"cleared","path":"%s","label":"%s","branch":"%s","head":"%s",' \
 			"$(json_escape "$old_top")" "$(json_escape "$(abbrev "$old_top")")" \
 			"$(json_escape "$old_branch")" "$(json_escape "$old_head")"
-		printf '"base":"%s","activity":"cleared","activityDetail":"%s","activityRow":"%s"}\n' \
-			"$(json_escape "$old_base")" "$(json_escape "${CLEARED_DETAILS[$i]}")" \
+		printf '"base":"%s","activity":"cleared","activityVerb":"gone",' \
+			"$(json_escape "$old_base")"
+		printf '"activityDetail":"%s","activityRow":"%s"}\n' \
+			"$(json_escape "${CLEARED_DETAILS[$i]}")" \
 			"$(json_escape "${CLEARED_ROWS[$i]}")"
 		i=$((i + 1))
 	done
@@ -1017,37 +1077,20 @@ fi
 # them is what made one list unreadable: checkouts the reader edits themselves,
 # and the detached-HEAD worktrees agents were given. Within each, the biggest
 # diff comes first - the row worth reading is almost never the alphabetical one.
-#
-# The aligned ROW above is untouched and still what --json carries, so the
-# Neovim picker and every script keep the format they were written against.
 
-# sortkey<TAB>label<TAB>branch<TAB>what<TAB>lines, split by section. The sort key
-# is total lines touched, so `sort -rn` alone puts the loudest row on top.
+# sortkey<TAB>name<TAB>branch<TAB>what<TAB>lines, split by section, every field
+# taken from the single pass above rather than derived again here. The sort key is
+# total lines touched, so `sort -rn` alone puts the loudest row on top.
 MINE=()
 AGENTS=()
-for rec in ${RECORDS[@]+"${RECORDS[@]}"}; do
-	IFS=$'\t' read -r top branch ahead uniq sf uf nf add del val pr full_head base fingerprint <<<"$rec"
-	what=$(what_changed "$ahead" "$uniq" "$sf" "$uf" "$nf")
-	lines='·'
-	[ $((add + del)) -gt 0 ] && lines="+$add/-$del"
-	# Only what was actually looked up. Both are opt-in and report "?" when they
-	# were not asked for, and a column of question marks was most of what made the
-	# old table unreadable - so the unasked answer is simply not shown. It is the
-	# last field on the row, where a variable width costs no alignment.
-	[ "$val" = '?' ] || lines="$lines  tests $val"
-	[ "$pr" = '?' ] || lines="$lines  PR $pr"
-	case $branch in
-	'('*')') branch='detached' ;;
+i=0
+while [ "$i" -lt ${#KINDS[@]} ]; do
+	entry="${KEYS[$i]}"$'\t'"${FITTED[$i]}"$'\t'"${BRANCHES[$i]}"$'\t'"${WHATS[$i]}"$'\t'"${SIZES[$i]}"
+	case ${KINDS[$i]} in
+	agent) AGENTS+=("$entry") ;;
+	*) MINE+=("$entry") ;;
 	esac
-	[ ${#branch} -gt 24 ] && branch="${branch:0:22}.."
-	case $top in
-	*/.treehouse/*)
-		AGENTS+=("$((add + del))"$'\t'"$(fit_label "$(agent_label "$top")")"$'\t'"$branch"$'\t'"$what"$'\t'"$lines")
-		;;
-	*)
-		MINE+=("$((add + del))"$'\t'"$(fit_label "$(abbrev "$top")")"$'\t'"$branch"$'\t'"$what"$'\t'"$lines")
-		;;
-	esac
+	i=$((i + 1))
 done
 
 # Loudest first, then the cap. Ordering and truncating here rather than at print

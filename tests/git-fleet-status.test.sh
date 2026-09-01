@@ -151,6 +151,55 @@ third="$("$SCRIPT" --root "$JRN")"
 assert_contains "$third" 'gone' 'the journal does not report a worktree that went clean'
 assert_contains "$third" 'nothing left to show' 'the journal does not say why the worktree went away'
 
+# --- --no-save, so that reading the fleet does not consume the journal -------
+#
+# Saving a new baseline on every scan is what lets the next one open with what
+# happened while you were away. That makes a scan destructive to the very thing it
+# reports, so anything that scans in order to render something else - the browser
+# report, a script - must be able to look without moving the mark. Otherwise a
+# glance at one diff silently answers and discards "what did the agents do".
+
+printf 'four\n' >>"$JW/README.md"
+commit_in "$JW" 'work after the baseline'
+STATE_FILE=$(find "$GIT_FLEET_STATE_DIR" -type f | head -1)
+[ -n "$STATE_FILE" ] || fail 'the scan saved no baseline to protect'
+BASELINE_BEFORE=$(shasum -a 256 "$STATE_FILE" | awk '{print $1}')
+
+for attempt in 1 2; do
+	peek="$("$SCRIPT" --root "$JRN" --no-save)"
+	assert_contains "$peek" 'started' \
+		"--no-save read $attempt does not report work that appeared since the baseline"
+done
+[ "$(shasum -a 256 "$STATE_FILE" | awk '{print $1}')" = "$BASELINE_BEFORE" ] ||
+	fail '--no-save moved the baseline, so the next read loses what changed'
+pass '--no-save reports what changed without consuming the record of it'
+
+# And a plain scan still does move it, or the journal would report the same news
+# forever and stop meaning "since you last looked".
+"$SCRIPT" --root "$JRN" >/dev/null
+after="$("$SCRIPT" --root "$JRN" --no-save)"
+assert_not_contains "$after" 'started' 'a plain scan no longer saves a baseline'
+
+# --- the row every surface shows is built once -------------------------------
+#
+# The table, the JSON the Neovim picker prints verbatim, git-fleet-diff --repos and
+# the browser report all show the same rows. Each one formatting its own is how two
+# views of one fleet start disagreeing, so the scan builds the row and also hands
+# over its parts for a consumer that lays out its own columns.
+
+printf 'five\n' >>"$JW/README.md"
+rows="$("$SCRIPT" --root "$JRN" --no-save --json)"
+assert_contains "$rows" '"kind":"agent"' '--json does not say which rows are agents work'
+assert_contains "$rows" '"name":"proj #2"' '--json does not carry the short label of a row'
+assert_contains "$rows" '"activityVerb":"changed"' \
+	'--json does not carry the journal verb, so a consumer has to keep its own copy'
+assert_contains "$rows" '"what":"' '--json does not carry what changed as its own field'
+assert_contains "$rows" '"lines":"+' '--json does not carry the line counts as their own field'
+assert_contains "$rows" '"row":"proj #2' 'the prebuilt row does not lead with the label'
+assert_not_contains "$rows" '"row":"proj #2  fm/task  ?' \
+	'the prebuilt row still carries empty columns for tests and PR state'
+pass 'the row and its parts are built once, in the scan, for every surface to show'
+
 # --- long lists stop at one screen, and say so -------------------------------
 #
 # A machine running a dozen agents has 87 changed checkouts. Printing all of them

@@ -212,6 +212,152 @@ assert_contains "$(cat "$TMP/stat-alone")" 'committed.txt' \
 	'--stat on its own summarised nothing'
 pass '--stat on its own summarises without opening the picker'
 
+# --- the browser report ---------------------------------------------------------
+#
+# The page has to be readable with nothing else running: no server, no network
+# fetch, and no escape sequence left where a byte of text belongs. It also has to
+# be safe, because a diff is untrusted text - a repository can contain a file whose
+# contents are markup, and rendering that literally would let a checkout rewrite
+# the page describing it.
+
+AGENT="$FLEET/.treehouse/one-abc123/7/one"
+mkdir -p "${AGENT%/*}"
+cp -R "$REPO" "$AGENT"
+printf '<script>alert("pwned")</script>\n' >"$AGENT/markup.html"
+
+# delta and jq where the script expects to find them. The whole point of the ANSI
+# conversion is that delta's own rendering survives the trip into HTML, so the
+# renderer that is installed on this machine is the one under test.
+JQ_BIN=$(command -v jq) || fail 'the report needs jq, which is not installed'
+DELTA_BIN=$(command -v delta) || fail 'the report needs delta, which is not installed'
+NO_DELTA_PATH="$STUB:$PLAIN_PATH:${JQ_BIN%/*}"
+HTML_PATH="$NO_DELTA_PATH:${DELTA_BIN%/*}"
+
+# open(1) stubbed, so "did it try to show me the page" is an assertion rather than
+# a browser window arriving in the middle of a test run.
+OPENED="$TMP/opened"
+cat >"$STUB/open" <<EOF
+#!/usr/bin/env bash
+printf '%s\n' "\$@" > "$OPENED"
+EOF
+chmod +x "$STUB/open"
+rm -f "$OPENED"
+
+html_run() {
+	HOME="$TMP" GIT_FLEET_STATE_DIR="$TMP/state" GIT_FLEET_HTML_DIR="$TMP/cache" \
+		PATH="${HTML_RUN_PATH:-$HTML_PATH}" GIT_FLEET_STATUS="$ROOT/scripts/git-fleet-status" \
+		"$SCRIPT" "$@" -r "$FLEET" -d 6
+}
+
+html_run --stdout >"$TMP/report.html" 2>"$TMP/report.err" ||
+	fail "the report exited $?: $(cat "$TMP/report.err")"
+HTML=$(cat "$TMP/report.html")
+
+assert_contains "$HTML" 'Your checkouts' 'the report has no section for my own checkouts'
+assert_contains "$HTML" 'Agent worktrees' 'the report has no section for the agent worktrees'
+assert_contains "$HTML" 'one #7' 'the report does not name an agent worktree by its slot'
+assert_contains "$HTML" 'untracked.txt' 'the report lost a changed file'
+assert_not_contains "$HTML" 'fleet/clean' 'the report included a clean checkout'
+pass 'the report sorts every changed checkout into mine and the agents'
+
+# A long path is clipped in the middle, not at the end. Every row in a fleet shares
+# its leading directories and differs in the last segment, so an end-clipped label
+# hides the only part that answers "which checkout is this".
+assert_contains "$HTML" '<span class="tail">one</span>' \
+	'a checkout path is not split so the name at its end survives truncation'
+
+assert_not_contains "$HTML" '<script>alert' 'a diff containing markup was rendered as markup'
+
+# Also asserted without delta, which is both the fallback path on a host that has
+# none and the only way to see the escaping exactly: delta syntax-highlights an
+# HTML file, so `<script>` arrives as several separately coloured pieces and the
+# escaped text is correct without being one contiguous string.
+HTML_RUN_PATH="$NO_DELTA_PATH" html_run --stdout >"$TMP/plain.html" 2>"$TMP/plain.err" ||
+	fail "the report without delta exited $?: $(cat "$TMP/plain.err")"
+PLAIN=$(cat "$TMP/plain.html")
+assert_contains "$PLAIN" '&lt;script&gt;alert' 'the report does not escape markup found inside a diff'
+assert_not_contains "$PLAIN" '<script>alert' 'a diff containing markup was rendered as markup'
+assert_contains "$PLAIN" 'untracked.txt' 'the report without delta lost a changed file'
+pass 'a diff is escaped, with delta and without it, so a repository cannot rewrite the page'
+
+! grep -q "$(printf '\033')" "$TMP/report.html" ||
+	fail 'the report contains raw escape sequences, so delta ANSI reached the page unconverted'
+assert_contains "$HTML" 'style="color:#' 'the report has no colour, so the ANSI conversion did nothing'
+pass "delta's colours survive the conversion, and none of its escapes do"
+
+# One file, openable with the network off. An external stylesheet or script would
+# make the page blank on a plane and would defeat --host, which is just a pipe.
+if grep -oE '(src|href)="[^"]+"' "$TMP/report.html" | grep -qv '="#'; then
+	fail 'the report loads something external; it has to stand alone'
+fi
+pass 'the report is self-contained: nothing is fetched to read it'
+
+[ ! -f "$OPENED" ] || fail '--stdout opened a browser instead of writing to stdout'
+pass '--stdout writes the page and opens nothing'
+
+rm -f "$OPENED"
+OUT_FILE="$TMP/named.html"
+STDOUT=$(html_run --output "$OUT_FILE" 2>"$TMP/named.err") ||
+	fail "--output exited $?: $(cat "$TMP/named.err")"
+[ -s "$OUT_FILE" ] || fail '--output wrote no file'
+assert_not_contains "$STDOUT" '<html' '--output printed the page to stdout as well as writing it'
+[ -f "$OPENED" ] || fail '--output wrote the page and never offered to show it'
+assert_contains "$(cat "$OPENED")" "$OUT_FILE" 'the page that was written is not the one opened'
+[ ! -e "$OUT_FILE.part" ] || fail 'the half-written page was left behind'
+pass '--output writes the named file, whole, and opens it'
+
+# --- reading the fleet must not consume the record of what changed --------------
+#
+# Every scan saves a new baseline, which is what lets the next one open with what
+# happened while you were away. A scan run to render something else has to leave
+# that baseline alone, or looking at one diff silently answers and discards the
+# question. This is the regression: the report scans through --json, which used to
+# save, so the first look erased the journal for the second.
+
+# The baseline is set by looking at the fleet, which is the scan's own job. The
+# report deliberately cannot set one: it is a reader, and a reader that moved the
+# mark would answer this question once and then lie about it.
+HOME="$TMP" GIT_FLEET_STATE_DIR="$TMP/state" PATH="$HTML_PATH" \
+	"$ROOT/scripts/git-fleet-status" -r "$FLEET" -d 6 >/dev/null 2>&1 ||
+	fail 'the baseline-setting scan failed'
+cp -R "$REPO" "$FLEET/appeared"
+
+for attempt in 1 2; do
+	html_run --stdout >"$TMP/journal-$attempt.html" 2>/dev/null ||
+		fail "report $attempt failed"
+	assert_contains "$(cat "$TMP/journal-$attempt.html")" 'Since you last looked' \
+		"report $attempt lost the record of what changed while I was away"
+	assert_contains "$(cat "$TMP/journal-$attempt.html")" 'appeared' \
+		"report $attempt does not report the checkout that appeared since the baseline"
+done
+pass 'reading the report leaves the record of what changed intact for the next read'
+
+# --- another machine's fleet, in this machine's browser -------------------------
+#
+# The page is one self-contained file, so this is a pipe and nothing more: no copy
+# step, no forwarded port, no server left running on the far side.
+
+cat >"$STUB/ssh" <<'EOF'
+#!/usr/bin/env bash
+printf '%s\n' "$@" >&2
+printf '<!doctype html>\n<title>remote fleet</title>\n'
+EOF
+chmod +x "$STUB/ssh"
+rm -f "$OPENED"
+
+REMOTE="$TMP/remote.html"
+html_run --host desk.example.invalid --output "$REMOTE" 2>"$TMP/ssh.args" ||
+	fail "--host exited $?: $(cat "$TMP/ssh.args")"
+assert_contains "$(cat "$TMP/ssh.args")" 'fleet-html --stdout' \
+	'--host does not ask the other machine for the page itself'
+assert_contains "$(cat "$TMP/ssh.args")" 'desk.example.invalid' '--host asked the wrong machine'
+assert_not_contains "$(cat "$TMP/ssh.args")" '-L' '--host forwarded a port; the page needs no server'
+assert_contains "$(cat "$REMOTE")" 'remote fleet' "--host did not keep the other machine's page"
+assert_contains "$(cat "$OPENED")" "$REMOTE" '--host never opened what it fetched'
+pass "--host brings another machine's fleet back over ssh and opens it here"
+
+rm -f "$STUB/ssh" "$STUB/open"
+
 # --- the installer wires the shared config in, once ----------------------------
 
 grep -q '^\[core\]' "$SHARED_CONFIG" || fail 'the shared config sets no pager'
@@ -242,9 +388,11 @@ pass 'bootstrap.sh and rebuild.sh both install the diff tools'
 
 # --- the short names are declared for the Mac ----------------------------------
 
-for name in fleet fleet-diff git-fleet-diff; do
+for name in fleet fleet-diff fleet-html git-fleet-diff; do
 	grep -q "\".local/bin/$name\"" "$ROOT/home.nix" ||
 		fail "home.nix does not link ~/.local/bin/$name"
+	grep -q "$name" "$INSTALLER" ||
+		fail "scripts/install-diff-tools does not link $name on a dev desk"
 done
 grep -q '^    delta$' "$ROOT/home.nix" || fail 'home.nix does not install delta'
-pass 'home.nix installs delta and links fleet, fleet-diff and git-fleet-diff'
+pass 'both machines get delta and every fleet command'
