@@ -226,17 +226,17 @@ cp -R "$REPO" "$AGENT"
 printf '<script>alert("pwned")</script>\n' >"$AGENT/markup.html"
 
 # A checkout whose label is too long for the column, in the shape this desk is full
-# of: a Brazil workspace, `~/<workspace>/src/<Package>`. Six of these differ only in
+# of: a monorepo workspace, `~/<workspace>/src/<Package>`. Six of these differ only in
 # the middle - the leading directories are identical and so is the package name at
 # the end - which is why the label is elided from the left rather than clipped at
 # the right, the same decision the terminal table makes.
-LONG="$FLEET/lineage-ws-lineage-cr2-20260828-abcdef/src/AWSGlueLineageAppConfigCDK"
+LONG="$FLEET/service-ws-billing-cr2-20260828-abcdef/src/ExampleServiceAppConfigCDK"
 mkdir -p "${LONG%/*}"
 cp -R "$REPO" "$LONG"
 # On a branch too long for the terminal's column, which the page has room to show
 # whole: these branches differ in their last few characters, so a capped one names
 # the wrong work.
-git_quiet "$LONG" checkout -q -b fm/lineage-three-patch-reconciliation
+git_quiet "$LONG" checkout -q -b fm/service-three-patch-reconciliation
 
 # delta and jq where the script expects to find them. The whole point of the ANSI
 # conversion is that delta's own rendering survives the trip into HTML, so the
@@ -276,20 +276,20 @@ pass 'the report sorts every changed checkout into mine and the agents'
 # A label too long for the column loses its start, never its end: every row in a
 # fleet shares its leading directories, and this desk's dominant shape shares the
 # trailing package name too, so what tells two rows apart is the end of the middle.
-assert_contains "$HTML" '/src/AWSGlueLineageAppConfigCDK</span>' \
+assert_contains "$HTML" '/src/ExampleServiceAppConfigCDK</span>' \
 	'a long label was clipped at the end, hiding the part that says which checkout it is'
 assert_contains "$HTML" '…' 'a clipped label does not show that anything was dropped'
-assert_not_contains "$HTML" '>~/fleet/lineage-ws' \
+assert_not_contains "$HTML" '>~/fleet/service-ws' \
 	'a label too long for the column was printed whole, so the row runs past its column'
 
 # A branch is not capped to the terminal's column width either. Two fm/ branches on
 # one machine differ in their last few characters, so a page that shows
 # "fm/fm-pi-adapter-recor.." names two different pieces of work the same.
-assert_contains "$HTML" 'fm/lineage-three-patch-reconciliation' \
+assert_contains "$HTML" 'fm/service-three-patch-reconciliation' \
 	'the page shows the branch capped to the width of a terminal column'
 
 # The whole path is still on the row, so hovering answers anything the elision drops.
-assert_contains "$HTML" "title=\"$(cd "$FLEET" && pwd -P)/lineage-ws-lineage-cr2-20260828-abcdef/src/AWSGlueLineageAppConfigCDK\"" \
+assert_contains "$HTML" "title=\"$(cd "$FLEET" && pwd -P)/service-ws-billing-cr2-20260828-abcdef/src/ExampleServiceAppConfigCDK\"" \
 	'an elided label carries no title, so the dropped part of the path is unrecoverable'
 pass 'a label too long for its column keeps the end that identifies the checkout'
 

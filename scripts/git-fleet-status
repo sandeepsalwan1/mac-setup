@@ -664,7 +664,7 @@ what_changed() {
 }
 
 # A path is capped rather than only measured, because one deep checkout -
-# ~/DataZoneServiceMeta/src/DataZoneServiceBrazilMetaRepo - is long enough to push
+# ~/ExampleServiceMeta/src/ExampleServiceDeepMetaRepo - is long enough to push
 # every other row's columns out of line on its own. The tail is the half that
 # identifies a checkout, so that is the half kept.
 #

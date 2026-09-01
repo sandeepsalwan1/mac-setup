@@ -209,11 +209,11 @@ assert_contains "$rows" '"row":"proj #2' 'the prebuilt row does not lead with th
 # the name already has: a consumer laying out its own columns has room the table
 # does not, and two fm/ branches that differ in their last characters read as one
 # when they arrive pre-shortened.
-git -C "$JW" checkout -q -b fm/lineage-three-patch-reconciliation
+git -C "$JW" checkout -q -b fm/service-three-patch-reconciliation
 wide="$("$SCRIPT" --root "$JRN" --no-save)"
 wide_json="$("$SCRIPT" --root "$JRN" --no-save --json)"
-assert_contains "$wide" 'fm/lineage-three-patch..' 'the table does not cap a long branch to its column'
-assert_contains "$wide_json" '"branchLabel":"fm/lineage-three-patch-reconciliation"' \
+assert_contains "$wide" 'fm/service-three-patch..' 'the table does not cap a long branch to its column'
+assert_contains "$wide_json" '"branchLabel":"fm/service-three-patch-reconciliation"' \
 	'the JSON hands out the branch already shortened for a terminal'
 assert_not_contains "$rows" '"row":"proj #2  fm/task  ?' \
 	'the prebuilt row still carries empty columns for tests and PR state'

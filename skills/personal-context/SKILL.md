@@ -50,7 +50,7 @@ LLM (`kiro-cli`) to read markdown you can read yourself, which is slow and adds 
    recorded history. Mac only, since it reads the summarizer's state; on a mirror start at
    step 2 with the repo or host name.
 2. Look up a known name: `ls "$KB/wiki/entities" "$KB/wiki/topics"`, then read the hit.
-   Names are kebab-case, so guessing works (`aws-glue-lineage.md`, `herdr.md`).
+   Names are kebab-case, so guessing works (`pi-runtime.md`, `herdr.md`).
 3. Search: `rg -il "<term>" "$KB/wiki"`, then read the top hits. `rg -i "<term>"
    "$KB/index.md"` gives a one-line-per-page overview instead.
 4. See what is live: `head -60 "$KB/wiki/current-context.md"`.

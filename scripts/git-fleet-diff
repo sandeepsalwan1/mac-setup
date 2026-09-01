@@ -772,7 +772,7 @@ button:hover { background: #30363d }
    subtle version of this bug: +9/-3 and +1485/-13447 size their own track, and
    then no two rows' line counts line up. */
 /* The name takes the slack, because it is the only column with no honest upper
-   bound: a Brazil workspace path is sixty characters. The three beside it are sized
+   bound: a workspace path here reaches sixty characters. The three beside it are sized
    to what a real fleet holds, measured rather than guessed - a branch runs to
    thirty-six characters and a "what" to thirty-five ("19 commits to push, 1 edited,
    7 new"), and both are told apart by their ends, so a column too narrow for them
@@ -883,8 +883,8 @@ html_section() {
 
 # The label as the column can hold it, elided from the left - the same decision the
 # terminal table makes, for the same reason. Rows in a fleet share their leading
-# directories, and this desk's dominant shape is a Brazil workspace: six rows read
-# `~/lineage-ws-lineage-cr2-…/src/AWSGlueLineageAppConfigCDK`, identical in both the
+# directories, and this desk's dominant shape is a monorepo workspace: six rows read
+# `~/service-ws-billing-cr2-…/src/ExampleServiceAppConfigCDK`, identical in both the
 # first characters and the last, and told apart only by the end of the workspace
 # name in the middle. Keeping the end keeps that. The whole path stays on the row's
 # title attribute, so hovering answers anything this drops.
