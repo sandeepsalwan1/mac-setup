@@ -753,7 +753,7 @@ button:hover { background: #30363d }
    its own detail out of line with every other row's. */
 .journal div {
   display: grid; align-items: baseline; gap: 0 1rem; padding: .1rem 0;
-  grid-template-columns: 4.5rem minmax(16rem, 30rem) 1fr;
+  grid-template-columns: 4.5rem minmax(12rem, 24rem) 1fr;
 }
 .journal .verb { color: #7ee787 }
 /* The journal names the same checkouts, so it truncates them the same way. Both
@@ -771,16 +771,16 @@ button:hover { background: #30363d }
    columns land in the same place on every row. An auto-sized last column is the
    subtle version of this bug: +9/-3 and +1485/-13447 size their own track, and
    then no two rows' line counts line up. */
-/* The name takes the slack, because it is the column that runs out of room: a
-   Brazil workspace path is sixty characters and a "what" is never more than about
-   twenty-five. The old layout gave the slack to "what" instead, which left
-   "1 commit, 4 edited, 1 new" wrapping to two lines beside an empty half-column.
-   The branch column holds twenty rems because an fm/ branch runs to thirty-six
-   characters and the ones on one machine differ in their last few: shown to twelve
-   rems, fm/fm-pi-adapter-records-w4 and fm/fm-pi-adapter-recover-w4 read alike. */
+/* The name takes the slack, because it is the only column with no honest upper
+   bound: a Brazil workspace path is sixty characters. The three beside it are sized
+   to what a real fleet holds, measured rather than guessed - a branch runs to
+   thirty-six characters and a "what" to thirty-five ("19 commits to push, 1 edited,
+   7 new"), and both are told apart by their ends, so a column too narrow for them
+   is worse than one that leaves a gap. Shown at twelve rems,
+   fm/fm-pi-adapter-records-w4 and fm/fm-pi-adapter-recover-w4 read alike. */
 .row > summary {
   display: grid; align-items: baseline; gap: 0 1.1rem; cursor: pointer;
-  grid-template-columns: 1rem minmax(14rem, 1fr) minmax(8rem, 20rem) 14rem 8rem;
+  grid-template-columns: 1rem minmax(14rem, 1fr) minmax(8rem, 20rem) 16rem 8rem;
   padding: .4rem .5rem; border-radius: 5px; list-style: none;
 }
 .row > summary::-webkit-details-marker { display: none }
