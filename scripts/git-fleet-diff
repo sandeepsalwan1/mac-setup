@@ -568,8 +568,29 @@ repo_picker() {
 # is also what makes reading a dev desk's fleet from the Mac a single ssh pipe -
 # the file arrives whole, over the connection that is already open.
 
+# How much diff the page carries, per row and in total. The total is what decides
+# whether the page opens at all: a coloured diff line costs about 400 bytes of
+# markup, so the dev desk's 79 changed checkouts at 4000 lines each rendered a 92MB
+# file - and nearly all of it was diff nobody clicked. The budget is shared out
+# across however many checkouts changed, so five of them get their whole diff and
+# eighty get a readable head each, with every truncated row ending in the command
+# that shows all of it. Set GIT_FLEET_HTML_MAX_LINES to pin a per-row cap and ignore
+# the budget entirely.
+HTML_BUDGET_LINES=${GIT_FLEET_HTML_BUDGET:-20000}
 HTML_MAX_LINES=${GIT_FLEET_HTML_MAX_LINES:-4000}
+HTML_MIN_LINES=200
 HTML_WIDTH=176
+
+# Called once the scan is in, because the share depends on how many rows there are.
+html_fit_budget() {
+	local rows=$1 share
+	[ -z "${GIT_FLEET_HTML_MAX_LINES:-}" ] || return 0
+	[ "$rows" -gt 0 ] || return 0
+	share=$((HTML_BUDGET_LINES / rows))
+	[ "$share" -lt "$HTML_MIN_LINES" ] && share=$HTML_MIN_LINES
+	[ "$share" -lt "$HTML_MAX_LINES" ] && HTML_MAX_LINES=$share
+	return 0
+}
 
 esc_html() {
 	local s=$1
@@ -931,6 +952,8 @@ html_report() {
 	done < <(jq -r 'select(.type == "repo")
 		| [.path, .kind, .name, .branchLabel, .what, .lines] | @tsv' "$snapshot")
 
+	html_fit_budget "${#H_PATH[@]}"
+
 	has_previous=$(jq -r 'select(.type == "meta") | .hasPrevious' "$snapshot")
 	previous_at=$(jq -r 'select(.type == "meta") | .previousAt' "$snapshot")
 	total_lines=$(jq -rs 'map(select(.type == "repo"))
@@ -944,7 +967,13 @@ html_report() {
 	printf '<h1>fleet <span class="dim">%s &middot; %s</span></h1>\n' \
 		"$(esc_html "$host")" "$(esc_html "$now")"
 	printf '<p class="sub">%d changed, %s lines. ' "${#H_PATH[@]}" "$(esc_html "$total_lines")"
-	printf 'Click any row to read its diff.</p>\n'
+	printf 'Click any row to read its diff'
+	# Said once here rather than left as a surprise at the bottom of a fold: with
+	# this many checkouts the page shows the head of each diff, not all of it.
+	if [ "$HTML_MAX_LINES" -lt 4000 ]; then
+		printf ', shown to %d lines with this many changed' "$HTML_MAX_LINES"
+	fi
+	printf '.</p>\n'
 	printf '<div class="bar"><button data-all="open">expand all</button>'
 	printf '<button data-all="close">collapse all</button></div>\n'
 

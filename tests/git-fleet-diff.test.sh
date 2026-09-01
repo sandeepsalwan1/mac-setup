@@ -306,6 +306,32 @@ assert_contains "$(cat "$OPENED")" "$OUT_FILE" 'the page that was written is not
 [ ! -e "$OUT_FILE.part" ] || fail 'the half-written page was left behind'
 pass '--output writes the named file, whole, and opens it'
 
+# --- the page has to open, so its diffs share one budget ------------------------
+#
+# A coloured diff line costs roughly 400 bytes of markup, so a per-row cap alone
+# does not bound the page: a dev desk with 79 changed checkouts rendered 92MB, which
+# is not a page anyone opens. The budget is divided by the number of changed
+# checkouts, so a handful still get their whole diff and eighty get a readable head
+# each. The row that is cut says so, and says what to run to see the rest.
+BUDGET=$(GIT_FLEET_HTML_BUDGET=12 html_run --stdout 2>/dev/null)
+assert_contains "$BUDGET" 'shown to 200 lines with this many changed' \
+	'a page whose diffs are shortened does not say so at the top, with the number'
+assert_contains "$BUDGET" 'one #7' 'the budget dropped a row instead of shortening its diff'
+assert_contains "$BUDGET" 'untracked.txt' 'the budget shortened a diff down to nothing'
+
+# What a shortened row says at the point it stops. Driven through the per-row cap
+# because the budget has a floor - a share too small to read is not worth rendering -
+# and the fixture's diffs are well under it.
+CUT=$(GIT_FLEET_HTML_MAX_LINES=5 html_run --stdout 2>/dev/null)
+assert_contains "$CUT" 'more lines. Read all of it with:  fleet-diff' \
+	'a shortened diff does not name the command that shows the rest'
+
+# An explicit cap is the escape hatch and outranks the budget, or there would be no
+# way to ask for a whole diff on a machine running many agents.
+PINNED=$(GIT_FLEET_HTML_BUDGET=12 GIT_FLEET_HTML_MAX_LINES=4000 html_run --stdout 2>/dev/null)
+assert_not_contains "$PINNED" 'shown to' 'an explicit per-row cap did not override the budget'
+pass 'the page divides one line budget across the changed checkouts, and says when it cut'
+
 # --- reading the fleet must not consume the record of what changed --------------
 #
 # Every scan saves a new baseline, which is what lets the next one open with what
