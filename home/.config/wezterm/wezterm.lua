@@ -8,6 +8,12 @@ config.font_size = 15.0
 config.window_background_opacity = 0.8
 config.macos_window_background_blur = 50
 config.hide_tab_bar_if_only_one_tab = true
+
+-- Raise OSC 9/777 notifications even when the pane that sent them is focused.
+-- The default, SuppressFromFocusedPane, silently drops the agent-finished alerts
+-- Herdr sends with [ui.toast] delivery = "terminal", which is the one delivery
+-- mode that still reaches this Mac from a `herdr --remote` session.
+config.notification_handling = "AlwaysShow"
 config.window_decorations = "RESIZE"
 
 -- Dim unfocused windows so the focused one is obvious at a glance.

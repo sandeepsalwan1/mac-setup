@@ -24,4 +24,11 @@ copy_mode  = "prefix+y"  # herdr's copy-mode entry key; copy-mode's own internal
 agent_panel_sort = "spaces"
 
 [ui.toast]
-delivery = "off"
+# `terminal` writes the notification as an OSC escape to the outer terminal, so the
+# alert is raised by WezTerm on this Mac. That is the only mode that survives ssh:
+# `system` calls the OS notification service in the process that runs the herdr
+# server, so a `herdr --remote` attach would post it on the cloud desktop where
+# nobody is looking, and `herdr` in-app toasts only exist while herdr is on screen.
+# WezTerm drops OSC notifications from the focused pane unless
+# notification_handling = "AlwaysShow", which home/.config/wezterm/wezterm.lua sets.
+delivery = "terminal"
