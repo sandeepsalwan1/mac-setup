@@ -208,6 +208,25 @@ assert_not_contains "$rows" '"row":"proj #2  fm/task  ?' \
 	'the prebuilt row still carries empty columns for tests and PR state'
 pass 'the row and its parts are built once, in the scan, for every surface to show'
 
+# --- an exclusion applies to the baseline too ---------------------------------
+#
+# A baseline saved before the exclusion existed still holds those paths, and each
+# scan since then reports them as "gone" - a row about a checkout the reader has
+# said they never want to hear about. The report cannot clear them either: it reads
+# with --no-save, so it never writes the baseline that would drop them.
+
+EX="$TMP/excl"
+mkdir -p "$EX/snapshot"
+dotfiles_git_init_commit "$EX/live"
+dotfiles_git_init_commit "$EX/snapshot/copy"
+printf 'edit\n' >>"$EX/live/README.md"
+printf 'edit\n' >>"$EX/snapshot/copy/README.md"
+"$SCRIPT" --root "$EX" >/dev/null
+stale=$(GIT_FLEET_EXCLUDE="$EX/snapshot" "$SCRIPT" --root "$EX" --no-save)
+assert_not_contains "$stale" 'copy' 'a newly excluded path is still reported as gone from the baseline'
+assert_not_contains "$stale" 'gone' 'the baseline was not filtered by the exclusion'
+pass 'an exclusion added after the baseline drops those rows instead of reporting them gone'
+
 # --- two pools of one repository are not the same row -------------------------
 #
 # A repository can have more than one treehouse pool: a leftover beside a live one,

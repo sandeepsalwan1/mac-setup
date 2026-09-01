@@ -721,6 +721,29 @@ if [ -r "$STATE_FILE" ]; then
 	done <"$STATE_FILE"
 fi
 
+# An exclusion has to mean the same thing in both directions. A baseline saved
+# before the exclusion existed still holds those paths, and every scan since then
+# reports each one as "gone" - a row about a checkout the reader has said they never
+# want to hear about. The browser report makes it permanent, because it reads with
+# --no-save and so never writes the baseline that would drop them. Four such rows
+# were on this desk's page. Dropping them as the baseline loads fixes the journal,
+# the label collision check and the cleared rows in one place.
+if [ "$HAS_PREVIOUS" -eq 1 ] && [ -n "${GIT_FLEET_EXCLUDE:-}" ] &&
+	[ "${#PREVIOUS_RECORDS[@]}" -gt 0 ]; then
+	kept=$(
+		for old in "${PREVIOUS_RECORDS[@]}"; do
+			printf '%s\n' "${old%%$'\t'*}"
+		done | drop_excluded
+	)
+	inside=()
+	for old in "${PREVIOUS_RECORDS[@]}"; do
+		case $'\n'"$kept"$'\n' in
+		*$'\n'"${old%%$'\t'*}"$'\n'*) inside+=("$old") ;;
+		esac
+	done
+	PREVIOUS_RECORDS=(${inside[@]+"${inside[@]}"})
+fi
+
 previous_for_path() {
 	local wanted=$1 old
 	for old in ${PREVIOUS_RECORDS[@]+"${PREVIOUS_RECORDS[@]}"}; do
