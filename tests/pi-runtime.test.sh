@@ -51,7 +51,7 @@ ln -s "$REAL_PI" "$TEST_HOME/.local/bin/pi"
 mkdir "$TEST_HOME/.local/bin/pi.real"
 printf '%s\n' 'adjacent directory' >"$TEST_HOME/.local/bin/pi.real/sentinel"
 
-source_hash_before=$(shasum -a 256 "$SOURCE_AGENT/settings.json" | awk '{print $1}')
+source_hash_before=$(sha256_file "$SOURCE_AGENT/settings.json")
 HOME="$TEST_HOME" \
 	PI_DECLARATIVE_AGENT_DIR="$SOURCE_AGENT" \
 	PI_AGENT_DIR="$AGENT_DIR" \
@@ -208,7 +208,7 @@ for backup in \
 		grep -q . || fail "setup did not back up directory target $backup"
 done
 
-source_hash_after=$(shasum -a 256 "$SOURCE_AGENT/settings.json" | awk '{print $1}')
+source_hash_after=$(sha256_file "$SOURCE_AGENT/settings.json")
 [ "$source_hash_after" = "$source_hash_before" ] ||
 	fail 'runtime setup or simulated Pi bookkeeping changed declarative settings'
 

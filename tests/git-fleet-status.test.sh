@@ -171,14 +171,14 @@ printf 'four\n' >>"$JW/README.md"
 commit_in "$JW" 'work after the baseline'
 STATE_FILE=$(find "$GIT_FLEET_STATE_DIR" -type f | head -1)
 [ -n "$STATE_FILE" ] || fail 'the scan saved no baseline to protect'
-BASELINE_BEFORE=$(shasum -a 256 "$STATE_FILE" | awk '{print $1}')
+BASELINE_BEFORE=$(sha256_file "$STATE_FILE")
 
 for attempt in 1 2; do
 	peek="$("$SCRIPT" --root "$JRN" --no-save)"
 	assert_contains "$peek" 'started' \
 		"--no-save read $attempt does not report work that appeared since the baseline"
 done
-[ "$(shasum -a 256 "$STATE_FILE" | awk '{print $1}')" = "$BASELINE_BEFORE" ] ||
+[ "$(sha256_file "$STATE_FILE")" = "$BASELINE_BEFORE" ] ||
 	fail '--no-save moved the baseline, so the next read loses what changed'
 pass '--no-save reports what changed without consuming the record of it'
 

@@ -61,7 +61,7 @@ printf 'agent never added this\n' >"$REPO/untracked.txt"
 # is the question here, not how it is painted.
 PLAIN_PATH=/usr/bin:/bin
 
-INDEX_BEFORE=$(shasum -a 256 "$REPO/.git/index" | awk '{print $1}')
+INDEX_BEFORE=$(sha256_file "$REPO/.git/index")
 OUT=$(PATH="$PLAIN_PATH" "$SCRIPT" --print "$REPO" 2>/dev/null)
 
 assert_contains "$OUT" 'committed.txt' 'the diff omits work the agent committed'
@@ -72,7 +72,7 @@ assert_not_contains "$OUT" 'mainline.txt' \
 	'the diff reports the base branch own commits, so it is not measured from the merge base'
 pass 'one checkout diff covers committed, staged, unstaged and untracked work'
 
-INDEX_AFTER=$(shasum -a 256 "$REPO/.git/index" | awk '{print $1}')
+INDEX_AFTER=$(sha256_file "$REPO/.git/index")
 [ "$INDEX_BEFORE" = "$INDEX_AFTER" ] ||
 	fail 'reading a diff wrote to the repository index; it must stay read-only'
 pass 'reading a diff leaves the index untouched'
@@ -243,7 +243,11 @@ git_quiet "$LONG" checkout -q -b fm/service-three-patch-reconciliation
 # renderer that is installed on this machine is the one under test.
 JQ_BIN=$(command -v jq) || fail 'the report needs jq, which is not installed'
 DELTA_BIN=$(command -v delta) || fail 'the report needs delta, which is not installed'
-NO_DELTA_PATH="$STUB:$PLAIN_PATH:${JQ_BIN%/*}"
+ln -s "$JQ_BIN" "$STUB/jq"
+# Keep jq available without adding its whole directory. Nix and the Linux
+# installer place jq and delta together, which would silently re-enable delta
+# in the fallback-path assertion below.
+NO_DELTA_PATH="$STUB:$PLAIN_PATH"
 HTML_PATH="$NO_DELTA_PATH:${DELTA_BIN%/*}"
 
 # open(1) stubbed, so "did it try to show me the page" is an assertion rather than
@@ -257,9 +261,23 @@ chmod +x "$STUB/open"
 rm -f "$OPENED"
 
 html_run() {
-	HOME="$TMP" GIT_FLEET_STATE_DIR="$TMP/state" GIT_FLEET_HTML_DIR="$TMP/cache" \
+	DISPLAY='' HOME="$TMP" GIT_FLEET_STATE_DIR="$TMP/state" GIT_FLEET_HTML_DIR="$TMP/cache" \
 		PATH="${HTML_RUN_PATH:-$HTML_PATH}" GIT_FLEET_STATUS="$ROOT/scripts/git-fleet-status" \
 		"$SCRIPT" "$@" -r "$FLEET" -d 6
+}
+
+assert_page_presented() {
+	local stdout=$1 file=$2 mode=$3
+	case $(uname -s) in
+	Darwin)
+		[ -f "$OPENED" ] || fail "$mode wrote the page and never offered to show it"
+		assert_contains "$(cat "$OPENED")" "$file" "$mode did not open the page it wrote"
+		;;
+	*)
+		[ ! -f "$OPENED" ] || fail "$mode tried to open a GUI browser on a headless host"
+		assert_contains "$stdout" "$file" "$mode did not print the page path on a headless host"
+		;;
+	esac
 }
 
 html_run --stdout >"$TMP/report.html" 2>"$TMP/report.err" ||
@@ -328,8 +346,7 @@ STDOUT=$(html_run --output "$OUT_FILE" 2>"$TMP/named.err") ||
 	fail "--output exited $?: $(cat "$TMP/named.err")"
 [ -s "$OUT_FILE" ] || fail '--output wrote no file'
 assert_not_contains "$STDOUT" '<html' '--output printed the page to stdout as well as writing it'
-[ -f "$OPENED" ] || fail '--output wrote the page and never offered to show it'
-assert_contains "$(cat "$OPENED")" "$OUT_FILE" 'the page that was written is not the one opened'
+assert_page_presented "$STDOUT" "$OUT_FILE" '--output'
 [ ! -e "$OUT_FILE.part" ] || fail 'the half-written page was left behind'
 pass '--output writes the named file, whole, and opens it'
 
@@ -400,14 +417,14 @@ chmod +x "$STUB/ssh"
 rm -f "$OPENED"
 
 REMOTE="$TMP/remote.html"
-html_run --host desk.example.invalid --output "$REMOTE" 2>"$TMP/ssh.args" ||
+REMOTE_STDOUT=$(html_run --host desk.example.invalid --output "$REMOTE" 2>"$TMP/ssh.args") ||
 	fail "--host exited $?: $(cat "$TMP/ssh.args")"
 assert_contains "$(cat "$TMP/ssh.args")" 'fleet-html --stdout' \
 	'--host does not ask the other machine for the page itself'
 assert_contains "$(cat "$TMP/ssh.args")" 'desk.example.invalid' '--host asked the wrong machine'
 assert_not_contains "$(cat "$TMP/ssh.args")" '-L' '--host forwarded a port; the page needs no server'
 assert_contains "$(cat "$REMOTE")" 'remote fleet' "--host did not keep the other machine's page"
-assert_contains "$(cat "$OPENED")" "$REMOTE" '--host never opened what it fetched'
+assert_page_presented "$REMOTE_STDOUT" "$REMOTE" '--host'
 pass "--host brings another machine's fleet back over ssh and opens it here"
 
 rm -f "$STUB/ssh" "$STUB/open"

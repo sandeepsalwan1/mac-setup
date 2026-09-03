@@ -168,6 +168,17 @@ cleanup_chrome_devtools_hooks() {
 	fi
 }
 
+sha256_of() {
+	local file=$1
+	if command -v sha256sum >/dev/null 2>&1; then
+		sha256sum "$file" | awk '{print $1}'
+	elif command -v shasum >/dev/null 2>&1; then
+		shasum -a 256 "$file" | awk '{print $1}'
+	else
+		die 'neither sha256sum nor shasum is available'
+	fi
+}
+
 install_no_mistakes() {
 	local existing_version architecture filename expected_checksum url
 	local archive actual_checksum install_dir install_bin link_dir link_path
@@ -209,7 +220,7 @@ install_no_mistakes() {
 
 	note "downloading no-mistakes $NO_MISTAKES_VERSION"
 	curl --proto '=https' --tlsv1.2 -fsSL "$url" -o "$archive"
-	actual_checksum="$(shasum -a 256 "$archive" | awk '{print $1}')"
+	actual_checksum="$(sha256_of "$archive")"
 	[ "$actual_checksum" = "$expected_checksum" ] ||
 		die "checksum mismatch for $filename"
 

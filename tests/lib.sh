@@ -13,7 +13,7 @@ fi
 DOTFILES_TEST_LIB_SOURCED=1
 
 # shellcheck disable=SC2034
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 
 fail() {
   printf 'not ok - %s\n' "$1" >&2
@@ -22,6 +22,17 @@ fail() {
 
 pass() {
   printf 'ok - %s\n' "$1"
+}
+
+sha256_file() {
+  local file=$1
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$file" | awk '{print $1}'
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$file" | awk '{print $1}'
+  else
+    fail 'neither sha256sum nor shasum is available'
+  fi
 }
 
 # --- self-cleaning temp root -------------------------------------------------
