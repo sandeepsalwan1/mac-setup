@@ -17,7 +17,7 @@
 #   degradation with one clear diagnostic;
 # - working ship: geometry, cadence, colors, resize, narrow fallback,
 #   freeze/resume, timer disposal, extension lifecycle;
-# - real Pi 0.84.3 TUI proofs in tmux without credentials or provider calls.
+# - real Pi 0.84.4 TUI proofs in tmux without credentials or provider calls.
 set -u
 
 # shellcheck source=tests/lib.sh
@@ -894,8 +894,8 @@ test_real_pi_tui_smoke() {
     echo "skip: pi or tmux not found for isolated real TUI smoke"
     return 0
   fi
-  [ "$(pi --version 2>/dev/null || true)" = "0.84.3" ] \
-    || fail "real Pi smoke requires the installed Pi 0.84.3 proof target"
+  [ "$(pi --version 2>/dev/null || true)" = "0.84.4" ] \
+    || fail "real Pi smoke requires the installed Pi 0.84.4 proof target"
 
   fixture="$TMP_ROOT/tui-smoke"
   agent="$fixture/agent"
@@ -987,7 +987,7 @@ TS
   grep -Fq 'stream-start' "$fixture/provider-markers.txt" || fail "real Pi smoke did not enter the provider stream"
   grep -Fq '\__/' "$fixture/wide" || fail "real Pi smoke did not show Calm's wide working boat"
   if grep -Eiq 'thinking[.][.][.]' "$fixture/wide"; then
-    fail "real Pi 0.84.3 showed thinking... noise while Calm's working ship was active"
+    fail "real Pi 0.84.4 showed thinking... noise while Calm's working ship was active"
   fi
   tmux -L "$socket" resize-window -t "$TMUX_SESSION" -x 40 -y 30
   for i in $(seq 1 120); do
@@ -1015,7 +1015,7 @@ TS
   tmux -L "$socket" send-keys -t "$TMUX_SESSION" Enter
   sleep 0.1
   tmux -L "$socket" kill-server 2>/dev/null || true
-  pass "isolated Pi 0.84.3 TUI proves auto-load, quiet /calm persistence, resize-safe working animation, suppressed thinking noise, and genuine transcript text without credentials"
+  pass "isolated Pi 0.84.4 TUI proves auto-load, quiet /calm persistence, resize-safe working animation, suppressed thinking noise, and genuine transcript text without credentials"
 }
 
 test_zero_coupling_and_state_file
