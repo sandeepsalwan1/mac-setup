@@ -1,6 +1,6 @@
 ---
 name: personal-context
-description: Read the personal knowledge base in the Obsidian vault at ~/Documents/Obsidian Vault, built automatically from past agent transcripts. Use before starting work on a recurring project, repo, or host; when asked "what do I know about X", "check my notes", "what did I decide about Y", "have I hit this before"; or when a problem feels like one that has already been solved. Read-only: context-keeper writes the vault, agents do not.
+description: "Read the personal knowledge base in the Obsidian vault at ~/Documents/Obsidian Vault, built automatically from past agent transcripts. Use before starting work on a recurring project, repo, or host; when asked 'what do I know about X', 'check my notes', 'what did I decide about Y', 'have I hit this before'; or when a problem feels like one that has already been solved. Read-only: context-keeper writes the vault, agents do not."
 ---
 
 # Personal Context
