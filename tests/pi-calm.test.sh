@@ -174,20 +174,26 @@ test_zero_coupling_and_state_file() {
 test_static_typescript_and_repo_wiring() {
   local system_path home_manager_files extensions_derivation extensions_target
 
-  # Prove the evaluated Home Manager output, independent of source formatting.
-  system_path=$(nix build "$ROOT#darwinConfigurations.mac.system" --no-link --print-out-paths 2>/dev/null) \
-    || fail "nix-darwin system did not build"
-  home_manager_files=$(nix-store -qR "$system_path" | grep -- '-home-manager-files$' | head -n 1)
-  [ -n "$home_manager_files" ] \
-    || fail "built system does not contain Home Manager files"
-  [ -L "$home_manager_files/.pi/agent/extensions" ] \
-    || fail "built Home Manager output does not link ~/.pi/agent/extensions"
-  extensions_derivation=$(readlink "$home_manager_files/.pi/agent/extensions")
-  extensions_target=$(readlink "$extensions_derivation")
-  case "$extensions_target" in
-    */.dotfiles/home/.pi/agent/extensions) ;;
-    *) fail "built Pi extensions link points at the wrong target: $extensions_target" ;;
-  esac
+  if [ "$(uname -s)" = Darwin ]; then
+    command -v nix >/dev/null 2>&1 \
+      || fail "nix is required for the nix-darwin wiring proof"
+    # Prove the evaluated Home Manager output, independent of source formatting.
+    system_path=$(nix build "$ROOT#darwinConfigurations.mac.system" --no-link --print-out-paths 2>/dev/null) \
+      || fail "nix-darwin system did not build"
+    home_manager_files=$(nix-store -qR "$system_path" | grep -- '-home-manager-files$' | head -n 1)
+    [ -n "$home_manager_files" ] \
+      || fail "built system does not contain Home Manager files"
+    [ -L "$home_manager_files/.pi/agent/extensions" ] \
+      || fail "built Home Manager output does not link ~/.pi/agent/extensions"
+    extensions_derivation=$(readlink "$home_manager_files/.pi/agent/extensions")
+    extensions_target=$(readlink "$extensions_derivation")
+    case "$extensions_target" in
+      */.dotfiles/home/.pi/agent/extensions) ;;
+      *) fail "built Pi extensions link points at the wrong target: $extensions_target" ;;
+    esac
+  else
+    echo "skip: nix-darwin Home Manager wiring proof requires macOS"
+  fi
   [ -f "$CALM_DIR/index.ts" ] || fail "calm extension entry point missing"
   [ -f "$CALM_DIR/LICENSE" ] || fail "calm license file missing"
 
