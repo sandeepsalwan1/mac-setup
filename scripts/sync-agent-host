@@ -113,6 +113,12 @@ for host in "${HOSTS[@]}"; do
 
 	ssh -o BatchMode=yes "$host" '"$HOME"/mac-setup/scripts/link-portable-skills'
 
+	if ! ssh -o BatchMode=yes "$host" '"$HOME"/mac-setup/scripts/link-agent-health'; then
+		note "agent-health link failed; host left otherwise synced"
+		failed=$((failed + 1))
+		continue
+	fi
+
 	ssh -o BatchMode=yes "$host" "
 		set -eu
 		printf 'sync-agent-host:   HEAD %s\n' \"\$(git -C \"\$HOME/mac-setup\" rev-parse --short HEAD)\"
