@@ -201,7 +201,20 @@ wait_for_pane() {
 	return 1
 }
 
-tmux -L "$TMUX_SOCKET" new-session -d -s herdr -x 120 -y 40 \
+# Run these tests from inside a Herdr session and the tmux server inherits every
+# HERDR_* variable: HERDR_ENV trips the nested-herdr refusal, and once that is
+# gone HERDR_SOCKET_PATH still outranks the probe's own HOME, so Herdr binds the
+# real session's socket and exits "already running". Strip the whole prefix rather
+# than the names seen today, so a new marker cannot reintroduce this silently.
+HERDR_FREE=(env -u HERDR_ENV)
+while IFS='=' read -r name _; do
+	case "$name" in
+	HERDR_ENV) : ;;
+	HERDR_*) HERDR_FREE+=(-u "$name") ;;
+	esac
+done < <(env)
+
+"${HERDR_FREE[@]}" tmux -L "$TMUX_SOCKET" new-session -d -s herdr -x 120 -y 40 \
 	-e "HOME=$PROBE_HOME" -e TERM=xterm-256color \
 	"$HERDR_REAL_BIN" --no-session
 wait_for_pane || fail "Herdr did not start under tmux: $(capture)"

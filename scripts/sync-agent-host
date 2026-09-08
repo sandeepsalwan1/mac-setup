@@ -104,11 +104,17 @@ for host in "${HOSTS[@]}"; do
 
 	# Verify by ref tip. A transfer that reports success and lands nothing is the
 	# documented failure mode here, so confirm the commit is actually present.
+	# Containment rather than equality: a host that has committed since the last
+	# sync is ahead, not stale, and demanding equality reported that as a failure.
 	remote_tip="$(ssh -o BatchMode=yes "$host" 'git -C "$HOME/mac-setup" rev-parse HEAD')"
-	if [ "$remote_tip" != "$TIP" ]; then
-		note "HEAD is ${remote_tip:0:8}, expected ${TIP:0:8}"
+	if ! ssh -o BatchMode=yes "$host" \
+		"git -C \"\$HOME/mac-setup\" merge-base --is-ancestor $TIP HEAD"; then
+		note "HEAD is ${remote_tip:0:8}, which does not contain ${TIP:0:8}"
 		failed=$((failed + 1))
 		continue
+	fi
+	if [ "$remote_tip" != "$TIP" ]; then
+		note "  HEAD ${remote_tip:0:8} is ahead of ${TIP:0:8}; bundle its commits back to this Mac"
 	fi
 
 	ssh -o BatchMode=yes "$host" '"$HOME"/mac-setup/scripts/link-portable-skills'

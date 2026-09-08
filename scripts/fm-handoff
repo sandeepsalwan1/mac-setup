@@ -367,10 +367,14 @@ for rd in "$D"/repos/*/; do
           fi
         done
         if [ -n "$alt" ]; then
+          # The directory slug joins path components with `~`, which git forbids
+          # in a refname, so every command printed here used to be rejected as an
+          # invalid refspec. The namespace gets its own dash-joined spelling.
+          ns=$(basename "$rd" | tr '~^:?*[\\ ' '-')
           fetched="no clone yet (land it in $alt)"
           RESTORE_ALT="${RESTORE_ALT}  $rel  ->  ~/$alt
       git -C ~/$alt fetch ~/handoff/fm-handoff-$RUN/repos/$(basename "$rd")/local-commits.bundle \\
-        '+refs/heads/*:refs/handoff/$RUN-$(basename "$rd")/heads/*'
+        '+refs/heads/*:refs/handoff/$RUN-$ns/heads/*'
 "
         else
           fetched="no clone yet (needs its remote)"
@@ -458,4 +462,13 @@ MISSING-BASE means that repo's clone on the new host does not yet have the
 commits the bundle builds on. Fetch its remote there, then re-run:
   git -C ~/<repo> fetch --all
   fm-handoff
+
+If that still fails, the prerequisites are not on the remote at all - a matching
+remote URL does not mean the target clone holds the exact commits this bundle was
+built against. Re-capture that one repo self-contained, which needs no base:
+  ssh $OLD_HOST 'git -C ~/<source-repo> bundle create - --all' > /tmp/f.bundle
+  scp /tmp/f.bundle $NEW_HOST:/tmp/f.bundle
+  ssh $NEW_HOST "git -C ~/<repo> fetch /tmp/f.bundle \\
+    '+refs/heads/*:refs/handoff/$RUN-<slug>/heads/*'"
+Spell <slug> with dashes: git rejects a refname containing '~'.
 EOF

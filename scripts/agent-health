@@ -122,6 +122,10 @@ def processes() -> dict[int, tuple[str, int, int]]:
 
 
 def collect(seconds: float) -> dict[str, Any]:
+    # Only sampling needs /proc. Guarding in main() instead made --help and
+    # report, which read persisted samples and do arithmetic, fail on a Mac.
+    if not sys.platform.startswith("linux") or not Path("/proc/stat").is_file():
+        raise SystemExit("agent-health sample requires Linux with /proc")
     if seconds <= 0:
         raise SystemExit("sample interval must be greater than zero")
     started = time.monotonic()
@@ -289,8 +293,6 @@ def print_report(summary: dict[str, Any]) -> None:
 
 
 def main() -> int:
-    if not sys.platform.startswith("linux") or not Path("/proc/stat").is_file():
-        raise SystemExit("agent-health requires Linux with /proc")
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
     sample_parser = subparsers.add_parser("sample")
