@@ -14,6 +14,7 @@ shellcheck -x \
 	"$ROOT/scripts/install-agent-tools" \
 	"$ROOT/scripts/install-tools" \
 	"$ROOT/scripts/link-official-codex-skills" \
+	"$ROOT/scripts/link-agent-health" \
 	"$ROOT/scripts/read-flake-user" \
 	"$ROOT/scripts/link-portable-skills" \
 	"$ROOT/scripts/sync-agent-host" \
@@ -27,6 +28,7 @@ shellcheck -x \
 	"$ROOT/scripts/setup-pi-runtime" \
 	"$ROOT/tests/security-scan.sh" \
 	"$ROOT/tests/backpass-config.test.sh" \
+	"$ROOT/tests/agent-health.test.sh" \
 	"$ROOT/tests/bootstrap.test.sh" \
 	"$ROOT/tests/computer-use-cli.test.sh" \
 	"$ROOT/tests/context-keeper.test.sh" \
@@ -58,6 +60,7 @@ shfmt -d \
 	"$ROOT/scripts/install-agent-tools" \
 	"$ROOT/scripts/install-tools" \
 	"$ROOT/scripts/link-official-codex-skills" \
+	"$ROOT/scripts/link-agent-health" \
 	"$ROOT/scripts/read-flake-user" \
 	"$ROOT/scripts/link-portable-skills" \
 	"$ROOT/scripts/sync-agent-host" \
@@ -70,6 +73,7 @@ shfmt -d \
 	"$ROOT/scripts/pi-firstmate" \
 	"$ROOT/scripts/setup-pi-runtime" \
 	"$ROOT/tests/security-scan.sh" \
+	"$ROOT/tests/agent-health.test.sh" \
 	"$ROOT/tests/backpass-config.test.sh" \
 	"$ROOT/tests/bootstrap.test.sh" \
 	"$ROOT/tests/computer-use-cli.test.sh" \
@@ -92,6 +96,7 @@ shfmt -d \
 	"$ROOT/tests/vault-access.test.sh"
 
 "$ROOT/tests/backpass-config.test.sh"
+"$ROOT/tests/agent-health.test.sh"
 "$ROOT/tests/bootstrap.test.sh"
 "$ROOT/tests/computer-use-cli.test.sh"
 "$ROOT/tests/context-keeper.test.sh"

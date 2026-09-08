@@ -21,5 +21,6 @@
 - Global installs: declare portable baseline tools in dotfiles. Keep work-specific packages local and never auto-record them.
 - Backpass is periodic memory maintenance, not a per-task step. Suggest it after recurring cross-session friction or when a project AGENTS.md is stale or overgrown. Run its model-backed analysis only with user approval, and run `backpass apply` only with explicit approval after reviewing the evidence.
 - Unrecognized changes: assume another agent; keep going and focus on your changes.
+- Keep command output bounded at the source. Large tool results are persisted and can create severe storage I/O amplification on busy agent hosts.
 - Do not leave finished work sitting on one machine, but never publish it yourself. `Bash(git push*)` is denied in `~/.claude/settings.json`, so once a change is committed and tested, say it is ready and hand over the exact command. Amazon packages go out through `cr` (CRUX), never a push. If the remote is public and the change carries material that cannot be published, say so instead and do not hand over a command at all.
 - Read `~/AGENTS.local.md` first when it exists: it carries this machine's workplace-specific rules, which stay out of this public repository.

@@ -1,0 +1,324 @@
+#!/usr/bin/env python3
+"""Record enough Linux host data to identify coding-agent bottlenecks."""
+
+from __future__ import annotations
+
+import argparse
+import datetime as dt
+import fcntl
+import json
+import math
+import os
+import shutil
+import sys
+import time
+from collections import defaultdict
+from pathlib import Path
+from typing import Any
+
+
+STATE_DIR = Path(
+    os.environ.get(
+        "AGENT_HEALTH_STATE_DIR",
+        Path.home() / ".local" / "state" / "agent-health",
+    )
+)
+SAMPLE_SECONDS = float(os.environ.get("AGENT_HEALTH_SAMPLE_SECONDS", "1"))
+RETENTION_DAYS = int(os.environ.get("AGENT_HEALTH_RETENTION_DAYS", "14"))
+AGENTS = {"claude", "codex", "kiro", "kiro-cli", "pi"}
+INSTANCE_RSS_KIB = 64 * 1024
+
+
+def now() -> dt.datetime:
+    return dt.datetime.now(dt.timezone.utc)
+
+
+def percentile(numbers: list[float], wanted: float) -> float:
+    ordered = sorted(numbers)
+    if not ordered:
+        return 0.0
+    position = (len(ordered) - 1) * wanted / 100
+    lower, upper = math.floor(position), math.ceil(position)
+    if lower == upper:
+        return ordered[lower]
+    return ordered[lower] * (upper - position) + ordered[upper] * (position - lower)
+
+
+def cpu_totals() -> tuple[int, int]:
+    values = [
+        int(value)
+        for value in Path("/proc/stat")
+        .read_text(encoding="utf-8")
+        .splitlines()[0]
+        .split()[1:9]
+    ]
+    return sum(values), values[3] + values[4]
+
+
+def pressure(kind: str, category: str) -> float:
+    try:
+        lines = (Path("/proc/pressure") / kind).read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return 0.0
+    for line in lines:
+        parts = line.split()
+        if parts and parts[0] == category:
+            fields = dict(part.split("=", 1) for part in parts[1:])
+            return float(fields["avg10"])
+    return 0.0
+
+
+def memory_available_pct() -> float:
+    values: dict[str, int] = {}
+    for line in Path("/proc/meminfo").read_text(encoding="utf-8").splitlines():
+        key, raw = line.split(":", 1)
+        values[key] = int(raw.strip().split()[0])
+    return values["MemAvailable"] * 100 / values["MemTotal"]
+
+
+def process_name(proc: Path, comm: str) -> str:
+    if comm not in {"MainThread", "node", "python", "python3"}:
+        return comm
+    try:
+        args = (proc / "cmdline").read_bytes().split(b"\0")
+        names = [Path(arg.decode(errors="replace")).name for arg in args if arg]
+    except OSError:
+        return comm
+    if not names:
+        return comm
+    if names[0].startswith("python") and len(names) > 1:
+        return names[1]
+    return names[0]
+
+
+def processes() -> dict[int, tuple[str, int, int]]:
+    result: dict[int, tuple[str, int, int]] = {}
+    uid = os.getuid()
+    for proc in Path("/proc").iterdir():
+        if not proc.name.isdigit():
+            continue
+        try:
+            status = (proc / "status").read_text(encoding="utf-8").splitlines()
+            fields = dict(line.split(":", 1) for line in status if ":" in line)
+            if int(fields["Uid"].split()[0]) != uid:
+                continue
+            rss_kib = int(fields.get("VmRSS", "0").split()[0])
+            comm = (proc / "comm").read_text(encoding="utf-8").strip()
+            io = dict(
+                line.split(":", 1)
+                for line in (proc / "io").read_text(encoding="utf-8").splitlines()
+            )
+            reads = int(io.get("read_bytes", "0"))
+            writes = int(io.get("write_bytes", "0"))
+            cancelled = int(io.get("cancelled_write_bytes", "0"))
+            result[int(proc.name)] = (
+                process_name(proc, comm),
+                reads + max(0, writes - cancelled),
+                rss_kib,
+            )
+        except (FileNotFoundError, PermissionError, ProcessLookupError, KeyError, ValueError):
+            continue
+    return result
+
+
+def collect(seconds: float) -> dict[str, Any]:
+    if seconds <= 0:
+        raise SystemExit("sample interval must be greater than zero")
+    started = time.monotonic()
+    cpu_before, proc_before = cpu_totals(), processes()
+    time.sleep(seconds)
+    cpu_after, proc_after = cpu_totals(), processes()
+    elapsed = max(time.monotonic() - started, 0.001)
+
+    total_delta = max(1, cpu_after[0] - cpu_before[0])
+    idle_delta = max(0, cpu_after[1] - cpu_before[1])
+    busy = (total_delta - idle_delta) * 100 / total_delta
+
+    by_command: dict[str, int] = defaultdict(int)
+    for pid, current in proc_after.items():
+        previous = proc_before.get(pid)
+        if previous and previous[0] == current[0]:
+            by_command[current[0]] += max(0, current[1] - previous[1])
+    top_command, top_bytes = max(
+        by_command.items(), key=lambda item: item[1], default=("", 0)
+    )
+
+    agent_instances = sum(
+        1
+        for command, _, rss_kib in proc_after.values()
+        if command in AGENTS and rss_kib >= INSTANCE_RSS_KIB
+    )
+    logical_cpus = os.cpu_count() or 1
+    disk = shutil.disk_usage(Path.home())
+    return {
+        "schema": 2,
+        "timestamp": now().isoformat(),
+        "sample_seconds": round(elapsed, 3),
+        "cpu_busy_pct": round(busy, 2),
+        "load_per_cpu": round(os.getloadavg()[0] / logical_cpus, 4),
+        "cpu_pressure_pct": pressure("cpu", "some"),
+        "memory_available_pct": round(memory_available_pct(), 2),
+        "memory_pressure_pct": pressure("memory", "full"),
+        "io_pressure_some_pct": pressure("io", "some"),
+        "io_pressure_full_pct": pressure("io", "full"),
+        "disk_used_pct": round(disk.used * 100 / disk.total, 2),
+        "agent_instances": agent_instances,
+        "top_io_command": top_command,
+        "top_io_mib_s": round(top_bytes / elapsed / 1024**2, 2),
+    }
+
+
+def persist(sample: dict[str, Any]) -> Path:
+    STATE_DIR.mkdir(mode=0o700, parents=True, exist_ok=True)
+    STATE_DIR.chmod(0o700)
+    timestamp = dt.datetime.fromisoformat(sample["timestamp"])
+    path = STATE_DIR / f"samples-{timestamp.date().isoformat()}.jsonl"
+    with (STATE_DIR / ".lock").open("a", encoding="utf-8") as lock:
+        os.fchmod(lock.fileno(), 0o600)
+        fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+        with path.open("a", encoding="utf-8") as output:
+            os.fchmod(output.fileno(), 0o600)
+            output.write(json.dumps(sample, separators=(",", ":"), sort_keys=True) + "\n")
+        cutoff = timestamp.date() - dt.timedelta(days=RETENTION_DAYS)
+        for old in STATE_DIR.glob("samples-*.jsonl"):
+            try:
+                old_date = dt.date.fromisoformat(old.stem.removeprefix("samples-"))
+            except ValueError:
+                continue
+            if old_date < cutoff:
+                old.unlink()
+    return path
+
+
+def load(hours: float) -> list[dict[str, Any]]:
+    cutoff = now() - dt.timedelta(hours=hours)
+    records: list[dict[str, Any]] = []
+    for path in sorted(STATE_DIR.glob("samples-*.jsonl")):
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            continue
+        for line in lines:
+            try:
+                record = json.loads(line)
+                timestamp = dt.datetime.fromisoformat(record["timestamp"])
+            except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+                continue
+            if record.get("schema") == 2 and timestamp >= cutoff:
+                records.append(record)
+    return sorted(records, key=lambda record: record["timestamp"])
+
+
+def numbers(records: list[dict[str, Any]], key: str) -> list[float]:
+    return [float(record[key]) for record in records if key in record]
+
+
+def summarize(records: list[dict[str, Any]], hours: float) -> dict[str, Any]:
+    cpu_p95 = percentile(numbers(records, "cpu_busy_pct"), 95)
+    load_p95 = percentile(numbers(records, "load_per_cpu"), 95)
+    cpu_pressure_p95 = percentile(numbers(records, "cpu_pressure_pct"), 95)
+    memory_min = min(numbers(records, "memory_available_pct"), default=0)
+    memory_pressure_p95 = percentile(numbers(records, "memory_pressure_pct"), 95)
+    io_some_p95 = percentile(numbers(records, "io_pressure_some_pct"), 95)
+    io_full_p95 = percentile(numbers(records, "io_pressure_full_pct"), 95)
+    disk_max = max(numbers(records, "disk_used_pct"), default=0)
+    agents_p95 = percentile(numbers(records, "agent_instances"), 95)
+    top = max(records, key=lambda record: record.get("top_io_mib_s", 0))
+
+    if disk_max >= 90:
+        code, label = "disk_capacity", "Disk capacity pressure"
+    elif memory_min < 10 or (memory_min < 20 and memory_pressure_p95 >= 1):
+        code, label = "memory_pressure", "Memory pressure"
+    elif io_full_p95 >= 5 or io_some_p95 >= 10:
+        code, label = "io_contention", "Storage I/O contention"
+        if agents_p95 >= 8:
+            label += " under concurrent agent work"
+    elif cpu_p95 >= 90 or cpu_pressure_p95 >= 5 or load_p95 >= 1:
+        code, label = "cpu_saturation", "CPU saturation"
+    else:
+        code, label = "host_healthy", "Host resources healthy"
+
+    return {
+        "hours": hours,
+        "samples": len(records),
+        "start": records[0]["timestamp"],
+        "end": records[-1]["timestamp"],
+        "verdict": {"code": code, "label": label},
+        "cpu_busy_pct_p95": round(cpu_p95, 2),
+        "load_per_cpu_p95": round(load_p95, 3),
+        "cpu_pressure_pct_p95": round(cpu_pressure_p95, 2),
+        "memory_available_pct_min": round(memory_min, 2),
+        "memory_pressure_pct_p95": round(memory_pressure_p95, 2),
+        "io_pressure_some_pct_p95": round(io_some_p95, 2),
+        "io_pressure_full_pct_p95": round(io_full_p95, 2),
+        "disk_used_pct_max": round(disk_max, 2),
+        "agent_instances_p95": round(agents_p95, 1),
+        "top_io_command": top.get("top_io_command", ""),
+        "top_io_mib_s": float(top.get("top_io_mib_s", 0)),
+    }
+
+
+def print_report(summary: dict[str, Any]) -> None:
+    print(f"Agent health - last {summary['hours']:g}h")
+    print(f"Host verdict: {summary['verdict']['label']}")
+    print(f"Samples: {summary['samples']} from {summary['start']} to {summary['end']}")
+    print(
+        f"CPU: busy p95 {summary['cpu_busy_pct_p95']:.1f}% | "
+        f"pressure p95 {summary['cpu_pressure_pct_p95']:.1f}% | "
+        f"load/core p95 {summary['load_per_cpu_p95']:.2f}"
+    )
+    print(
+        f"Memory: available min {summary['memory_available_pct_min']:.1f}% | "
+        f"full pressure p95 {summary['memory_pressure_pct_p95']:.1f}%"
+    )
+    print(
+        f"I/O: some p95 {summary['io_pressure_some_pct_p95']:.1f}% | "
+        f"full p95 {summary['io_pressure_full_pct_p95']:.1f}%"
+    )
+    print(
+        f"Disk: max {summary['disk_used_pct_max']:.1f}% used | "
+        f"agent instances p95 {summary['agent_instances_p95']:.0f}"
+    )
+    if summary["top_io_command"]:
+        print(
+            f"Top sampled I/O: {summary['top_io_command']} "
+            f"{summary['top_io_mib_s']:.1f} MiB/s"
+        )
+    if summary["verdict"]["code"] == "host_healthy":
+        print("Next check: model, network, or tool latency")
+
+
+def main() -> int:
+    if not sys.platform.startswith("linux") or not Path("/proc/stat").is_file():
+        raise SystemExit("agent-health requires Linux with /proc")
+    parser = argparse.ArgumentParser(description=__doc__)
+    subparsers = parser.add_subparsers(dest="command", required=True)
+    sample_parser = subparsers.add_parser("sample")
+    sample_parser.add_argument("--interval", type=float, default=SAMPLE_SECONDS)
+    sample_parser.add_argument("--print", action="store_true", dest="print_sample")
+    report_parser = subparsers.add_parser("report")
+    report_parser.add_argument("--hours", type=float, default=24)
+    report_parser.add_argument("--json", action="store_true", dest="json_output")
+    args = parser.parse_args()
+
+    if args.command == "sample":
+        sample = collect(args.interval)
+        persist(sample)
+        if args.print_sample:
+            print(json.dumps(sample, indent=2, sort_keys=True))
+        return 0
+    if args.hours <= 0:
+        raise SystemExit("report hours must be greater than zero")
+    records = load(args.hours)
+    if not records:
+        raise SystemExit(f"no samples in the last {args.hours:g}h; run agent-health sample")
+    summary = summarize(records, args.hours)
+    if args.json_output:
+        print(json.dumps(summary, indent=2, sort_keys=True))
+    else:
+        print_report(summary)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

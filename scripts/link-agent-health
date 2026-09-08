@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+LINK="${AGENT_HEALTH_LINK:-$HOME/.local/bin/agent-health}"
+TARGET="${AGENT_HEALTH_TARGET:-$ROOT/scripts/agent-health}"
+
+[ -x "$TARGET" ] || {
+	printf 'link-agent-health: target is not executable: %s\n' "$TARGET" >&2
+	exit 1
+}
+
+mkdir -p "$(dirname "$LINK")"
+if [ -e "$LINK" ] && [ ! -L "$LINK" ]; then
+	printf 'link-agent-health: refusing to replace non-symlink: %s\n' "$LINK" >&2
+	exit 1
+fi
+
+ln -sfn "$TARGET" "$LINK"
+printf 'link-agent-health: %s -> %s\n' "$LINK" "$TARGET"
