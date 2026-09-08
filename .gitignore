@@ -1,7 +1,11 @@
-# herdr runtime artifacts (regenerated at runtime; never commit)
+# herdr runtime artifacts (regenerated at runtime; never commit). Herdr 0.8 added
+# the last three, which showed up as untracked noise in every host's status.
 home/.config/herdr/*.log
 home/.config/herdr/session.json
 home/.config/herdr/*.sock
+home/.config/herdr/.plugins.lock
+home/.config/herdr/release-notes.json
+home/.config/herdr/sessions/
 
 # macOS + nix build noise
 .DS_Store
