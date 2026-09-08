@@ -18,6 +18,14 @@ mkdir -p "$TEST_BIN" "$FIXTURE_WEZTERM_APP/Contents/MacOS" "$FIXTURE_CODEX_APP/C
 	"$(dirname "$FIXTURE_WEZTERM_LINK")"
 ln -s "$FIXTURE_WEZTERM_APP/Contents/MacOS/wezterm-gui" "$FIXTURE_WEZTERM_LINK"
 
+# Every macOS binary this guide touches is faked, so faking uname too lets the
+# guide itself be proved on the Linux cloud desktops instead of dying at the
+# platform guard.
+cat >"$TEST_BIN/uname" <<'SH'
+#!/usr/bin/env bash
+printf 'Darwin\n'
+SH
+
 cat >"$TEST_BIN/plistbuddy" <<'SH'
 #!/usr/bin/env bash
 case "${*: -1}" in
@@ -94,6 +102,7 @@ run_permissions() {
 		OPEN_BIN="$TEST_BIN/open" \
 		OSASCRIPT_BIN="$TEST_BIN/osascript" \
 		PROFILES_BIN="$TEST_BIN/profiles" \
+		UNAME_BIN="$TEST_BIN/uname" \
 		WEZTERM_BIN="$TEST_BIN/wezterm" \
 		OPEN_LOG="$FIXTURE_OPEN_LOG" \
 		OSASCRIPT_LOG="$FIXTURE_OSASCRIPT_LOG" \
@@ -127,6 +136,7 @@ MAC_SETUP_SESSION_KIND=wezterm \
 	OPEN_BIN="$TEST_BIN/open" \
 	OSASCRIPT_BIN="$TEST_BIN/osascript" \
 	PROFILES_BIN="$TEST_BIN/profiles" \
+	UNAME_BIN="$TEST_BIN/uname" \
 	APPLICATIONS_DIR="$TMP_ROOT/Applications" \
 	HOME="$TMP_ROOT" \
 	"$ROOT/scripts/setup-macos-permissions" --status >"$TMP_ROOT/chatgpt-status.out"

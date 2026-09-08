@@ -13,6 +13,7 @@ READLINK_BIN="${READLINK_BIN:-/usr/bin/readlink}"
 OPEN_BIN="${OPEN_BIN:-/usr/bin/open}"
 OSASCRIPT_BIN="${OSASCRIPT_BIN:-/usr/bin/osascript}"
 PROFILES_BIN="${PROFILES_BIN:-/usr/bin/profiles}"
+UNAME_BIN="${UNAME_BIN:-/usr/bin/uname}"
 MODE=status
 
 usage() {
@@ -52,7 +53,7 @@ while [ "$#" -gt 0 ]; do
 	shift
 done
 
-[ "$(uname -s)" = Darwin ] || die 'this permission guide supports macOS only'
+[ "$("$UNAME_BIN" -s)" = Darwin ] || die 'this permission guide supports macOS only'
 
 verify_signed_app() {
 	local app_path=$1 expected_bundle_id=$2 expected_team_id=$3

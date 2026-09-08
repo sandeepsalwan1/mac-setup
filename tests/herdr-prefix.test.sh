@@ -30,6 +30,15 @@ cat >"$TEST_BIN/herdr" <<'SH'
 [ "$*" = 'config check' ]
 SH
 
+# The keystroke path being proved is macOS-only, but every binary it touches is
+# faked here, so the proof itself runs anywhere. Faking uname too is what keeps
+# this test meaningful on the Linux cloud desktops rather than dying at the
+# platform guard.
+cat >"$TEST_BIN/uname" <<'SH'
+#!/usr/bin/env bash
+printf 'Darwin\n'
+SH
+
 cat >"$TEST_BIN/hidutil" <<'SH'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -53,6 +62,7 @@ run_check() {
 	HERDR_BIN="$TEST_BIN/herdr" \
 		HIDUTIL_BIN="$TEST_BIN/hidutil" \
 		JQ_BIN="$REAL_JQ" \
+		UNAME_BIN="$TEST_BIN/uname" \
 		HIDUTIL_STATE="$FIXTURE_HIDUTIL_STATE" \
 		EXPECTED_HERDR_CONFIG="$config" \
 		HERDR_CONFIG="$config" \
@@ -117,6 +127,7 @@ PATH="/usr/bin:/bin" \
 	HIDUTIL_BIN="$TEST_BIN/hidutil" \
 	JQ_BIN="$REAL_JQ" \
 	HIDUTIL_STATE="$FIXTURE_HIDUTIL_STATE" \
+	UNAME_BIN="$TEST_BIN/uname" \
 	EXPECTED_HERDR_CONFIG="$HERDR_CONFIG" \
 	"$ROOT/scripts/check-herdr-prefix" >"$TMP_ROOT/restricted-check.out"
 grep -Fq 'right Command sends F12' "$TMP_ROOT/restricted-check.out" ||
@@ -126,6 +137,7 @@ grep -Fq 'right Command sends F12' "$TMP_ROOT/restricted-check.out" ||
 PATH="/usr/bin:/bin" \
 	HIDUTIL_BIN="$TEST_BIN/hidutil" \
 	JQ_BIN="$REAL_JQ" \
+	UNAME_BIN="$TEST_BIN/uname" \
 	HIDUTIL_STATE="$FIXTURE_HIDUTIL_STATE" \
 	"$ROOT/scripts/apply-herdr-prefix" >"$TMP_ROOT/restricted-apply.out"
 grep -Fq 'right Command sends F12' "$TMP_ROOT/restricted-apply.out" ||
@@ -168,8 +180,12 @@ rg -F 'F12' "$ROOT/terminal-mastery/GLOSSARY.md" >/dev/null ||
 # The config validating is not evidence the prefix fires: Herdr accepts "f13" and
 # then ignores F13's "\e[25~" at runtime. Only a running Herdr can tell them
 # apart, so drive one in tmux the way tests/pi-calm.test.sh drives real Pi.
+# Bare `uname` on purpose, not UNAME_BIN: the fixture above reports Darwin so the
+# checks under test can run anywhere, but a real Herdr only decodes the real
+# right-Command remap on a real Mac. Honouring the fixture here would drive a
+# Linux Herdr at a keystroke path that host cannot produce.
 HERDR_REAL_BIN="$(command -v herdr 2>/dev/null || true)"
-if [ -z "$HERDR_REAL_BIN" ] || ! command -v tmux >/dev/null 2>&1; then
+if [ "$(uname -s)" != Darwin ] || [ -z "$HERDR_REAL_BIN" ] || ! command -v tmux >/dev/null 2>&1; then
 	pass 'right Command maps to F12 and F12 is the Herdr prefix (runtime probe skipped)'
 	exit 0
 fi

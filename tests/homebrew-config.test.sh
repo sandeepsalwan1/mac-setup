@@ -4,6 +4,14 @@ set -euo pipefail
 # shellcheck source=tests/lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
+if [ "$(uname -s)" != Darwin ]; then
+	echo "skip: nix-darwin Homebrew cask proof requires macOS"
+	exit 0
+fi
+
+command -v nix >/dev/null 2>&1 ||
+	fail 'nix is required for the nix-darwin Homebrew cask proof'
+
 CASKS_JSON="$(nix eval --json "$ROOT#darwinConfigurations.mac.config.homebrew.casks")"
 
 jq -e '

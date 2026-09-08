@@ -119,4 +119,10 @@ shfmt -d \
 "$ROOT/tests/pi-calm.test.sh"
 "$ROOT/tests/security-scan.sh"
 
-nix flake check --no-build "$ROOT"
+# The flake describes a nix-darwin system, so only a Mac can evaluate it. The
+# cloud desktops run everything above and stop here.
+if command -v nix >/dev/null 2>&1; then
+	nix flake check --no-build "$ROOT"
+else
+	echo "skip: nix flake check requires nix"
+fi

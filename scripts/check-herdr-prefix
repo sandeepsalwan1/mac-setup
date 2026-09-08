@@ -11,6 +11,7 @@ HERDR_BIN="${HERDR_BIN:-$(command -v herdr 2>/dev/null || true)}"
 [ -n "$HERDR_BIN" ] || HERDR_BIN="$HERDR_FALLBACK_BIN"
 APPLY_PREFIX_BIN="${APPLY_PREFIX_BIN:-$ROOT/scripts/apply-herdr-prefix}"
 HIDUTIL_BIN="${HIDUTIL_BIN:-/usr/bin/hidutil}"
+UNAME_BIN="${UNAME_BIN:-/usr/bin/uname}"
 RIGHT_COMMAND_USAGE=30064771303
 F12_USAGE=30064771141
 
@@ -36,7 +37,7 @@ right_command_is_mapped() {
 		'
 }
 
-[ "$(uname -s)" = Darwin ] || die 'this keybinding check supports macOS only'
+[ "$("$UNAME_BIN" -s)" = Darwin ] || die 'this keybinding check supports macOS only'
 [ -r "$HERDR_CONFIG" ] || die "missing Herdr config: $HERDR_CONFIG"
 grep -Eq '^[[:space:]]*prefix[[:space:]]*=[[:space:]]*"f12"[[:space:]]*$' "$HERDR_CONFIG" ||
 	die 'Herdr prefix must remain f12, the key the right Command remap produces'
