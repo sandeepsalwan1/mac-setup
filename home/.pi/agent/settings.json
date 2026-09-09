@@ -10,7 +10,7 @@
   "theme": "rose-pine-moon",
   "defaultProvider": "amazon-bedrock",
   "defaultModel": "global.openai.gpt-5.6-sol",
-  "defaultThinkingLevel": "low",
+  "defaultThinkingLevel": "max",
   "steeringMode": "all",
   "followUpMode": "all",
   "collapseChangelog": true,
