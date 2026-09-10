@@ -41,6 +41,7 @@ shellcheck -x \
 	"$ROOT/tests/install-tools.test.sh" \
 	"$ROOT/tests/macos-permissions.test.sh" \
 	"$ROOT/tests/official-codex-skills.test.sh" \
+	"$ROOT/tests/portable-skills.test.sh" \
 	"$ROOT/tests/security-scan.test.sh" \
 	"$ROOT/tests/pi-runtime.test.sh" \
 	"$ROOT/tests/pi-compaction.test.sh" \
@@ -87,6 +88,7 @@ shfmt -d \
 	"$ROOT/tests/install-tools.test.sh" \
 	"$ROOT/tests/macos-permissions.test.sh" \
 	"$ROOT/tests/official-codex-skills.test.sh" \
+	"$ROOT/tests/portable-skills.test.sh" \
 	"$ROOT/tests/security-scan.test.sh" \
 	"$ROOT/tests/pi-runtime.test.sh" \
 	"$ROOT/tests/pi-compaction.test.sh" \
@@ -109,6 +111,7 @@ shfmt -d \
 "$ROOT/tests/install-tools.test.sh"
 "$ROOT/tests/macos-permissions.test.sh"
 "$ROOT/tests/official-codex-skills.test.sh"
+"$ROOT/tests/portable-skills.test.sh"
 "$ROOT/tests/security-scan.test.sh"
 "$ROOT/tests/pi-runtime.test.sh"
 "$ROOT/tests/pi-compaction.test.sh"

@@ -2,48 +2,6 @@
 
 let
   dotfiles = "${config.home.homeDirectory}/.dotfiles";
-  # Every portable skill, named here so the dotfiles are the single source of
-  # truth and every skill lands in all four roots. Only the tracked ones can be
-  # listed: a flake evaluates in pure mode, so it cannot discover the untracked
-  # workplace-specific skills that also live under skills/. Those are linked at
-  # activation time by scripts/link-portable-skills, which reads the directory.
-  managedSkills = [
-    "autoreview"
-    "chrome-devtools-axi"
-    "computer-use-cli"
-    "create-project-level-agents-md-file"
-    "defuddle"
-    "grill-me"
-    "improve-codebase-architecture"
-    "json-canvas"
-    "lavish"
-    "no-mistakes"
-    "obsidian-bases"
-    "obsidian-cli"
-    "obsidian-markdown"
-    "personal-context"
-    "shadcn"
-  ];
-  skillRoots = [
-    ".skills"
-    ".agents/skills"
-    ".claude/skills"
-    ".codex/skills"
-  ];
-  managedSkillFiles = builtins.listToAttrs (
-    lib.concatMap
-      (skill:
-        map
-          (root: {
-            name = "${root}/${skill}";
-            value = {
-              source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/skills/${skill}";
-              force = true;
-            };
-          })
-          skillRoots)
-      managedSkills
-  );
 in
 
 {
@@ -239,7 +197,7 @@ in
     };
   };
 
-  home.file = managedSkillFiles // {
+  home.file = {
     ".local/bin/cua-cli" = {
       source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/skills/computer-use-cli/scripts/cua-cli.mjs";
       force = true;

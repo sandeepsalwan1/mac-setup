@@ -18,6 +18,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 SKILLS_DIR="$ROOT/skills"
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/mac-setup"
 BACKUP_DIR="$STATE_DIR/skill-backups/$(date +%Y%m%d-%H%M%S)"
+PROFILE_OWNER="${XDG_STATE_HOME:-$HOME/.local/state}/agent-skills/profile-owner"
 
 ROOTS=(
 	"$HOME/.skills"
@@ -34,6 +35,11 @@ die() {
 	printf 'portable-skills: %s\n' "$1" >&2
 	exit 1
 }
+
+if [ -s "$PROFILE_OWNER" ]; then
+	note "shared skill profile is externally managed; 0 links changed"
+	exit 0
+fi
 
 [ -d "$SKILLS_DIR" ] || die "missing skills directory: $SKILLS_DIR"
 

@@ -100,21 +100,28 @@ The complete global instructions live in `home/AGENTS.md` and are linked to:
 - `~/.pi/agent/AGENTS.md`
 - `~/.config/opencode/AGENTS.md`
 
-The repository snapshots these selected authored skills exactly as installed:
+The repository snapshots these selected authored skills exactly:
 
 - autoreview
 - chrome-devtools-axi
 - computer-use-cli
 - create-project-level-agents-md-file
+- defuddle
 - grill-me
 - improve-codebase-architecture
+- json-canvas
 - lavish
 - no-mistakes
+- obsidian-bases
+- obsidian-cli
+- obsidian-markdown
+- personal-context
 - shadcn
 
-Home Manager exposes each one through `~/.skills`, `~/.agents/skills`,
-`~/.codex/skills`, and `~/.claude/skills`. Only those named directories are
-replaced. Every unrelated skill already on the machine is preserved.
+The activation linker exposes each one through `~/.skills`, `~/.agents/skills`,
+`~/.codex/skills`, and `~/.claude/skills`. It preserves unrelated skills and
+defers entirely when `~/.local/state/agent-skills/profile-owner` declares an
+external shared profile.
 
 Pi keeps declarative settings in this repository but runs from writable settings
 materialized by `scripts/setup-pi-runtime`, so version bookkeeping cannot modify

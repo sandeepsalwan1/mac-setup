@@ -55,8 +55,10 @@ if sed -n '/^description:/p' "$SKILL" | grep -Eqi 'optional|prefer|or computer u
 	fail 'CUA CLI skill description presents ambiguous alternatives'
 fi
 
-rg -Fq '"computer-use-cli"' "$ROOT/home.nix" ||
-	fail 'Home Manager does not expose the CUA CLI skill'
+HOME="$TMP_ROOT/home" XDG_STATE_HOME="$TMP_ROOT/state" \
+	"$ROOT/scripts/link-portable-skills" >"$TMP_ROOT/link.out"
+[ "$(cd "$TMP_ROOT/home/.agents/skills/computer-use-cli" && pwd -P)" = "$ROOT/skills/computer-use-cli" ] ||
+	fail 'The portable linker does not expose the CUA CLI skill'
 rg -Fq '".local/bin/cua-cli"' "$ROOT/home.nix" ||
 	fail 'Home Manager does not install the CUA CLI command'
 
