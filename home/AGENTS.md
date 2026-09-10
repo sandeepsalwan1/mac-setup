@@ -1,7 +1,6 @@
 # global agent instructions
 
-- Never use Unicode U+2014. Use plain dash "-" instead.
-- When writing commit messages, NEVER auto-add your agent name as co-author.
+- Never use em dash "—".
 - Never manually modify CHANGELOG.md files or any files that are marked as auto-generated
 - When making technical decisions, do not give much weight to development cost.
   Instead, prefer quality, simplicity, robustness, scalability, and long term maintainability.
@@ -20,7 +19,6 @@
 - Plan deviations: while implementing an explicitly discussed plan (e.g. lavish, PRD), if a material deviation is necessary, create local-only `decisions-HH-MM.md` recording the requested plan, the deviation, and the reason.
 - Follow YAGNI principles.
 - Reduce code and cyclomatic complexity
-- Always work on mainline.
 - Global installs: declare portable baseline tools in dotfiles. Keep work-specific packages local and never auto-record them.
 - Backpass is periodic memory maintenance, not a per-task step. Suggest it after recurring cross-session friction or when a project AGENTS.md is stale or overgrown. Run its model-backed analysis only with user approval, and run `backpass apply` only with explicit approval after reviewing the evidence.
 - Make ALL of your responses clear & very concise
@@ -31,12 +29,6 @@
   Independent work runs IN PARALLEL by default. Sequential is the exception and
   needs a reason. Triggers: multiple files, API calls, uploads, searches, subagents.
   Before any loop over 2+ items ask: does item 2 need item 1's result? If no, parallel.
-- Keep command output bounded at the source. Large tool results are persisted and can create severe storage I/O amplification on busy agent hosts.
-- Do not leave finished work sitting on one machine, but never publish it yourself. Once a change is committed and tested, say it is ready and hand over the exact command. Amazon packages go out through `cr` (CRUX), never a push. If the remote is public and the change carries material that cannot be published, say so instead and do not hand over a command at all.
-- Read AGENTS.local.md beside this file first when it exists. It carries this machine's workplace-specific rules and capacity limits, which stay out of this public repository. The import below loads it for runtimes that support imports; read it directly if yours does not.
-
-@AGENTS.local.md
-
 ## Coding Rules
 - No single-use helper functions.
 - If a package has `Config`, it uses the `brazil -h` build system.
