@@ -37,4 +37,4 @@ Patterns are POSIX ERE for `grep -E`. Keep the shared shell script as the single
 - Pi: `~/.pi/agent/extensions/command-guard.ts`
 - FirstMate Pi: `~/.local/state/pi-firstmate/agent/extensions/command-guard.ts`
 
-Hook failures other than an explicit policy match fail open so a missing dependency cannot brick every shell command. The installer and verifier prove that `jq`, scripts, config entries, and both Pi adapters are present.
+Hook and configuration failures fail closed with a clear error. The installer and verifier prove that `jq`, scripts, config entries, and both Pi adapters are present.

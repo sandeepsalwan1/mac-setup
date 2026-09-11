@@ -23,6 +23,7 @@ A SELECT-only role prevents writes at the database permission layer. Query timeo
 4. Have the user or an authorized database operator apply production DDL. Do not run it merely because this skill was invoked.
 5. Store the connection string in an approved secret manager or local environment. Never commit it.
 6. Verify both successful reads and rejected writes before declaring the role ready.
+7. Review each future table and grant access explicitly. New tables remain inaccessible by default.
 
 ## Template
 
@@ -33,8 +34,6 @@ alter role agent_reader set statement_timeout = '10s';
 
 grant usage on schema public to agent_reader;
 grant select on all tables in schema public to agent_reader;
-alter default privileges for role postgres in schema public
-  grant select on tables to agent_reader;
 
 revoke select on table public.secrets from agent_reader;
 revoke select on table public.private_events from agent_reader;

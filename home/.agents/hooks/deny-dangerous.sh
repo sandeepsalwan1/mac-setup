@@ -31,6 +31,11 @@ command -v jq >/dev/null 2>&1 || deny "Command guard unavailable: jq is required
 input=$(cat)
 command_text=$(printf '%s' "$input" | jq -er '.tool_input.command // .toolInput.command // .command' 2>/dev/null) ||
   deny "Command guard could not read a shell command."
+command_text=${command_text//$'\\\r\n'/}
+command_text=${command_text//$'\\\n'/}
+command_text=${command_text//$'\r\n'/ }
+command_text=${command_text//$'\n'/ }
+command_text=${command_text//$'\r'/ }
 
 active_patterns=0
 while IFS= read -r pattern; do
