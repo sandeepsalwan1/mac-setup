@@ -36,12 +36,16 @@ command_text=${command_text//$'\\\n'/}
 command_text=${command_text//$'\r\n'/ }
 command_text=${command_text//$'\n'/ }
 command_text=${command_text//$'\r'/ }
+substitution_text=$command_text
+substitution_text=${substitution_text//\(/ }
+substitution_text=${substitution_text//\)/ }
+substitution_text=${substitution_text//\`/ }
 
 active_patterns=0
-while IFS= read -r pattern; do
+while IFS= read -r pattern || [[ -n "$pattern" ]]; do
   case "$pattern" in ''|'#'*) continue ;; esac
   active_patterns=$((active_patterns + 1))
-  printf '%s\n' "$command_text" | grep -qE -- "$pattern" 2>/dev/null
+  printf '%s\n%s\n' "$command_text" "$substitution_text" | grep -qE -- "$pattern" 2>/dev/null
   status=$?
   case "$status" in
     0) deny "Command guard blocked a catastrophic command. Matched pattern: $pattern" ;;
