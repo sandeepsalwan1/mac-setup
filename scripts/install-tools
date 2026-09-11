@@ -4,21 +4,6 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 NPM_GLOBALS_FILE="${NPM_GLOBALS_FILE:-$ROOT/home/npm-globals.txt}"
 NPM_PREFIX="${NPM_PREFIX:-$HOME/.local/share/npm}"
-NO_MISTAKES_VERSION="${NO_MISTAKES_VERSION:-v1.60.2}"
-
-# Global, not a local, because the EXIT trap below runs after the function that
-# creates the directory has returned: a local is out of scope by then, which under
-# `set -u` turns cleanup into "temp_dir: unbound variable" and leaks the directory
-# it meant to remove. The explicit success matters for the same reason - a failed
-# test as the last command in an EXIT trap becomes the script's exit status.
-TEMP_DIR=''
-
-cleanup_temp_dir() {
-	[ -n "${TEMP_DIR:-}" ] && rm -rf "$TEMP_DIR"
-	return 0
-}
-
-trap cleanup_temp_dir EXIT
 
 note() {
 	printf 'install-tools: %s\n' "$1"
@@ -168,78 +153,82 @@ cleanup_chrome_devtools_hooks() {
 	fi
 }
 
-sha256_of() {
-	local file=$1
-	if command -v sha256sum >/dev/null 2>&1; then
-		sha256sum "$file" | awk '{print $1}'
-	elif command -v shasum >/dev/null 2>&1; then
-		shasum -a 256 "$file" | awk '{print $1}'
-	else
-		die 'neither sha256sum nor shasum is available'
-	fi
-}
+install_command_guard() {
+	local source_dir="$ROOT/home/.agents/hooks"
+	local target_dir="$HOME/.agents/hooks"
+	local name mode source target settings temp command_path
 
-install_no_mistakes() {
-	local existing_version architecture filename expected_checksum url
-	local archive actual_checksum install_dir install_bin link_dir link_path
+	mkdir -p "$target_dir"
+	for name in dangerous-patterns.txt deny-dangerous.sh test-guard.sh; do
+		source="$source_dir/$name"
+		target="$target_dir/$name"
+		case "$name" in
+		*.sh) mode=0755 ;;
+		*) mode=0644 ;;
+		esac
+		if [ -f "$target" ] && cmp -s "$source" "$target"; then
+			chmod "$mode" "$target"
+			continue
+		fi
+		install -m "$mode" "$source" "$target"
+	done
 
-	if [ "${MAC_SETUP_SKIP_NO_MISTAKES:-0}" = "1" ]; then
-		note 'no-mistakes installation skipped by environment'
-		return
-	fi
+	command_path="$target_dir/deny-dangerous.sh"
+	for settings in "$HOME/.claude/settings.json" "$HOME/.codex/hooks.json"; do
+		mkdir -p "$(dirname "$settings")"
+		[ -f "$settings" ] || printf '{}\n' >"$settings"
+		temp="$(mktemp "${settings}.tmp.XXXXXX")"
+		if ! jq \
+			--arg command "$command_path" \
+			--arg settings "$settings" \
+			--arg claude_settings "$HOME/.claude/settings.json" '
+			def managed:
+				type == "object"
+				and .type? == "command"
+				and (.command? | type == "string" and endswith("/.agents/hooks/deny-dangerous.sh"));
+			if $settings == $claude_settings
+			   and (.permissions? | type) == "object"
+			   and (.permissions.deny? | type) == "array"
+			then .permissions.deny |= map(select(
+				. != "Bash(rm -rf /)"
+				and . != "Bash(rm -rf ~*)"
+				and . != "Bash(rm -rf /*)"
+			))
+			else . end
+			| if (.hooks? == null) then .hooks = {}
+			elif (.hooks | type) != "object" then error("hooks must be an object")
+			else . end
+			| if (.hooks.PreToolUse? == null) then .hooks.PreToolUse = []
+			  elif (.hooks.PreToolUse | type) != "array" then error("hooks.PreToolUse must be an array")
+			  else . end
+			| .hooks.PreToolUse |= map(
+				if type != "object" or (.hooks | type) != "array"
+				then error("PreToolUse entries must contain a hooks array")
+				else .hooks |= map(select(managed | not))
+				end
+			)
+			| .hooks.PreToolUse |= map(select(.hooks | length > 0))
+			| .hooks.PreToolUse += [{
+				matcher: "Bash",
+				hooks: [{type: "command", command: $command, timeout: 3}]
+			}]
+		' "$settings" >"$temp"; then
+			rm -f "$temp"
+			die "could not merge the command guard into $settings"
+		fi
+		if cmp -s "$settings" "$temp"; then
+			rm -f "$temp"
+		else
+			chmod 600 "$temp"
+			mv "$temp" "$settings"
+			note "installed the command guard in $settings"
+		fi
+	done
 
-	existing_version=''
-	if command -v no-mistakes >/dev/null 2>&1; then
-		existing_version="$(no-mistakes --version 2>/dev/null | head -n 1 || true)"
-	elif [ -x "$HOME/.local/bin/no-mistakes" ]; then
-		existing_version="$("$HOME/.local/bin/no-mistakes" --version 2>/dev/null | head -n 1 || true)"
-	fi
-	case "$existing_version" in
-	*"$NO_MISTAKES_VERSION"*)
-		note "no-mistakes $NO_MISTAKES_VERSION is already installed"
-		return
-		;;
-	esac
-
-	case "$(uname -m)" in
-	arm64 | aarch64)
-		architecture=arm64
-		expected_checksum=a7c88b1ab2fba96b30ccc64ca3e95676ae3c3d8625a32d3e74cc2461621ab54a
-		;;
-	x86_64 | amd64)
-		architecture=amd64
-		expected_checksum=f99df63ef2f1974932068fce3bb7b4322a72203b4c8bf958e97e2a09bab01930
-		;;
-	*) die "unsupported architecture: $(uname -m)" ;;
-	esac
-
-	filename="no-mistakes-${NO_MISTAKES_VERSION}-darwin-${architecture}.tar.gz"
-	url="https://github.com/kunchenguid/no-mistakes/releases/download/${NO_MISTAKES_VERSION}/${filename}"
-	TEMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/mac-setup-tools.XXXXXX")"
-	archive="$TEMP_DIR/$filename"
-
-	note "downloading no-mistakes $NO_MISTAKES_VERSION"
-	curl --proto '=https' --tlsv1.2 -fsSL "$url" -o "$archive"
-	actual_checksum="$(sha256_of "$archive")"
-	[ "$actual_checksum" = "$expected_checksum" ] ||
-		die "checksum mismatch for $filename"
-
-	tar -xzf "$archive" -C "$TEMP_DIR"
-	install_dir="$HOME/.no-mistakes/bin"
-	install_bin="$install_dir/no-mistakes"
-	link_dir="$HOME/.local/bin"
-	link_path="$link_dir/no-mistakes"
-	mkdir -p "$install_dir" "$link_dir"
-	install -m 0755 "$TEMP_DIR/no-mistakes" "$install_bin"
-
-	if [ -e "$link_path" ] && [ ! -L "$link_path" ]; then
-		mv "$link_path" "$link_path.pre-mac-setup"
-	fi
-	ln -sfn "$install_bin" "$link_path"
-	"$install_bin" daemon restart >/dev/null
-	note "installed no-mistakes $NO_MISTAKES_VERSION"
+	"$target_dir/test-guard.sh" "$target_dir/deny-dangerous.sh" >/dev/null ||
+		die 'command guard self-test failed'
 }
 
 install_npm_tools
 cleanup_chrome_devtools_hooks
-install_no_mistakes
+install_command_guard

@@ -62,7 +62,8 @@ regardless of how the tool arrived. It never reinstalls or upgrades a satisfied 
 
 Pinned npm tools are listed in `home/npm-globals.txt`. `scripts/install-tools`
 checks each command's installed version before running npm, and installs the
-pinned no-mistakes release only when needed.
+shared catastrophic-command guard without installing a review harness.
+The guard migrates three legacy broad Claude `rm` denies so named project cleanup remains usable.
 
 Backpass is pinned there and configured by `.backpassrc.json`. It treats
 `AGENTS.md` as this repository's canonical memory file and places accepted skill
@@ -111,7 +112,8 @@ The repository snapshots these selected authored skills exactly:
 - improve-codebase-architecture
 - json-canvas
 - lavish
-- no-mistakes
+- global-agent-guardrails
+- create-readonly-db-role
 - obsidian-bases
 - obsidian-cli
 - obsidian-markdown

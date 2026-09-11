@@ -78,6 +78,12 @@ mkdir -p "$TEST_HOME/.claude" "$TEST_HOME/.codex" "$TEST_HOME/.config/opencode/p
 cat >"$TEST_HOME/.claude/settings.json" <<'EOF'
 {
   "theme": "dark",
+  "permissions": {
+    "deny": [
+      "Bash(rm -rf ~*)",
+      "Read(keep-this-rule)"
+    ]
+  },
   "hooks": {
     "SessionStart": [
       {
@@ -123,7 +129,6 @@ run_installer() {
 		NPM_INTERRUPT_AFTER_CHROME_INSTALL="${NPM_INTERRUPT_AFTER_CHROME_INSTALL:-0}" \
 		CHROME_DEVTOOLS_AXI_SESSION=worker \
 		CHROME_DEVTOOLS_AXI_PORT=9999 \
-		MAC_SETUP_SKIP_NO_MISTAKES=1 \
 		"$ROOT/scripts/install-tools"
 }
 
@@ -135,14 +140,32 @@ run_installer >/dev/null
 
 jq -e '
 	.theme == "dark"
+	and .permissions.deny == ["Read(keep-this-rule)"]
 	and ([.hooks.SessionStart[].hooks[].command] == ["keep-claude-hook"])
 ' "$TEST_HOME/.claude/settings.json" >/dev/null ||
-	fail 'Claude cleanup did not preserve unrelated settings and hooks'
+	fail 'Claude cleanup did not migrate only the broad rm deny and preserve unrelated state'
 jq -e '
 	.custom == true
 	and ([.hooks.session_start[].command] == ["keep-codex-hook"])
 ' "$TEST_HOME/.codex/hooks.json" >/dev/null ||
 	fail 'Codex cleanup did not preserve unrelated settings and hooks'
+for settings in "$TEST_HOME/.claude/settings.json" "$TEST_HOME/.codex/hooks.json"; do
+	jq -e --arg command "$TEST_HOME/.agents/hooks/deny-dangerous.sh" '
+		[
+			.hooks.PreToolUse[].hooks[]
+			| select(.type == "command" and .command == $command and .timeout == 3)
+		]
+		| length == 1
+	' "$settings" >/dev/null ||
+		fail "command guard was not merged exactly once into $settings"
+done
+for name in dangerous-patterns.txt deny-dangerous.sh test-guard.sh; do
+	cmp -s "$ROOT/home/.agents/hooks/$name" "$TEST_HOME/.agents/hooks/$name" ||
+		fail "command guard file differs after install: $name"
+done
+"$TEST_HOME/.agents/hooks/test-guard.sh" \
+	"$TEST_HOME/.agents/hooks/deny-dangerous.sh" >/dev/null ||
+	fail 'installed command guard self-test failed'
 [ "$(cat "$TEST_HOME/.codex/config.toml")" = $'[features]\nhooks = true' ] ||
 	fail 'Chrome cleanup changed the shared Codex hooks feature'
 [ ! -e "$TEST_HOME/.config/opencode/plugins/axi-chrome-devtools-axi.js" ] ||
@@ -196,4 +219,4 @@ run_installer >/dev/null
 [ ! -e "$TEST_PREFIX/.chrome-devtools-axi-recycle-pending" ] ||
 	fail 'completed Chrome bridge recycling left pending state behind'
 
-pass 'install-tools migrates Chrome state and remains idempotent'
+pass 'install-tools migrates Chrome state, installs the command guard, and remains idempotent'

@@ -213,6 +213,10 @@ install_runtime_file \
 	"$SOURCE_AGENT_DIR/extensions/firstmate-calm-status.ts" \
 	"$FIRSTMATE_AGENT_DIR/extensions/firstmate-calm-status.ts" \
 	"firstmate-calm-status-extension"
+install_runtime_file \
+	"$SOURCE_AGENT_DIR/extensions/command-guard.ts" \
+	"$FIRSTMATE_AGENT_DIR/extensions/command-guard.ts" \
+	"firstmate-command-guard-extension"
 
 install_wrapper
 

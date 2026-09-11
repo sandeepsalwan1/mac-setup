@@ -34,6 +34,7 @@ printf '%s\n' '{}' >"$SOURCE_AGENT/themes/test.json"
 printf '%s\n' '# Test agents' >"$SOURCE_AGENT/AGENTS.md"
 printf '%s\n' 'calm' >"$SOURCE_AGENT/extensions/calm/index.ts"
 printf '%s\n' 'status helper' >"$SOURCE_AGENT/extensions/firstmate-calm-status.ts"
+printf '%s\n' 'command guard' >"$SOURCE_AGENT/extensions/command-guard.ts"
 printf '%s\n' 'title' >"$SOURCE_AGENT/extensions/terminal-status-title.js"
 ln -s "$SOURCE_AGENT/settings.json" "$AGENT_DIR/settings.json"
 ln -s "$SOURCE_AGENT/models.json" "$AGENT_DIR/models.json"
@@ -76,6 +77,12 @@ if [ ! -f "$FIRSTMATE_AGENT_DIR/extensions/firstmate-calm-status.ts" ] ||
 	! cmp -s "$SOURCE_AGENT/extensions/firstmate-calm-status.ts" \
 		"$FIRSTMATE_AGENT_DIR/extensions/firstmate-calm-status.ts"; then
 	fail 'Firstmate runtime did not install the command-free Calm status mitigation'
+fi
+if [ ! -f "$FIRSTMATE_AGENT_DIR/extensions/command-guard.ts" ] ||
+	[ -L "$FIRSTMATE_AGENT_DIR/extensions/command-guard.ts" ] ||
+	! cmp -s "$SOURCE_AGENT/extensions/command-guard.ts" \
+		"$FIRSTMATE_AGENT_DIR/extensions/command-guard.ts"; then
+	fail 'Firstmate runtime did not install the shared command guard'
 fi
 [ "$(readlink "$FIRSTMATE_AGENT_DIR/models.json")" = "$AGENT_DIR/models.json" ] ||
 	fail 'Firstmate runtime did not reuse the declared model catalog'
