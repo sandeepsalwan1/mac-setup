@@ -1,12 +1,12 @@
 # Catastrophic shell-command denylist. One POSIX ERE per line.
 
 # Whole root, home roots, or an entire user home. Targeted removals stay allowed.
-(^|[;&|[:space:]])(sudo[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*)?rm[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*["']?/["']?[[:space:]]*($|[;&|])
-(^|[;&|[:space:]])(sudo[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*)?rm[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*["']?/\*
-(^|[;&|[:space:]])(sudo[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*)?rm[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*["']?(~|\$HOME|\$\{HOME\})/?["']?[[:space:]]*($|[;&|])
-(^|[;&|[:space:]])(sudo[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*)?rm[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*["']?(~|\$HOME|\$\{HOME\})/\*
-(^|[;&|[:space:]])(sudo[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*)?rm[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*["']?(/Users(/[^/[:space:]"']+)?|/(local/)?home(/[^/[:space:]"']+)?)/?["']?[[:space:]]*($|[;&|])
-(^|[;&|[:space:]])(sudo[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*)?rm[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*["']?(/Users(/[^/[:space:]"']+)?|/(local/)?home(/[^/[:space:]"']+)?)/\*
+(^|[;&|[:space:]])(sudo[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*)?rm[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*(--[[:space:]]+)?["']?/["']?[[:space:]]*($|[;&|])
+(^|[;&|[:space:]])(sudo[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*)?rm[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*(--[[:space:]]+)?["']?/\*
+(^|[;&|[:space:]])(sudo[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*)?rm[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*(--[[:space:]]+)?["']?(~|\$HOME|\$\{HOME\})/?["']?[[:space:]]*($|[;&|])
+(^|[;&|[:space:]])(sudo[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*)?rm[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*(--[[:space:]]+)?["']?(~|\$HOME|\$\{HOME\})/\*
+(^|[;&|[:space:]])(sudo[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*)?rm[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*(--[[:space:]]+)?["']?(/Users(/[^/[:space:]"']+)?|/(local/)?home(/[^/[:space:]"']+)?)/?["']?[[:space:]]*($|[;&|])
+(^|[;&|[:space:]])(sudo[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*)?rm[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*(--[[:space:]]+)?["']?(/Users(/[^/[:space:]"']+)?|/(local/)?home(/[^/[:space:]"']+)?)/\*
 --no-preserve-root
 
 # Raw disks and filesystems.
