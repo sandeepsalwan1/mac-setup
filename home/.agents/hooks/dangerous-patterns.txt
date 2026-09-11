@@ -7,7 +7,7 @@
 (^|[;&|()`[:space:]])(sudo[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*)?rm[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*(--[[:space:]]+)?["']?(~|\$HOME|\$\{HOME\})/\*
 (^|[;&|()`[:space:]])(sudo[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*)?rm[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*(--[[:space:]]+)?["']?(/Users(/[^/[:space:]"']+)?|/(local/)?home(/[^/[:space:]"']+)?)/?["']?[[:space:]]*($|[;&|])
 (^|[;&|()`[:space:]])(sudo[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*)?rm[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*(--[[:space:]]+)?["']?(/Users(/[^/[:space:]"']+)?|/(local/)?home(/[^/[:space:]"']+)?)/\*
---no-preserve-root
+(^|[;&|()`[:space:]])(sudo[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*)?rm[[:space:]][^;&|]*--no-preserve-root([=[:space:]]|$)
 
 # Raw disks and filesystems.
 (^|[;&|()`[:space:]])dd[[:space:]][^;&|]*of=["']?/dev/
