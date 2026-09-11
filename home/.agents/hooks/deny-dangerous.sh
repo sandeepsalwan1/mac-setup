@@ -33,9 +33,9 @@ command_text=$(printf '%s' "$input" | jq -er '.tool_input.command // .toolInput.
   deny "Command guard could not read a shell command."
 command_text=${command_text//$'\\\r\n'/}
 command_text=${command_text//$'\\\n'/}
-command_text=${command_text//$'\r\n'/ }
-command_text=${command_text//$'\n'/ }
-command_text=${command_text//$'\r'/ }
+command_text=${command_text//$'\r\n'/;}
+command_text=${command_text//$'\n'/;}
+command_text=${command_text//$'\r'/;}
 substitution_text=$command_text
 substitution_text=${substitution_text//\(/ }
 substitution_text=${substitution_text//\)/ }
