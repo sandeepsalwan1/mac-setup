@@ -20,16 +20,16 @@
 (^|[;&|()`[:space:]])(curl|wget)[[:space:]][^;&|]*\|[[:space:]]*(sudo[[:space:]]+)?(ba|z|da)?sh([[:space:]]|$)
 
 # Remote history and branch destruction. Force-with-lease stays allowed.
-(^|[;&|()`[:space:]])git[[:space:]]+push[^;&|]*[[:space:]](-f|--force)([[:space:]]|$)
-(^|[;&|()`[:space:]])git[[:space:]]+push[^;&|]*[[:space:]]\+[A-Za-z0-9._/-]
-(^|[;&|()`[:space:]])git[[:space:]]+push[^;&|]*[[:space:]](--delete|-d)([[:space:]]|$)
-(^|[;&|()`[:space:]])git[[:space:]]+push[^;&|]*[[:space:]]:[A-Za-z0-9._/-]
+(^|[;&|()`[:space:]])git[[:space:]]+([^;&|[:space:]]+[[:space:]]+)*push[^;&|]*[[:space:]](-f|--force)([[:space:]]|$)
+(^|[;&|()`[:space:]])git[[:space:]]+([^;&|[:space:]]+[[:space:]]+)*push[^;&|]*[[:space:]]\+[A-Za-z0-9._/-]
+(^|[;&|()`[:space:]])git[[:space:]]+([^;&|[:space:]]+[[:space:]]+)*push[^;&|]*[[:space:]](--delete|-d)([[:space:]]|$)
+(^|[;&|()`[:space:]])git[[:space:]]+([^;&|[:space:]]+[[:space:]]+)*push[^;&|]*[[:space:]]:[A-Za-z0-9._/-]
 
 # Whole-system permissions and unrecoverable local Git cleanup.
 (^|[;&|()`[:space:]])chmod[[:space:]][^;&|]*777[[:space:]]+["']?/["']?[[:space:]]*($|[;&|])
 (^|[;&|()`[:space:]])chown[[:space:]]+-R[^;&|]*[[:space:]]+/["']?[[:space:]]*($|[;&|])
-(^|[;&|()`[:space:]])git[[:space:]]+reflog[[:space:]]+expire[^;&|]*--expire(-unreachable)?(=|[[:space:]]+)now
-(^|[;&|()`[:space:]])git[[:space:]]+gc[^;&|]*--prune(=|[[:space:]]+)(now|all)
+(^|[;&|()`[:space:]])git[[:space:]]+([^;&|[:space:]]+[[:space:]]+)*reflog[[:space:]]+expire[^;&|]*--expire(-unreachable)?(=|[[:space:]]+)now
+(^|[;&|()`[:space:]])git[[:space:]]+([^;&|[:space:]]+[[:space:]]+)*gc[^;&|]*--prune(=|[[:space:]]+)(now|all)
 
 # Irreversible GitHub operations and token output.
 (^|[;&|()`[:space:]])gh[[:space:]]+repo[[:space:]]+delete([[:space:]]|$)
