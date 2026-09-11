@@ -48,12 +48,18 @@ pathless_text=${pathless_text//\/usr\/bin\//}
 pathless_text=${pathless_text//\/sbin\//}
 pathless_text=${pathless_text//\/bin\//}
 pathless_text=${pathless_text//\\/}
+wrapper_text=$(printf '%s' "$pathless_text" | sed -E "s/(^|[;&|[:space:]])((ba|z|da|k)?sh|fish)[[:space:]]+((-[[:alpha:]]+|--[[:alnum:]-]+)[[:space:]]+)*-[[:alpha:]]*c[[:alpha:]]*[[:space:]]+[\"']/\\1/g") ||
+  deny "Command guard unavailable: sed is required."
+if [[ "$wrapper_text" != "$pathless_text" ]]; then
+  wrapper_text=${wrapper_text//\"/}
+  wrapper_text=${wrapper_text//\'/}
+fi
 
 active_patterns=0
 while IFS= read -r pattern || [[ -n "$pattern" ]]; do
   case "$pattern" in ''|'#'*) continue ;; esac
   active_patterns=$((active_patterns + 1))
-  printf '%s\n%s\n%s\n' "$command_text" "$substitution_text" "$pathless_text" | grep -qE -- "$pattern" 2>/dev/null
+  printf '%s\n%s\n%s\n%s\n' "$command_text" "$substitution_text" "$pathless_text" "$wrapper_text" | grep -qE -- "$pattern" 2>/dev/null
   status=$?
   case "$status" in
     0) deny "Command guard blocked a catastrophic command. Matched pattern: $pattern" ;;
