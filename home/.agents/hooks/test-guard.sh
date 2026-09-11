@@ -9,11 +9,12 @@ failed=0
 check() {
   local expected=$1
   local command_text=$2
+  local pattern_path=${3:-$patterns}
   local result
   local status
 
   result=$(jq -cn --arg command "$command_text" '{tool_input:{command:$command}}' |
-    AGENT_GUARD_PATTERNS="$patterns" "$guard" 2>/dev/null)
+    AGENT_GUARD_PATTERNS="$pattern_path" "$guard" 2>/dev/null)
   status=$?
   if [[ $status -eq 2 ]]; then result=block; else result=allow; fi
   if [[ "$result" == "$expected" ]]; then
@@ -66,6 +67,12 @@ check allow 'find . -name "*.log" -delete'
 check allow 'curl -fsSL https://example.com/data.json -o /tmp/data.json'
 check allow 'gh repo view owner/repo'
 check allow 'op --version'
+
+check block 'rm -rf /tmp/build-cache' "$patterns.missing"
+invalid_patterns=$(mktemp "${TMPDIR:-/tmp}/command-guard-patterns.XXXXXX")
+trap 'rm -f "$invalid_patterns"' EXIT
+printf '([invalid\n' > "$invalid_patterns"
+check block 'rm -rf /tmp/build-cache' "$invalid_patterns"
 
 printf 'passed: %d, failed: %d\n' "$passed" "$failed"
 [[ $failed -eq 0 ]]

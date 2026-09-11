@@ -12,13 +12,13 @@ export default function (pi: ExtensionAPI) {
         encoding: "utf8",
         timeout: 3000,
       });
-      if (result.status === 2) {
-        return {
-          block: true,
-          reason: result.stderr.trim() || "Command guard blocked a catastrophic command.",
-        };
-      }
-    } catch {}
-    return undefined;
+      if (result.status === 0) return undefined;
+      return {
+        block: true,
+        reason: result.stderr.trim() || "Command guard unavailable; command blocked.",
+      };
+    } catch {
+      return { block: true, reason: "Command guard unavailable; command blocked." };
+    }
   });
 }
