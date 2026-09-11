@@ -168,7 +168,7 @@ in
       m = "git switch main";
       cc = "claude";
       cx = "codex";
-      fm = "cd ${config.home.homeDirectory}/Downloads/firstmate";
+      fm = "cd ${config.home.homeDirectory}/firstmate";
       co = "codex --full-auto";
       # Re-link every skill in the dotfiles into all four skill roots. On this
       # machine Home Manager already did it, so this is the escape hatch for a
