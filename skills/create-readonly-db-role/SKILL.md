@@ -5,20 +5,20 @@ description: Provision a hardened SELECT-only Postgres role for safe agent data 
 
 # Create a Read-Only Postgres Role
 
-A SELECT-only role prevents writes at the database permission layer. Query timeouts and a sensitive-table denylist reduce the remaining data-exposure and load risks.
+A SELECT-only role prevents writes at the database permission layer. Query timeouts and an explicit table allowlist reduce the remaining data-exposure and load risks.
 
 ## Design
 
-1. Grant `SELECT` and schema usage only.
+1. Grant schema usage and `SELECT` only on an explicit table allowlist.
 2. Set `default_transaction_read_only = on` and a bounded `statement_timeout`.
-3. Revoke access to tables containing secrets or restricted personal data.
+3. Leave tables containing secrets or restricted personal data ungranted.
 4. Never grant the `auth` schema by default.
 5. Decide explicitly how Row Level Security applies. `BYPASSRLS` reveals every row and should be used only when that is the intended access model.
 
 ## Workflow
 
 1. Check whether the role already exists.
-2. Ask the user which schemas and tables must remain inaccessible.
+2. Ask the user which schemas and tables the role must read.
 3. Write reviewed SQL to a repository file. Include application, verification, rotation, and rollback instructions.
 4. Have the user or an authorized database operator apply production DDL. Do not run it merely because this skill was invoked.
 5. Store the connection string in an approved secret manager or local environment. Never commit it.
@@ -33,10 +33,8 @@ alter role agent_reader set default_transaction_read_only = on;
 alter role agent_reader set statement_timeout = '10s';
 
 grant usage on schema public to agent_reader;
-grant select on all tables in schema public to agent_reader;
-
-revoke select on table public.secrets from agent_reader;
-revoke select on table public.private_events from agent_reader;
+grant select on table public.<expected_table> to agent_reader;
+grant select on table public.<another_expected_table> to agent_reader;
 ```
 
 Use `alter role agent_reader bypassrls` only after the user confirms that unrestricted row visibility is correct. Roll back with `drop owned by agent_reader; drop role agent_reader;` after checking ownership implications.
