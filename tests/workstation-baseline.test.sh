@@ -16,6 +16,22 @@ tasks-axi@0.2.5
 actual_npm="$(grep -Ev '^[[:space:]]*(#|$)' "$ROOT/home/npm-globals.txt")"
 [ "$actual_npm" = "$expected_npm" ]
 
+chrome_approval_helper="$ROOT/scripts/chrome-devtools-axi-native.swift"
+[ -x "$chrome_approval_helper" ]
+grep -F 'guard text(sheet, kAXRoleAttribute) == kAXSheetRole else { continue }' "$chrome_approval_helper" >/dev/null
+grep -F "&& text(\$0, kAXSubroleAttribute) == \"AXApplicationAlertDialog\"" "$chrome_approval_helper" >/dev/null
+grep -F "text(\$0, kAXRoleAttribute) == kAXHeadingRole && hasExactText(\$0, promptTitle)" "$chrome_approval_helper" >/dev/null
+grep -F "let allow = buttons.filter { hasExactText(\$0, \"Allow\") }" "$chrome_approval_helper" >/dev/null
+grep -F "let cancel = buttons.filter { hasExactText(\$0, \"Cancel\") }" "$chrome_approval_helper" >/dev/null
+grep -F "let settings = buttons.filter { hasExactText(\$0, \"Turn off in settings\") }" "$chrome_approval_helper" >/dev/null
+if grep -F 'kAXTitleAttribute) == promptTitle' "$chrome_approval_helper" >/dev/null; then
+	exit 1
+fi
+grep -F '".local/libexec/chrome-devtools-axi-native.swift"' "$ROOT/home.nix" >/dev/null
+if command -v swiftc >/dev/null 2>&1; then
+	swiftc -typecheck "$chrome_approval_helper"
+fi
+
 jq -e '
   .defaultProvider == "amazon-bedrock"
   and .defaultModel == "global.openai.gpt-5.6-sol"

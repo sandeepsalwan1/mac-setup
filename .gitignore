@@ -23,6 +23,9 @@ result-*
 # no-mistakes local validation state
 .no-mistakes/
 
+# Backpass local analysis state
+.backpass/
+
 # local implementation-plan deviation notes
 decisions-??-??.md
 

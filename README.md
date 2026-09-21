@@ -157,6 +157,10 @@ then run:
 ~/.dotfiles/scripts/link-official-codex-skills
 ```
 
+Authenticated personal-profile automation uses the separate `personal-chrome`
+skill. Home Manager links a strict native approval helper for Chrome's exact
+remote-debugging dialog, and the wrapper reuses its approved loopback bridge.
+
 That links the official Computer Use skill into the same four skill locations.
 The `computer-use` and `computer-use-cli` entries share one runtime: the former
 exposes the native tool integration, while the latter exposes `cua-cli`. Every
