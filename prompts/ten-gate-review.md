@@ -5,7 +5,7 @@ Run one review unit at a time. Fill every runtime input before starting.
 ```text
 TARGET_REVIEW_URL: <TARGET_REVIEW_URL>
 PROJECT_ROOT: <PROJECT_ROOT>
-TARGET_PACKAGE: <TARGET_PACKAGE>
+TARGET_PACKAGE: <TARGET_PACKAGE_OR_PACKAGES>
 BASE_REVIEW_URL: <BASE_REVIEW_URL>
 TASK_LINK: <TASK_LINK>
 REQUIREMENTS_PATH: <REQUIREMENTS_PATH>
@@ -13,9 +13,18 @@ HISTORICAL_MISTAKES_PATH: <HISTORICAL_MISTAKES_PATH>
 CLEAN_CODE_PATH: <CLEAN_CODE_PATH>
 GOLDEN_EXAMPLE_PATH: <GOLDEN_EXAMPLE_PATH>
 REAL_ENVIRONMENT_GUIDE: <REAL_ENVIRONMENT_GUIDE>
+EXTENSION_PATHS: <EXTENSION_PATHS>
 ```
 
+`TARGET_REVIEW_URL`, `PROJECT_ROOT`, `TARGET_PACKAGE`, and `CLEAN_CODE_PATH` are required. `TARGET_PACKAGE` may name one package or an explicit package set. Set unavailable context inputs to `NONE`; do not invent them. `EXTENSION_PATHS` is `NONE` or an ordered, comma-separated list of project-local Markdown files.
+
 `TARGET_REVIEW_URL` is the only review this run may change. Treat every other review as read-only context. If a required input is missing, stop before changing code.
+
+## Extensions
+
+Read every extension before Gate 0. Each extension must map every added check to one or more existing gates. It may add project context, evidence requirements, test commands, severity rules, or report fields.
+
+Extensions may only strengthen an existing gate. An extension cannot expand write scope; skip, reorder, replace, soften, or automatically pass a gate; or authorize publication, approval, merge, deployment, release, reviewer assignment, comments, or extra review revisions. This prompt wins any conflict. For compatible rules, the stricter rule wins. Record every loaded extension and its mapped gates in the completion report.
 
 ## Gate 0: No AI slop, fewer diffs
 
@@ -44,7 +53,7 @@ Open `<TARGET_REVIEW_URL>` and clear every analyzer or bot finding caused by the
 
 ## Gate 2: Historical mistakes
 
-Read `<HISTORICAL_MISTAKES_PATH>` in full. Then inspect the complete current diff and every relevant requirement. Check whether the diff repeats a previously documented defect or breaks behavior protected by an earlier correction. Fix only issues supported by current code and evidence.
+Read `<HISTORICAL_MISTAKES_PATH>` in full. If it is `NONE`, inspect relevant issue, review, and commit history instead. Then inspect the complete current diff and every relevant requirement. Check whether the diff repeats a previously documented defect or breaks behavior protected by an earlier correction. Fix only issues supported by current code and evidence.
 
 ## Gate 3: Clean code
 
@@ -58,21 +67,21 @@ Treat findings as advisory. Fix evidence-backed findings that meet the project's
 
 ## Gate 5: Existing-code reuse and minimality
 
-Read the repository before adding code. Reuse existing helpers, types, schemas, fixtures, tests, and build conventions. Compare relevant semantics with `<GOLDEN_EXAMPLE_PATH>`. Preserve justified project-specific behavior. Reject duplicate implementations, unnecessary wrappers, generic hardening, and unrelated cleanup.
+Read the repository before adding code. Reuse existing helpers, types, schemas, fixtures, tests, and build conventions. Compare relevant semantics with `<GOLDEN_EXAMPLE_PATH>`, or the closest existing implementation when it is `NONE`. Preserve justified project-specific behavior. Reject duplicate implementations, unnecessary wrappers, generic hardening, and unrelated cleanup.
 
 ## Gate 6: Prove it in a real environment
 
-Follow `<REAL_ENVIRONMENT_GUIDE>`. Exercise the real integration path and each cross-package contract affected by the review. Prefer deployed or high-fidelity integration evidence over mocks.
+Follow `<REAL_ENVIRONMENT_GUIDE>`, or the repository's documented integration path when it is `NONE`. Exercise the real integration path and each cross-package contract affected by the review. Prefer deployed or high-fidelity integration evidence over mocks.
 
 Record commands, counts, and exit codes. If a check cannot run, record the exact command and concrete missing prerequisite. Do not substitute a mock and call it real proof.
 
 ## Gate 7: Golden-example conformance
 
-Read `<GOLDEN_EXAMPLE_PATH>` before judging the diff. Compare file names, module layout, exports, configuration, tests, build setup, and documentation. Match the golden where no project requirement justifies a difference. Do not inherit defects documented beside the golden.
+Read `<GOLDEN_EXAMPLE_PATH>` before judging the diff. If it is `NONE`, use the closest existing implementation in the repository. Compare file names, module layout, exports, configuration, tests, build setup, and documentation. Match the golden where no project requirement justifies a difference. Do not inherit defects documented beside the golden.
 
 ## Gate 8: Align with the review behind you
 
-Run this once, after every other gate passes. Read `<BASE_REVIEW_URL>` and align names, shared helpers, schemas, identifiers, layout, and cross-package contracts.
+Run this once, after every other gate passes. Read `<BASE_REVIEW_URL>`, or compare against the target branch when it is `NONE`, and align names, shared helpers, schemas, identifiers, layout, and cross-package contracts.
 
 Never edit the previous review. If it has a serious correctness, safety, or data-loss defect, record it and make the smallest safe change in the target review only.
 
@@ -87,6 +96,7 @@ Fail this gate only for a demonstrated long-term defect. Keep speculative harden
 All ten gates must pass. Report:
 
 - `<TARGET_REVIEW_URL>` and the final head.
+- Every loaded extension and its mapped gates, or `extensions: none`.
 - PASS or FAIL for each gate, with the correction or `no-change`.
 - Gate 6 commands and observed results.
 - Confirmation that no unapproved publication, approval, merge, deployment, release, reviewer assignment, comment, or extra review revision occurred.
