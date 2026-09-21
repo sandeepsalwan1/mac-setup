@@ -380,7 +380,7 @@ assert_contains "$probe" '/.dotfiles/scripts/git-fleet-status' \
 
 rg -Fq '".local/bin/git-fleet-status"' "$ROOT/home.nix" ||
 	fail 'Home Manager does not install git-fleet-status onto PATH'
-rg -Fq 'GIT_FLEET_EXCLUDE' "$ROOT/home.nix" ||
-	fail 'Home Manager does not set GIT_FLEET_EXCLUDE'
+rg -Fq 'GIT_FLEET_EXCLUDE = "${config.home.homeDirectory}/.claude/jobs";' "$ROOT/home.nix" ||
+	fail 'Home Manager does not exclude only the active agent scratch directory'
 
 pass 'the fleet view reports changes, honours exclusions, stays read-only, and is found by Neovim'

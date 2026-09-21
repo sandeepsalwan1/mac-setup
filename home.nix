@@ -51,16 +51,9 @@ in
     CHROME_DEVTOOLS_AXI_MCP_PATH = "${config.home.homeDirectory}/.local/share/npm/lib/node_modules/chrome-devtools-mcp/build/src/bin/chrome-devtools-mcp.js";
     NPM_CONFIG_PREFIX = "${config.home.homeDirectory}/.local/share/npm";
     TERMINFO_DIRS = "${pkgs.ncurses}/share/terminfo:/usr/share/terminfo";
-    # Two kinds of directory that hold checkouts nobody wants offered as work.
-    # Host migration snapshots are whole copies of tracked checkouts, and opening
-    # a copy is always the wrong answer. Background agent jobs build throwaway git
-    # fixtures under their scratch directory, which the fleet view would otherwise
-    # report as live repositories that appear and vanish on their own.
-    #
-    # Excluded by path rather than by directory name because .claude also holds
-    # .claude/worktrees, where Claude Code puts real worktrees - the exact work
-    # this view exists to surface.
-    GIT_FLEET_EXCLUDE = "${config.home.homeDirectory}/Downloads/Firstmate Migration:${config.home.homeDirectory}/.claude/jobs";
+    # Agent jobs build throwaway Git fixtures under their scratch directory.
+    # Keep .claude/worktrees visible because those worktrees contain real work.
+    GIT_FLEET_EXCLUDE = "${config.home.homeDirectory}/.claude/jobs";
   };
 
   launchd.agents.chrome-devtools-axi-auto-connect = {
