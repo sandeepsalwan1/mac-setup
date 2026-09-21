@@ -19,6 +19,7 @@
 - Follow YAGNI principles.
 - Reduce code and cyclomatic complexity
 - Global installs: declare portable baseline tools in dotfiles. Keep work-specific packages local and never auto-record them.
+- Personal Chrome debugging: reuse one long-lived bridge. Never start parallel or repeated attachment attempts.
 - Backpass is periodic memory maintenance, not a per-task step. Suggest it after recurring cross-session friction or when a project AGENTS.md is stale or overgrown. Run its model-backed analysis only with user approval, and run `backpass apply` only with explicit approval after reviewing the evidence.
 - Make ALL of your responses clear & very concise
 - Use simple & easy-to-understand language, write in short sentences, in plain English
