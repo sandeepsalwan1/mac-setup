@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 KEEPER="$ROOT/home/bin/context-keeper"
+PYTHON="$(python3 -c 'import sys; print(sys.executable)')"
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 
@@ -25,9 +26,9 @@ cat >"$TMP/pi.jsonl" <<'EOF'
 {"type":"message","timestamp":"2026-08-27T00:00:02Z","message":{"role":"assistant","content":[{"type":"thinking","thinking":"hidden"},{"type":"text","text":"Decision documented."},{"type":"toolCall","name":"write"}]}}
 EOF
 
-"$KEEPER" extract codex "$TMP/codex.jsonl" >"$TMP/codex.out"
-"$KEEPER" extract claude "$TMP/claude.jsonl" >"$TMP/claude.out"
-"$KEEPER" extract pi "$TMP/pi.jsonl" >"$TMP/pi.out"
+"$PYTHON" "$KEEPER" extract codex "$TMP/codex.jsonl" >"$TMP/codex.out"
+"$PYTHON" "$KEEPER" extract claude "$TMP/claude.jsonl" >"$TMP/claude.out"
+"$PYTHON" "$KEEPER" extract pi "$TMP/pi.jsonl" >"$TMP/pi.out"
 
 jq -e '.id == "codex-1" and (.messages | length) == 2' "$TMP/codex.out" >/dev/null
 jq -e '.id == "claude-1" and (.messages | length) == 2' "$TMP/claude.out" >/dev/null
@@ -47,7 +48,7 @@ cat >"$TMP/config.json" <<EOF
   "remote_hosts": []
 }
 EOF
-"$KEEPER" --config "$TMP/config.json" init >/dev/null
+"$PYTHON" "$KEEPER" --config "$TMP/config.json" init >/dev/null
 test -f "$TMP/vault/Knowledge/Context Base/personal-context/.kb.json"
 test -f "$TMP/vault/Knowledge/Context Base/personal-context/schema.md"
 
@@ -66,7 +67,7 @@ printf '# Widget Service\n\nnote body\n' >"$TMP/vault/Knowledge/Context/Projects
 printf '# Home Chores\n\nchores body\n' >"$TMP/vault/Knowledge/Context/Projects/home-chores.md"
 mkdir -p "$TMP/work/widget/src" "$TMP/work/unrelated"
 
-brief() { HOME="$TMP" "$KEEPER" --config "$TMP/config.json" brief --cwd "$1"; }
+brief() { HOME="$TMP" "$PYTHON" "$KEEPER" --config "$TMP/config.json" brief --cwd "$1"; }
 brief "$TMP/work/widget" | grep -q 'Widget Service'
 brief "$TMP/work/widget/src" | grep -q 'Widget Service' # descendant of the recorded cwd
 brief "$TMP/work" | grep -q 'Widget Service'            # ancestor of the recorded cwd
@@ -115,7 +116,7 @@ cat >"$SUB/config.json" <<EOF
   "lookback_days": 36500
 }
 EOF
-HOME="$SUB/home" "$KEEPER" --config "$SUB/config.json" once --no-promotion >"$SUB/once.json"
+HOME="$SUB/home" "$PYTHON" "$KEEPER" --config "$SUB/config.json" once --no-promotion >"$SUB/once.json"
 
 # Both files claim one session key, so they overwrite each other's candidate and the file
 # count stays 1 either way. The visible damage is the extra summarization: one model call
