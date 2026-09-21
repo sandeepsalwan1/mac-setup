@@ -10,7 +10,6 @@ chrome-devtools-mcp@1.9.0
 gh-axi@0.1.35
 lavish-axi@0.1.76
 quota-axi@0.1.49
-compact-adviser@0.1.5
 tasks-axi@0.2.5
 @earendil-works/pi-coding-agent@0.87.0'
 actual_npm="$(grep -Ev '^[[:space:]]*(#|$)' "$ROOT/home/npm-globals.txt")"
@@ -38,7 +37,8 @@ jq -e '
   and .defaultThinkingLevel == "max"
   and .packages == [
     "npm:pi-web-access@0.30.0",
-    "npm:@ryan_nookpi/pi-extension-codex-fast-mode@0.2.7"
+    "npm:@ryan_nookpi/pi-extension-codex-fast-mode@0.2.7",
+    "npm:compact-adviser@0.1.5"
   ]
 ' "$ROOT/home/.pi/agent/settings.json" >/dev/null
 
@@ -79,6 +79,8 @@ done
 
 grep -F '<TARGET_REVIEW_URL>' "$ROOT/prompts/ten-gate-review.md" >/dev/null
 grep -F '<PROJECT_ROOT>' "$ROOT/prompts/ten-gate-review.md" >/dev/null
+grep -F '<EXTENSION_PATHS>' "$ROOT/prompts/ten-gate-review.md" >/dev/null
+grep -F 'Extensions may only strengthen an existing gate.' "$ROOT/prompts/ten-gate-review.md" >/dev/null
 if rg -i 'amazon|lineage|code\.amazon\.com|CR-[0-9]+' "$ROOT/prompts/ten-gate-review.md" >/dev/null; then
 	exit 1
 fi
