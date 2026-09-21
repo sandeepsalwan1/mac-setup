@@ -4,13 +4,13 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 
 expected_npm='acpx@0.18.0
-backpass@0.1.25
-chrome-devtools-axi@0.1.34
+backpass@0.1.26
+chrome-devtools-axi@0.1.35
 chrome-devtools-mcp@1.9.0
 gh-axi@0.1.35
-lavish-axi@0.1.75
-quota-axi@0.1.48
-compact-adviser@0.1.4
+lavish-axi@0.1.76
+quota-axi@0.1.49
+compact-adviser@0.1.5
 tasks-axi@0.2.5
 @earendil-works/pi-coding-agent@0.86.1'
 actual_npm="$(grep -Ev '^[[:space:]]*(#|$)' "$ROOT/home/npm-globals.txt")"
