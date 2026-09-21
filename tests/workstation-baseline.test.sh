@@ -12,7 +12,7 @@ lavish-axi@0.1.76
 quota-axi@0.1.49
 compact-adviser@0.1.5
 tasks-axi@0.2.5
-@earendil-works/pi-coding-agent@0.86.1'
+@earendil-works/pi-coding-agent@0.87.0'
 actual_npm="$(grep -Ev '^[[:space:]]*(#|$)' "$ROOT/home/npm-globals.txt")"
 [ "$actual_npm" = "$expected_npm" ]
 
