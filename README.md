@@ -64,6 +64,8 @@ Pinned npm tools are listed in `home/npm-globals.txt`. `scripts/install-tools`
 checks each command's installed version before running npm, and installs the
 shared catastrophic-command guard without installing a review harness.
 The guard migrates three legacy broad Claude `rm` denies so named project cleanup remains usable.
+The reviewed public source registry is in `data/repos.md`.
+The reusable review prompt is in `prompts/ten-gate-review.md`; it requires runtime review and project inputs and contains no workplace-specific links.
 
 Backpass is pinned there and configured by `.backpassrc.json`. It treats
 `AGENTS.md` as this repository's canonical memory file and places accepted skill
@@ -101,7 +103,7 @@ The complete global instructions live in `home/AGENTS.md` and are linked to:
 - `~/.pi/agent/AGENTS.md`
 - `~/.config/opencode/AGENTS.md`
 
-The repository snapshots these selected authored skills exactly:
+The repository keeps reviewed snapshots of these selected authored skills:
 
 - autoreview
 - chrome-devtools-axi
@@ -111,7 +113,15 @@ The repository snapshots these selected authored skills exactly:
 - grill-me
 - improve-codebase-architecture
 - json-canvas
+- kun
 - lavish
+- no-mistakes
+- quota-axi
+- stow
+- tasks-axi
+- teach
+- vision
+- gh-axi
 - global-agent-guardrails
 - create-readonly-db-role
 - obsidian-bases

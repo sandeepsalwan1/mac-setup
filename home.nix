@@ -168,6 +168,7 @@ in
       m = "git switch main";
       cc = "claude";
       cx = "codex";
+      kc = "kiro-cli";
       fm = "cd ${config.home.homeDirectory}/firstmate";
       co = "codex --full-auto";
       # Re-link every skill in the dotfiles into all four skill roots. On this

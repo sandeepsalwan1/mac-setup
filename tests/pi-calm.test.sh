@@ -17,7 +17,7 @@
 #   degradation with one clear diagnostic;
 # - working ship: geometry, cadence, colors, resize, narrow fallback,
 #   freeze/resume, timer disposal, extension lifecycle;
-# - real Pi 0.84.4 TUI proofs in tmux without credentials or provider calls.
+# - real pinned Pi TUI proofs in tmux without credentials or provider calls.
 set -u
 
 # shellcheck source=tests/lib.sh
@@ -26,6 +26,7 @@ set -u
 TMP_ROOT=$(dotfiles_test_tmproot pi-calm)
 CALM_DIR="$ROOT/home/.pi/agent/extensions/calm"
 PI_PACKAGE_DIR=${PI_CALM_TEST_PACKAGE_DIR:-"$(npm root -g 2>/dev/null)/@earendil-works/pi-coding-agent"}
+PI_PROOF_VERSION=$(sed -n 's/^@earendil-works\/pi-coding-agent@//p' "$ROOT/home/npm-globals.txt")
 TMUX_SOCKET="pi-calm-test-$$"
 TMUX_SESSION="pi-calm-e2e"
 
@@ -900,8 +901,8 @@ test_real_pi_tui_smoke() {
     echo "skip: pi or tmux not found for isolated real TUI smoke"
     return 0
   fi
-  [ "$(pi --version 2>/dev/null || true)" = "0.84.4" ] \
-    || fail "real Pi smoke requires the installed Pi 0.84.4 proof target"
+  [ "$(pi --version 2>/dev/null || true)" = "$PI_PROOF_VERSION" ] \
+    || fail "real Pi smoke requires the installed Pi $PI_PROOF_VERSION proof target"
 
   fixture="$TMP_ROOT/tui-smoke"
   agent="$fixture/agent"
@@ -993,7 +994,7 @@ TS
   grep -Fq 'stream-start' "$fixture/provider-markers.txt" || fail "real Pi smoke did not enter the provider stream"
   grep -Fq '\__/' "$fixture/wide" || fail "real Pi smoke did not show Calm's wide working boat"
   if grep -Eiq 'thinking[.][.][.]' "$fixture/wide"; then
-    fail "real Pi 0.84.4 showed thinking... noise while Calm's working ship was active"
+    fail "real Pi $PI_PROOF_VERSION showed thinking... noise while Calm's working ship was active"
   fi
   tmux -L "$socket" resize-window -t "$TMUX_SESSION" -x 40 -y 30
   for i in $(seq 1 120); do
@@ -1021,7 +1022,7 @@ TS
   tmux -L "$socket" send-keys -t "$TMUX_SESSION" Enter
   sleep 0.1
   tmux -L "$socket" kill-server 2>/dev/null || true
-  pass "isolated Pi 0.84.4 TUI proves auto-load, quiet /calm persistence, resize-safe working animation, suppressed thinking noise, and genuine transcript text without credentials"
+  pass "isolated Pi $PI_PROOF_VERSION TUI proves auto-load, quiet /calm persistence, resize-safe working animation, suppressed thinking noise, and genuine transcript text without credentials"
 }
 
 test_zero_coupling_and_state_file

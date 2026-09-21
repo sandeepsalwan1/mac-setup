@@ -12,7 +12,6 @@
 - Apply that same high standard to engineering excellence: lint, test failures, and test flakiness.
   If you see one, even if it is not caused by what you are working on right now, still get it fixed.
 - Prefer integration tests and logs over unit tests.
-- Before using "dynamic workflows", "ultra code" or any harness feature that immediately spawns a large swarm of subagents, always explain the tradeoffs and ask the user for explicit approval.
 - Project memory and AGENTS.md: when the user corrects recurring behavior, store one terse durable rule so it does not repeat; token-sensitive.
 - Don't write comments 99.8% of time unless bugprone code; Write clear code instead.
 - Work independently, unblock yourself, you have full permission. Don't ask unless only something I can do. Do it.
@@ -36,21 +35,21 @@
 - Before coding:
     - Ensure the Brazil workspace is up to date with `brazil ws sync`.
 - While coding:
-    - Run `cr` to raise a code review; `pwd` must be the corresponding repository.
-    - Always keep one commit per code review; amend existing commit and run `cr -r` to update.
+    - Keep exactly one commit per code review and finish all changes locally before creating the review.
     - Use `cr -i` to group multiple logically related commits across packages into one code review.
-    - CR description should focus on how the change was tested.
+    - CR descriptions should focus on how the change was tested.
 - Before raising a code review:
     - Check the current user's existing code reviews.
     - Make sure `brazil-build release` passes; skip if doc update.
     - Ensure the Brazil workspace is up to date with `brazil ws sync`.
-    - Do not publish a CR without my permission, draft is ok.
+    - Inspect the final commit and complete diff, then run `cr` exactly once from the corresponding repository.
+    - Do not publish a CR without my permission; a draft CR is allowed and should be uploaded.
 - After raising a code review:
+    - Never run `cr -r`, upload another commit, or otherwise create another revision for that review.
     - Use mycli to monitor analyzer status and reviewer comments.
-    - Reply and resolve bot comments if you have addressed them; leave human comments to me.
-- To update an existing code review:
-    - Create a new commit on mainline and cherry-pick it onto the code review branch.
-- Do not publish comments without my permission
+    - Reply to and resolve addressed bot comments; leave human comments to me.
+    - If the review needs code changes, stop and ask whether to create a separate CR.
+- Do not publish comments without my permission to humans.
 ## Commit Template
 ```
 <brief description of the change(s)>
@@ -65,4 +64,5 @@ Related:
 - <any references or related code reviews, do not include the current one>
 
 ```
+Do not make new revisions on published CRs.
 Unknown changes = other agent.  Conflict/problem: stop + ask. Continue, touching own scope.

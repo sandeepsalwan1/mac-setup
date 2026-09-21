@@ -193,12 +193,14 @@ fi
 TMUX_SOCKET="herdr-prefix-$$"
 # Herdr keys its socket off HOME and refuses to start beside another instance, so
 # the probe needs a home of its own to leave the real session untouched.
-PROBE_HOME="$TMP_ROOT/home"
+PROBE_HOME="$(TMPDIR=/tmp dotfiles_test_tmproot herdr-home)"
 mkdir -p "$PROBE_HOME/.config/herdr"
 cp "$HERDR_CONFIG" "$PROBE_HOME/.config/herdr/config.toml"
 
 probe_cleanup() {
 	tmux -L "$TMUX_SOCKET" kill-server 2>/dev/null || true
+	HOME="$PROBE_HOME" HERDR_CONFIG_PATH="$PROBE_HOME/.config/herdr/config.toml" \
+		"${HERDR_FREE[@]}" "$HERDR_REAL_BIN" session stop prefix-probe >/dev/null 2>&1 || true
 }
 trap 'probe_cleanup; dotfiles_test_cleanup' EXIT
 
@@ -232,7 +234,7 @@ done < <(env)
 
 "${HERDR_FREE[@]}" tmux -L "$TMUX_SOCKET" new-session -d -s herdr -x 120 -y 40 \
 	-e "HOME=$PROBE_HOME" -e TERM=xterm-256color \
-	"$HERDR_REAL_BIN" --no-session
+	"$HERDR_REAL_BIN" --session prefix-probe
 wait_for_pane || fail "Herdr did not start under tmux: $(capture)"
 
 # The trap first: an F13 prefix looks correct everywhere except at runtime.
