@@ -7,7 +7,7 @@ FILTERED="$(mktemp "${TMPDIR:-/tmp}/mac-setup-trufflehog-filtered.XXXXXX")"
 trap 'rm -f "$REPORT" "$FILTERED"' EXIT
 umask 077
 
-gitleaks detect --source "$ROOT" --no-git --redact --exit-code 1
+gitleaks detect --source "$ROOT" --config "$ROOT/.gitleaks.toml" --no-git --redact --exit-code 1
 
 resolve_symlink_path() {
 	local path=$1 directory target links=0

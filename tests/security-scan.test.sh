@@ -11,7 +11,7 @@ mkdir -p "$TEST_BIN/plain" "$TEST_BIN/wrapped" "$TEST_BIN/wrapped-no-flag"
 
 cat >"$TEST_BIN/gitleaks" <<'SH'
 #!/usr/bin/env bash
-exit 0
+printf '%s\n' "$@" >"$GITLEAKS_ARGS_LOG"
 SH
 cat >"$TEST_BIN/trufflehog-stub" <<'SH'
 #!/usr/bin/env bash
@@ -60,8 +60,21 @@ $PHYSICAL_ROOT/tests/trufflehog-exclude-paths.txt
 $PHYSICAL_ROOT
 EOF
 
+cat >"$TMP_ROOT/expected-gitleaks-args" <<EOF
+detect
+--source
+$PHYSICAL_ROOT
+--config
+$PHYSICAL_ROOT/.gitleaks.toml
+--no-git
+--redact
+--exit-code
+1
+EOF
+
 for mode in plain wrapped wrapped-no-flag; do
 	PATH="$TEST_BIN/$mode:$TEST_BIN:/usr/bin:/bin" \
+		GITLEAKS_ARGS_LOG="$TMP_ROOT/gitleaks-$mode-args.log" \
 		TRUFFLEHOG_ARGS_LOG="$TMP_ROOT/trufflehog-$mode-args.log" \
 		TRUFFLEHOG_WRAPPER_LOG="$TMP_ROOT/trufflehog-$mode-wrapper.log" \
 		"$ROOT/tests/security-scan.sh" >"$TMP_ROOT/$mode-output"
@@ -69,6 +82,10 @@ for mode in plain wrapped wrapped-no-flag; do
 	if ! cmp -s "$TMP_ROOT/expected-args" "$TMP_ROOT/trufflehog-$mode-args.log"; then
 		diff -u "$TMP_ROOT/expected-args" "$TMP_ROOT/trufflehog-$mode-args.log" >&2 || true
 		fail "security scan passed incorrect arguments to $mode TruffleHog"
+	fi
+	if ! cmp -s "$TMP_ROOT/expected-gitleaks-args" "$TMP_ROOT/gitleaks-$mode-args.log"; then
+		diff -u "$TMP_ROOT/expected-gitleaks-args" "$TMP_ROOT/gitleaks-$mode-args.log" >&2 || true
+		fail "security scan passed incorrect arguments to $mode Gitleaks"
 	fi
 	grep -Fq 'secret scans passed' "$TMP_ROOT/$mode-output" ||
 		fail "security scan did not complete with $mode TruffleHog"
@@ -81,10 +98,11 @@ for mode in plain wrapped wrapped-no-flag; do
 done
 
 if PATH="$TEST_BIN:/usr/bin:/bin" \
+	GITLEAKS_ARGS_LOG="$TMP_ROOT/gitleaks-missing-args.log" \
 	"$ROOT/tests/security-scan.sh" >"$TMP_ROOT/missing-output" 2>"$TMP_ROOT/missing-error"; then
 	fail 'security scan completed without TruffleHog'
 fi
 grep -Fxq 'security scan requires trufflehog on PATH' "$TMP_ROOT/missing-error" ||
 	fail 'security scan did not report missing TruffleHog clearly'
 
-pass 'security scan disables updates and preserves all scan controls across TruffleHog interfaces'
+pass 'security scan pins Gitleaks policy and preserves all TruffleHog controls'

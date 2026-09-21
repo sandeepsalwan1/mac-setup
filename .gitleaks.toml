@@ -1,0 +1,6 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Ignore the generated Backpass agent probe cache"
+paths = ['''(^|/)\.backpass/agent-probe-cache\.json$''']
