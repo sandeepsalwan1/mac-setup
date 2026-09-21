@@ -61,7 +61,7 @@ separate additive step, so an existing command or cask receipt satisfies that st
 regardless of how the tool arrived. It never reinstalls or upgrades a satisfied copy.
 
 Pinned npm tools are listed in `home/npm-globals.txt`. `scripts/install-tools`
-checks each command's installed version before running npm, and installs the
+checks each package's installed version before running npm, and installs the
 shared catastrophic-command guard without installing a review harness.
 The guard migrates three legacy broad Claude `rm` denies so named project cleanup remains usable.
 The reviewed public source registry is in `data/repos.md`.

@@ -14,11 +14,43 @@ die() {
 	exit 1
 }
 
-stop_default_chrome_bridge() {
-	local bridge_axi
+installed_npm_version() {
+	local package_name="$1" package_json version
+
+	package_json="$NPM_PREFIX/lib/node_modules/$package_name/package.json"
+	if [ -r "$package_json" ]; then
+		version="$(jq -r 'if (.version | type) == "string" then .version else empty end' "$package_json" 2>/dev/null || true)"
+		if [ -n "$version" ]; then
+			printf '%s\n' "$version"
+			return
+		fi
+	fi
+	if command -v "$package_name" >/dev/null 2>&1; then
+		"$package_name" --version 2>/dev/null | head -n 1 || true
+	fi
+}
+
+stop_chrome_bridges() {
+	local bridge_axi port session sessions_dir state
 
 	bridge_axi="$(command -v chrome-devtools-axi 2>/dev/null || true)"
 	[ -n "$bridge_axi" ] || return 0
+	sessions_dir="$HOME/.chrome-devtools-axi/sessions"
+	if [ -d "$sessions_dir" ]; then
+		for state in "$sessions_dir"/*/bridge.pid; do
+			[ -f "$state" ] || continue
+			session="$(basename "$(dirname "$state")")"
+			port="$(jq -r 'if (.port | type) == "number" then .port else empty end' "$state" 2>/dev/null || true)"
+			case "$port" in
+			'' | *[!0-9]*) continue ;;
+			esac
+			(
+				export CHROME_DEVTOOLS_AXI_PORT="$port"
+				export CHROME_DEVTOOLS_AXI_SESSION="$session"
+				"$bridge_axi" stop
+			)
+		done
+	fi
 	(
 		unset CHROME_DEVTOOLS_AXI_PORT CHROME_DEVTOOLS_AXI_SESSION
 		"$bridge_axi" stop
@@ -54,10 +86,7 @@ install_npm_tools() {
 		*) continue ;;
 		esac
 		wanted_version="${spec##*@}"
-		installed_version=''
-		if command -v "$package_name" >/dev/null 2>&1; then
-			installed_version="$("$package_name" --version 2>/dev/null | head -n 1 || true)"
-		fi
+		installed_version="$(installed_npm_version "$package_name")"
 		if [ "$installed_version" != "$wanted_version" ]; then
 			chrome_bridge_changed=1
 		fi
@@ -69,8 +98,8 @@ install_npm_tools() {
 
 	if [ "$chrome_bridge_changed" = "1" ]; then
 		: >"$recycle_pending"
-		note 'recycling the default Chrome DevTools AXI bridge before tool changes'
-		stop_default_chrome_bridge
+		note 'retiring Chrome DevTools AXI bridges before tool changes'
+		stop_chrome_bridges
 	fi
 
 	install_status=0
@@ -81,10 +110,7 @@ install_npm_tools() {
 
 		package_name="${spec%@*}"
 		wanted_version="${spec##*@}"
-		installed_version=''
-		if command -v "$package_name" >/dev/null 2>&1; then
-			installed_version="$("$package_name" --version 2>/dev/null | head -n 1 || true)"
-		fi
+		installed_version="$(installed_npm_version "$package_name")"
 
 		if [ "$installed_version" = "$wanted_version" ]; then
 			note "$package_name $wanted_version is already installed"
@@ -101,8 +127,8 @@ install_npm_tools() {
 	done <"$NPM_GLOBALS_FILE"
 
 	if [ "$chrome_bridge_changed" = "1" ]; then
-		note 'ensuring the default Chrome DevTools AXI bridge remains stopped after tool changes'
-		stop_default_chrome_bridge
+		note 'ensuring Chrome DevTools AXI bridges remain stopped after tool changes'
+		stop_chrome_bridges
 		rm -f "$recycle_pending"
 	fi
 	[ "$install_status" -eq 0 ] || return "$install_status"

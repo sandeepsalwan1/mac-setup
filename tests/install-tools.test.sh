@@ -24,6 +24,9 @@ cat >"$TEST_BIN/chrome-devtools-axi" <<'SH'
 #!/usr/bin/env bash
 if [ "${1:-}" = stop ]; then
 	printf '%s\n' "${CHROME_DEVTOOLS_AXI_SESSION-unset}:${CHROME_DEVTOOLS_AXI_PORT-unset}" >>"$BRIDGE_LOG"
+	if [ -n "${CHROME_DEVTOOLS_AXI_SESSION:-}" ]; then
+		rm -f "$HOME/.chrome-devtools-axi/sessions/$CHROME_DEVTOOLS_AXI_SESSION/bridge.pid"
+	fi
 else
 	printf '%s\n' '0.1.29'
 fi
@@ -69,12 +72,16 @@ chmod +x "$TEST_BIN/npm"
 cat >"$TEST_MANIFEST" <<'EOF'
 # fixture
 present-tool@1.2.3
+data-only-tool@3.0.0
 missing-tool@2.0.0
 chrome-devtools-axi@0.1.30
 chrome-devtools-mcp@1.7.0
 EOF
 
 mkdir -p "$TEST_HOME/.claude" "$TEST_HOME/.codex" "$TEST_HOME/.config/opencode/plugins"
+mkdir -p "$TEST_HOME/.chrome-devtools-axi/sessions/named" "$TEST_PREFIX/lib/node_modules/data-only-tool"
+printf '%s\n' '{"pid":123,"port":9421}' >"$TEST_HOME/.chrome-devtools-axi/sessions/named/bridge.pid"
+printf '%s\n' '{"name":"data-only-tool","version":"3.0.0"}' >"$TEST_PREFIX/lib/node_modules/data-only-tool/package.json"
 cat >"$TEST_HOME/.claude/settings.json" <<'EOF'
 {
   "theme": "dark",
@@ -135,8 +142,8 @@ run_installer() {
 run_installer >/dev/null
 [ "$(cat "$INSTALL_LOG")" = $'missing-tool@2.0.0\nchrome-devtools-axi@0.1.30' ] ||
 	fail 'installer did not skip the already satisfied npm tool'
-[ "$(cat "$BRIDGE_LOG")" = $'unset:unset\nunset:unset' ] ||
-	fail 'Chrome tool version changes did not guard both sides of the migration'
+[ "$(cat "$BRIDGE_LOG")" = $'named:9421\nunset:unset\nunset:unset' ] ||
+	fail 'Chrome tool version changes did not retire every bridge before migration'
 
 jq -e '
 	.theme == "dark"
@@ -178,7 +185,7 @@ EOF
 run_installer >/dev/null
 [ "$(wc -l <"$INSTALL_LOG" | tr -d ' ')" = 2 ] ||
 	fail 'a second run reinstalled an already satisfied npm tool'
-[ "$(wc -l <"$BRIDGE_LOG" | tr -d ' ')" = 2 ] ||
+[ "$(wc -l <"$BRIDGE_LOG" | tr -d ' ')" = 3 ] ||
 	fail 'an unchanged Chrome tool version recycled the bridge'
 [ "$(cat "$TEST_HOME/.config/opencode/plugins/axi-chrome-devtools-axi.js")" = 'export const userPlugin = true;' ] ||
 	fail 'Chrome cleanup changed an unmanaged OpenCode plugin'
@@ -194,11 +201,11 @@ if NPM_FAIL_AFTER_CHROME_INSTALL=1 run_installer >/dev/null 2>&1; then
 fi
 [ "$(tail -n 1 "$INSTALL_LOG")" = 'chrome-devtools-mcp@1.7.1' ] ||
 	fail 'installer did not adopt the changed MCP version'
-[ "$(wc -l <"$BRIDGE_LOG" | tr -d ' ')" = 4 ] ||
+[ "$(wc -l <"$BRIDGE_LOG" | tr -d ' ')" = 5 ] ||
 	fail 'an interrupted MCP version change did not guard both sides of the migration'
 
 run_installer >/dev/null
-[ "$(wc -l <"$BRIDGE_LOG" | tr -d ' ')" = 4 ] ||
+[ "$(wc -l <"$BRIDGE_LOG" | tr -d ' ')" = 5 ] ||
 	fail 'rerunning an interrupted Chrome upgrade recycled the bridge again'
 
 cat >"$TEST_MANIFEST" <<'EOF'
@@ -210,11 +217,11 @@ EOF
 if NPM_INTERRUPT_AFTER_CHROME_INSTALL=1 run_installer >/dev/null 2>&1; then
 	fail 'terminated Chrome package installation unexpectedly succeeded'
 fi
-[ "$(wc -l <"$BRIDGE_LOG" | tr -d ' ')" = 5 ] ||
+[ "$(wc -l <"$BRIDGE_LOG" | tr -d ' ')" = 6 ] ||
 	fail 'terminated Chrome upgrade unexpectedly reached its final bridge stop'
 
 run_installer >/dev/null
-[ "$(wc -l <"$BRIDGE_LOG" | tr -d ' ')" = 7 ] ||
+[ "$(wc -l <"$BRIDGE_LOG" | tr -d ' ')" = 8 ] ||
 	fail 'rerunning a terminated Chrome upgrade did not complete bridge recycling'
 [ ! -e "$TEST_PREFIX/.chrome-devtools-axi-recycle-pending" ] ||
 	fail 'completed Chrome bridge recycling left pending state behind'
