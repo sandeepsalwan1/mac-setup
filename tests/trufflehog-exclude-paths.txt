@@ -1,1 +1,3 @@
 (^|/)\.git/
+(^|/)\.backpass/agent-probe-cache\.json$
+(^|/)\.backpass/hosts/[0-9a-f]{64}$

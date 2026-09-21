@@ -194,6 +194,10 @@ in
   home.file = {
     ".agents/hooks".source =
       config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/hooks";
+    ".local/libexec/chrome-devtools-axi-native.swift" = {
+      source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/scripts/chrome-devtools-axi-native.swift";
+      force = true;
+    };
     ".local/bin/cua-cli" = {
       source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/skills/computer-use-cli/scripts/cua-cli.mjs";
       force = true;

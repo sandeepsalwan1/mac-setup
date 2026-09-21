@@ -4,3 +4,7 @@ useDefault = true
 [[allowlists]]
 description = "Ignore the generated Backpass agent probe cache"
 paths = ['''(^|/)\.backpass/agent-probe-cache\.json$''']
+
+[[allowlists]]
+description = "Ignore generated Backpass per-host probe caches"
+paths = ['''(^|/)\.backpass/hosts/[0-9a-f]{64}$''']
