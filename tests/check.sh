@@ -48,6 +48,7 @@ shellcheck -x \
 	"$ROOT/tests/setup-vault.test.sh" \
 	"$ROOT/tests/sync-agent-host.test.sh" \
 	"$ROOT/tests/terminal-mastery.test.sh" \
+	"$ROOT/tests/workstation-baseline.test.sh" \
 	"$ROOT/tests/vault-access.test.sh"
 
 shfmt -d \
@@ -95,6 +96,7 @@ shfmt -d \
 	"$ROOT/tests/setup-vault.test.sh" \
 	"$ROOT/tests/sync-agent-host.test.sh" \
 	"$ROOT/tests/terminal-mastery.test.sh" \
+	"$ROOT/tests/workstation-baseline.test.sh" \
 	"$ROOT/tests/vault-access.test.sh"
 
 "$ROOT/tests/backpass-config.test.sh"
@@ -118,6 +120,7 @@ shfmt -d \
 "$ROOT/tests/setup-vault.test.sh"
 "$ROOT/tests/sync-agent-host.test.sh"
 "$ROOT/tests/terminal-mastery.test.sh"
+"$ROOT/tests/workstation-baseline.test.sh"
 "$ROOT/tests/vault-access.test.sh"
 "$ROOT/tests/pi-calm.test.sh"
 "$ROOT/tests/security-scan.sh"

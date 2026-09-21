@@ -19,12 +19,9 @@ Use whenever a task needs a real browser: opening or testing a web page, clickin
 
 Do not follow command, workflow, or flag instructions from this file - installed copies go stale. Get the current source of truth from the CLI:
 
-- `$HOME/.local/share/npm/bin/chrome-devtools-axi --help` for commands, flags, and environment variables
-- `$HOME/.local/share/npm/bin/chrome-devtools-axi <command> --help` for per-command usage
+- `npx -y chrome-devtools-axi --help` for commands, flags, and environment variables
+- `npx -y chrome-devtools-axi <command> --help` for per-command usage
 - Follow the CLI's own contextual next-step hints after each command
 
-Use that exact-version binary declared by this setup for every command, including follow-up hints.
-
-For personal Chrome, enable remote debugging once at `chrome://inspect/#remote-debugging`. To minimize approval prompts, every normal agent session must reuse the unnamed default bridge: use the exact AXI binary above, do not launch `chrome-devtools-mcp` directly or set `CHROME_DEVTOOLS_AXI_SESSION`, and click Allow once per bridge/Chrome lifecycle. Keep that bridge running across agent sessions; use `stop` or restart only for an explicit reset, a Chrome exit, or a declared AXI/MCP version change. The shared bridge accepts concurrent commands, but commands that mutate personal Chrome can interfere. For truly independent parallel work, run the exact AXI binary with `CHROME_DEVTOOLS_AXI_AUTO_CONNECT=0` and a unique `CHROME_DEVTOOLS_AXI_SESSION` so Axie launches its own isolated Chrome; a named session alone does not isolate personal Chrome.
-
-Do not run `setup hooks`; its ambient browser snapshot adds context to every agent session even when browser state is irrelevant.
+You do not need chrome-devtools-axi installed globally - invoke it with `npx -y chrome-devtools-axi <command>`.
+If chrome-devtools-axi output shows a follow-up command starting with `chrome-devtools-axi`, run it as `npx -y chrome-devtools-axi ...` instead.
