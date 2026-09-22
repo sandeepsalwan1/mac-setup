@@ -10,7 +10,7 @@ chrome-devtools-mcp@1.9.0
 gh-axi@0.1.35
 lavish-axi@0.1.77
 quota-axi@0.1.50
-tasks-axi@0.2.5
+tasks-axi@0.2.6
 @earendil-works/pi-coding-agent@0.87.0'
 actual_npm="$(grep -Ev '^[[:space:]]*(#|$)' "$ROOT/home/npm-globals.txt")"
 [ "$actual_npm" = "$expected_npm" ]
