@@ -22,3 +22,5 @@ Do not follow command, flag, or workflow instructions from this file - installed
 - `npx -y gh-axi` for a dashboard of the current repo
 - `npx -y gh-axi --help` for global flags and the command index
 - `npx -y gh-axi <command> --help` for per-command usage
+
+Before an unattended outward write through a GUI-backed credential broker, verify that noninteractive authorization is available. Otherwise, report the operation blocked without launching it.
