@@ -10,7 +10,7 @@ authoritative references.
 ## What this repository can reproduce
 
 - The signed app and hardened GitHub CLI from the official Homebrew tap
-- The current set of Secret Names in `vault/secret-names.txt`
+- A private local Secret Name inventory in `vault/secret-names.local.txt`
 - The desired hardeners in `vault/hardeners.txt`
 - Shared agent instructions that tell agents where secrets belong
 
@@ -78,7 +78,7 @@ Automic Vault app.
 The default behavior preserves any Value already effective in the selected
 scope. `--replace` is the only mode that deliberately changes it. Project
 Values are saved for the canonical directory you provide. Only the Secret Name
-can be appended to `vault/secret-names.txt`; the Value is entered directly
+can be appended to the ignored local manifest; the Value is entered directly
 through Automic Vault and is never read or printed by these scripts.
 
 The Homebrew hardener remains intentionally absent. Work-machine package

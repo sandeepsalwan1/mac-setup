@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
-SECRET_NAMES_FILE="${SECRET_NAMES_FILE:-$ROOT/vault/secret-names.txt}"
+SECRET_NAMES_FILE="${SECRET_NAMES_FILE:-$ROOT/vault/secret-names.local.txt}"
 HARDENERS_FILE="${HARDENERS_FILE:-$ROOT/vault/hardeners.txt}"
 PERMISSIONS_BIN="${PERMISSIONS_BIN:-$ROOT/scripts/setup-macos-permissions}"
 SAVE_SECRETS=0
@@ -83,6 +83,14 @@ fi
 
 if ! saved_names="$(av list 2>/dev/null)"; then
 	note 'finish the Automic Vault app setup, then rerun this command'
+	exit 1
+fi
+
+if [ ! -e "$SECRET_NAMES_FILE" ]; then
+	note 'no local Secret Name manifest exists; skipping Secret Name setup'
+	SECRET_NAMES_FILE=/dev/null
+elif [ ! -r "$SECRET_NAMES_FILE" ]; then
+	note "local Secret Name manifest is unreadable: $SECRET_NAMES_FILE"
 	exit 1
 fi
 

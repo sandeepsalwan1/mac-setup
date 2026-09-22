@@ -136,7 +136,7 @@ whole point is learning the one you own.
   and no `vim.lsp.enable()` call anywhere in `home/.config/nvim/`. `gd` is mapped to
   `Snacks.picker.lsp_definitions()`, which needs an attached language server to return
   anything. Until one is added, `gd` will report no results. This is a real gap in the
-  config, not a gap in your knowledge - see [[learning-records/0002-no-lsp-attached.md]].
+  config, not a gap in your knowledge.
 - **No autocomplete and no Treesitter.** Syntax highlighting is Vim's built-in regex
   engine. Expect no popup completion menu.
 - **Herdr's full keybinding table is not mirrored offline here** because the config

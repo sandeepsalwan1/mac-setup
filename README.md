@@ -4,8 +4,8 @@ Sandeep's portable macOS setup for a new work Mac. It is based on
 [kunchenguid/dotfiles](https://github.com/kunchenguid/dotfiles) and uses
 nix-darwin plus Home Manager so the same clone can be applied repeatedly.
 
-This repository is public. It contains personal configuration, agent
-instructions, Secret Names, and selected skill snapshots. It never contains
+This repository is public. It contains personal configuration, generic agent
+instructions, and selected skill snapshots. It never contains
 Secret Values, login state, chat history, databases, caches, or logs.
 
 ## Fresh Mac
@@ -51,7 +51,7 @@ lazygit, delta, ShellCheck, shfmt, Gitleaks, TruffleHog, and Hack Nerd Font.
 This repository is public, so anything specific to one workplace stays out of it
 and the checkout is built to work without it. Every skill in `skills/` is exposed,
 and the ones that only make sense inside a company are kept untracked.
-Machine-specific agent rules go in `home/AGENTS.local.md`, which `home/AGENTS.md`
+Machine-specific agent rules go in `~/AGENTS.local.md`, which `home/AGENTS.md`
 points at and Git ignores.
 
 Homebrew activation uses `cleanup = "none"` and `autoUpdate = false`. It neither
@@ -104,6 +104,9 @@ The complete global instructions live in `home/AGENTS.md` and are linked to:
 - `~/.pi/agent/AGENTS.md`
 - `~/.config/opencode/AGENTS.md`
 
+Claude uses `xhigh` effort, auto permissions, and 3,650-day transcript retention. The global
+instructions protect Kiro, Claude, and Codex session transcripts from cleanup.
+
 The repository keeps reviewed snapshots of these selected authored skills:
 
 - autoreview
@@ -139,10 +142,11 @@ external shared profile.
 Pi keeps declarative settings in this repository but runs from writable settings
 materialized by `scripts/setup-pi-runtime`, so version bookkeeping cannot modify
 tracked files. Firstmate-spawned Pi uses the regular `pi` command through a scoped
-wrapper: only launches marked `FM_PI_HARNESS=pi` receive the named Bedrock profile,
-region, and dedicated agent directory. That directory omits the global Calm
-command because Firstmate's project extension owns `/calm`, while retaining a
-command-free status helper that suppresses Pi 0.83+ toggle noise.
+wrapper. Launches marked `FM_PI_HARNESS=pi` receive the dedicated agent directory
+and inherit the parent AWS profile and region. Private host settings can override
+them through `PI_FIRSTMATE_AWS_PROFILE` and `PI_FIRSTMATE_AWS_REGION`. That directory
+omits the global Calm command because Firstmate's project extension owns `/calm`,
+while retaining a command-free status helper that suppresses Pi 0.83+ toggle noise.
 
 Browser and Computer Use are proprietary plugins distributed with Codex, so their
 implementations are not copied into Git. The tracked `computer-use-cli` skill is a
@@ -216,7 +220,8 @@ theme schema, not from a private or live theme file.
 ## Automic Vault
 
 The bootstrap installs Automic Vault from its official Homebrew tap. Git stores
-only the current Secret Names and desired hardeners under `vault/`.
+only desired hardeners under `vault/`. Secret Names stay in the ignored private
+manifest at `vault/secret-names.local.txt`.
 
 Automic Vault 3.16 does not expose a raw export or supported migration flag.
 Secret Values stay out of this repository and must be entered on the new Mac
@@ -239,7 +244,7 @@ To add one secret later without replacing an effective existing Value:
 
 The command relaunches itself in direct WezTerm when necessary, passes only the
 Secret Name between processes, accepts the Value through Automic Vault's hidden
-`/dev/tty` prompt, and adds the non-secret name to the public manifest. It opens
+`/dev/tty` prompt, and adds the name to the private local manifest. It opens
 the matching Tool-specific Gate, or the exact secret's Direct Access screen when
 no tool gate exists. Use `--approval-required` to keep per-use approval, and use
 `--replace` only when deliberately changing an existing Value. See

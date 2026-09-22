@@ -109,4 +109,17 @@ grep -Fq 'start --new-tab' "$WEZTERM_LOG" ||
 grep -Fq 'setup-vault --doctor' "$WEZTERM_LOG" ||
 	fail 'Vault setup relaunch did not preserve its action'
 
+MISSING_NAMES="$TMP_ROOT/missing/secret-names.local.txt"
+PATH="$TEST_BIN:/usr/bin:/bin:$PATH" \
+	SAVED_NAMES="$SAVED_NAMES" \
+	AV_LOG="$AV_LOG" \
+	SECRET_NAMES_FILE="$MISSING_NAMES" \
+	HARDENERS_FILE="$HARDENERS" \
+	PERMISSIONS_BIN="$TEST_BIN/permissions" \
+	VAULT_ACCESS_BIN="$TEST_BIN/setup-vault-access" \
+	"$ROOT/scripts/setup-vault" >"$TMP_ROOT/missing-names.out"
+grep -Fq 'no local Secret Name manifest exists' "$TMP_ROOT/missing-names.out" ||
+	fail 'Vault setup did not explain an absent private manifest'
+[ ! -e "$MISSING_NAMES" ] || fail 'status-only Vault setup created a manifest'
+
 pass 'setup-vault is additive, starts authorization guidance, and relaunches actions in direct WezTerm'

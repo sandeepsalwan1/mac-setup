@@ -5,7 +5,7 @@ description: Maintain and debug the shared catastrophic-command guard used by Cl
 
 # Global Agent Guardrails
 
-MyCliSdeKit installs one shared guard under `~/.agents/hooks/` and wires it into Claude, Codex, standard Pi, and FirstMate's Pi runtime.
+The setup installs one shared guard under `~/.agents/hooks/` and wires it into Claude, Codex, standard Pi, and FirstMate's Pi runtime.
 
 The guard is a seatbelt against accidents, not a sandbox. It blocks only catastrophic operations such as deleting root or an entire home, writing raw disks, piping downloads into a shell, destroying remote Git history, deleting repositories, and extracting credentials.
 

@@ -60,8 +60,12 @@ find_real_pi() {
 }
 
 if [ "${FM_PI_HARNESS:-}" = "pi" ]; then
-	export AWS_PROFILE=codex-DO-NOT-DELETE
-	export AWS_REGION=us-east-2
+	if [ -n "${PI_FIRSTMATE_AWS_PROFILE:-}" ]; then
+		export AWS_PROFILE="$PI_FIRSTMATE_AWS_PROFILE"
+	fi
+	if [ -n "${PI_FIRSTMATE_AWS_REGION:-}" ]; then
+		export AWS_REGION="$PI_FIRSTMATE_AWS_REGION"
+	fi
 	export PI_CODING_AGENT_DIR="${PI_FIRSTMATE_AGENT_DIR:-$HOME/.local/state/pi-firstmate/agent}"
 fi
 

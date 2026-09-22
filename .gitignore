@@ -44,6 +44,8 @@ __pycache__/
 /home/*.local.env
 /home/*.local.txt
 /scripts/link-local-extras
+/vault/secret-names.local.txt
+/terminal-mastery/learning-records/
 
 # Third-party book text kept locally as prompt reference material. It carries an
 # "All rights reserved" notice, so it must not be published from here. Note that a

@@ -56,7 +56,7 @@ run_add_secret() {
 		PERMISSIONS_BIN="$TEST_BIN/permissions" \
 		VAULT_ACCESS_BIN="$ROOT/scripts/setup-vault-access" \
 		WEZTERM_BIN="$TEST_BIN/wezterm" \
-		SECRET_NAMES_FILE="$FIXTURE_SECRET_NAMES_FILE" \
+		SECRET_NAMES_FILE="${SECRET_NAMES_FILE:-$FIXTURE_SECRET_NAMES_FILE}" \
 		AV_LOG="$FIXTURE_AV_LOG" \
 		AV_STATE="$FIXTURE_AV_STATE" \
 		PERMISSIONS_LOG="$FIXTURE_PERMISSIONS_LOG" \
@@ -108,5 +108,12 @@ grep -Fq 'start --new-tab' "$FIXTURE_WEZTERM_LOG" ||
 if grep -Fq 'save RELAUNCHED_SECRET' "$FIXTURE_AV_LOG"; then
 	fail 'non-WezTerm process saved a Value before relaunching'
 fi
+
+LOCAL_SECRET_NAMES="$TMP_ROOT/private/secret-names.local.txt"
+SECRET_NAMES_FILE="$LOCAL_SECRET_NAMES" run_add_secret LOCAL_SECRET >"$TMP_ROOT/local-manifest.out"
+[ "$(stat -f '%Lp' "$LOCAL_SECRET_NAMES" 2>/dev/null || stat -c '%a' "$LOCAL_SECRET_NAMES")" = 600 ] ||
+	fail 'private Secret Name manifest permissions are not 0600'
+grep -Fxq LOCAL_SECRET "$LOCAL_SECRET_NAMES" ||
+	fail 'new Secret Name was not written to the private manifest'
 
 pass 'Vault onboarding validates names, preserves Values, chooses exact gates, probes without disclosure, and relaunches in WezTerm'

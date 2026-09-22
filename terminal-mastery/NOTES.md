@@ -27,7 +27,7 @@ These are the ones that will bite, ranked by how badly:
    there, regardless of where the repository was cloned originally.
 6. **Nix and npm package versions are pinned.** Homebrew keeps a minimal baseline and
    does not record later work-specific installs back into Git.
-7. **Only four herdr key overrides are real** - see [[learning-records/0003-herdr-config-mostly-defaults.md]].
+7. **Only four Herdr key overrides are real.** Verify them against the current config.
 
 ## Prior knowledge established
 

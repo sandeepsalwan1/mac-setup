@@ -68,7 +68,6 @@ They are styled to print cleanly in black and white. Cmd-P.
 - [GLOSSARY.md](GLOSSARY.md) - the canonical words, so lessons stay consistent.
 - [RESOURCES.md](RESOURCES.md) - trusted sources, offline ones first. Includes known gaps.
 - [NOTES.md](NOTES.md) - how you want to be taught, and the gotchas specific to your setup.
-- [learning-records/](learning-records/) - what has been established, driving what comes next.
 
 ## The five things most likely to bite you
 
