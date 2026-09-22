@@ -66,10 +66,12 @@ if rg -q 'git (push|reset --hard)|--force-with-lease|update-ref' "$SCRIPT"; then
 fi
 rg -q 'rev-parse HEAD' "$SCRIPT" ||
 	fail 'sync-agent-host does not verify the host tip after transferring'
+rg -q 'scripts/install-tools' "$SCRIPT" ||
+	fail 'sync-agent-host does not apply the pinned supporting tool manifest'
 
 # Braced, because zsh reads `"$host:path"` as a parameter modifier, eats the
 # colon, and turns the copy into a local-to-local one that still exits 0.
 rg -q 'scp -q "\$BUNDLE" "\$\{host\}:' "$SCRIPT" ||
 	fail 'the scp destination does not brace the host variable'
 
-pass 'sync-agent-host discovers hosts from context-keeper, carries a self-contained bundle, and only fast-forwards'
+pass 'sync-agent-host carries a self-contained bundle, fast-forwards, and applies pinned supporting tools'

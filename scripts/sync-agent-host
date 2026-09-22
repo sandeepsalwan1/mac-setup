@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Bring an ssh host's agent setup up to this Mac's: the dotfiles commits, the
-# skill links made from them, and a report on the knowledge-base mirror.
+# Bring an SSH host's agent setup up to this Mac's: the dotfiles commits, pinned
+# supporting tools, skill links, and a report on the knowledge-base mirror.
 #
 # Why this exists rather than `git pull` on the host: origin is a public GitHub
 # repository and local commits are deliberately never pushed there, so a host
@@ -118,6 +118,12 @@ for host in "${HOSTS[@]}"; do
 	fi
 
 	ssh -o BatchMode=yes "$host" '"$HOME"/mac-setup/scripts/link-portable-skills'
+
+	if ! ssh -o BatchMode=yes "$host" '"$HOME"/mac-setup/scripts/install-tools'; then
+		note "pinned tool installation failed; host left otherwise synced"
+		failed=$((failed + 1))
+		continue
+	fi
 
 	if ! ssh -o BatchMode=yes "$host" '"$HOME"/mac-setup/scripts/link-agent-health'; then
 		note "agent-health link failed; host left otherwise synced"

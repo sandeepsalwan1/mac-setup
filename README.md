@@ -64,6 +64,7 @@ Pinned npm tools are listed in `home/npm-globals.txt`. `scripts/install-tools`
 checks each package's installed version before running npm, and installs the
 shared catastrophic-command guard without installing a review harness.
 The guard migrates three legacy broad Claude `rm` denies so named project cleanup remains usable.
+`scripts/sync-agent-host` applies the same pinned tool manifest on each configured SSH host.
 The reviewed public source registry is in `data/repos.md`.
 The reusable review prompt is in `prompts/ten-gate-review.md`; it requires runtime review and project inputs and contains no workplace-specific links.
 
