@@ -5,9 +5,9 @@ The setup uses released tools where available and snapshots only each repository
 | Repository | Commit | Use |
 | --- | --- | --- |
 | [kun](https://github.com/kunchenguid/kun) | `0a037c4e38359ebd36e03d9596cd5f4cf0d95e24` | Kun skill |
-| [firstmate](https://github.com/kunchenguid/firstmate) | `aec043c718ef186a1d28c607fd5852b041e24435` | FirstMate and stow skill |
+| [firstmate](https://github.com/kunchenguid/firstmate) | `3fcbc6c0304bbd472f401ef77439cebc6608149d` | FirstMate and stow skill |
 | [no-mistakes](https://github.com/kunchenguid/no-mistakes) | `f6441c96c352a18b9cadcaef6b6c7017e9ac3970` | Review skill and release tool |
-| [lavish-axi](https://github.com/kunchenguid/lavish-axi) | `47e690b974521a5df7a268577425b8c48419ae9a` | Lavish skill and npm tool |
+| [lavish-axi](https://github.com/kunchenguid/lavish-axi) | `a3b3987062bb77441bbe6bd0cf40cc431f18888e` | Lavish skill and npm tool |
 | [backpass](https://github.com/kunchenguid/backpass) | `74cd97a1d2faaad41b480f931a9d7f15f21cca4c` | Memory maintenance tool |
 | [dotfiles](https://github.com/kunchenguid/dotfiles) | `9a4a6387d0dd6f4bf9b8a5a732b406916bbbf95d` | Upstream configuration reference |
 | [quota-axi](https://github.com/kunchenguid/quota-axi) | `072168e76a913dca56b73bc6aba38879264b196f` | Quota skill and npm tool |
