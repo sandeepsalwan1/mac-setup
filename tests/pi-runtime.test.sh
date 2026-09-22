@@ -128,10 +128,16 @@ HOME="$TEST_HOME" \
 
 HOME="$TEST_HOME" PI_TEST_LOG="$LOG" PATH="$TEST_HOME/.local/bin:/usr/bin:/bin" \
 	env -u AWS_PROFILE -u AWS_REGION -u PI_CODING_AGENT_DIR \
+	-u PI_FIRSTMATE_AWS_PROFILE -u PI_FIRSTMATE_AWS_REGION \
 	"$TEST_HOME/.local/bin/pi" --version
 HOME="$TEST_HOME" PI_TEST_LOG="$LOG" PI_FIRSTMATE_REAL_PI="$REAL_PI" \
-	FM_PI_HARNESS=pi AWS_PROFILE=unrelated AWS_REGION=elsewhere \
-	"$TEST_HOME/.local/bin/pi" --model test
+	FM_PI_HARNESS=pi AWS_PROFILE=test-inherited-profile AWS_REGION=test-inherited-region \
+	env -u PI_FIRSTMATE_AWS_PROFILE -u PI_FIRSTMATE_AWS_REGION \
+	"$TEST_HOME/.local/bin/pi" --model inherited
+HOME="$TEST_HOME" PI_TEST_LOG="$LOG" PI_FIRSTMATE_REAL_PI="$REAL_PI" \
+	FM_PI_HARNESS=pi AWS_PROFILE=test-parent-profile AWS_REGION=test-parent-region \
+	PI_FIRSTMATE_AWS_PROFILE=test-local-profile PI_FIRSTMATE_AWS_REGION=test-local-region \
+	"$TEST_HOME/.local/bin/pi" --model local
 mkdir -p "$TMP_ROOT/wrapper-copy" "$TMP_ROOT/path-bin" "$TMP_ROOT/homebrew/bin"
 cp "$TEST_HOME/.local/bin/pi" "$TMP_ROOT/wrapper-copy/pi"
 chmod 700 "$TMP_ROOT/wrapper-copy/pi"
@@ -157,22 +163,28 @@ first=$(sed -n '1p' "$LOG")
 second=$(sed -n '2p' "$LOG")
 third=$(sed -n '3p' "$LOG")
 fourth=$(sed -n '4p' "$LOG")
+fifth=$(sed -n '5p' "$LOG")
 assert_contains "$first" 'profile= region= agent=' \
 	"ordinary Pi inherited Firstmate-only AWS or agent-directory settings"
 assert_contains "$second" \
-	"profile=codex-DO-NOT-DELETE region=us-east-2 agent=$FIRSTMATE_AGENT_DIR" \
-	"Firstmate Pi did not receive its scoped profile, region, and runtime directory"
-assert_contains "$second" 'args=--model test' \
+	"profile=test-inherited-profile region=test-inherited-region agent=$FIRSTMATE_AGENT_DIR" \
+	"Firstmate Pi did not preserve its inherited AWS profile, region, and runtime directory"
+assert_contains "$second" 'args=--model inherited' \
 	"the Pi wrapper did not preserve arguments"
-assert_contains "$third" 'args=--path-install' \
+assert_contains "$third" \
+	"profile=test-local-profile region=test-local-region agent=$FIRSTMATE_AGENT_DIR" \
+	"Firstmate Pi did not apply its explicit local AWS profile and region"
+assert_contains "$third" 'args=--model local' \
+	"the Pi wrapper did not preserve local-environment arguments"
+assert_contains "$fourth" 'args=--path-install' \
 	"the Pi wrapper did not find a regular Pi later on PATH"
-assert_contains "$third" "source=$TMP_ROOT/path-bin/pi" \
+assert_contains "$fourth" "source=$TMP_ROOT/path-bin/pi" \
 	"the PATH regression did not execute the PATH-resolved Pi"
-assert_contains "$fourth" 'args=--homebrew-install' \
+assert_contains "$fifth" 'args=--homebrew-install' \
 	"the Pi wrapper did not find a regular Pi under Homebrew"
-assert_contains "$fourth" "source=$TMP_ROOT/homebrew/bin/pi" \
+assert_contains "$fifth" "source=$TMP_ROOT/homebrew/bin/pi" \
 	"the Homebrew regression did not execute the Homebrew Pi"
-[ "$(wc -l <"$LOG" | tr -d ' ')" = 4 ] ||
+[ "$(wc -l <"$LOG" | tr -d ' ')" = 5 ] ||
 	fail 'the Pi wrapper recursed while resolving a regular Pi executable'
 
 DIRECTORY_HOME="$TMP_ROOT/directory-target-home"
@@ -219,4 +231,4 @@ source_hash_after=$(sha256_file "$SOURCE_AGENT/settings.json")
 [ "$source_hash_after" = "$source_hash_before" ] ||
 	fail 'runtime setup or simulated Pi bookkeeping changed declarative settings'
 
-pass 'Pi runtime setup separates writable settings, preserves an adjacent regular Pi, replaces backed-up directory targets, restores wrapper permissions, validates overrides, resolves PATH and Homebrew Pi without recursion, and scopes Bedrock environment'
+pass 'Pi runtime setup separates writable settings, preserves an adjacent regular Pi, replaces backed-up directory targets, restores wrapper permissions, validates overrides, resolves PATH and Homebrew Pi without recursion, and scopes inherited and local AWS environment'

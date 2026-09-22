@@ -42,6 +42,12 @@ jq -e '
   ]
 ' "$ROOT/home/.pi/agent/settings.json" >/dev/null
 
+jq -e '
+  .effortLevel == "xhigh"
+  and .cleanupPeriodDays == 3650
+  and .permissions.defaultMode == "auto"
+' "$ROOT/home/.claude/settings.json" >/dev/null
+
 for skill in \
 	chrome-devtools-axi \
 	gh-axi \
