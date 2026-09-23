@@ -14,11 +14,21 @@ CLEAN_CODE_PATH: <CLEAN_CODE_PATH>
 GOLDEN_EXAMPLE_PATH: <GOLDEN_EXAMPLE_PATH>
 REAL_ENVIRONMENT_GUIDE: <REAL_ENVIRONMENT_GUIDE>
 EXTENSION_PATHS: <EXTENSION_PATHS>
+WORK_LOG_PATH: <WORK_LOG_PATH>
+SLIM_REVIEWER_PATH: <SLIM_REVIEWER_PATH>
 ```
 
 `TARGET_REVIEW_URL`, `PROJECT_ROOT`, `TARGET_PACKAGE`, and `CLEAN_CODE_PATH` are required. `TARGET_PACKAGE` may name one package or an explicit package set. Set unavailable context inputs to `NONE`; do not invent them. `EXTENSION_PATHS` is `NONE` or an ordered, comma-separated list of project-local Markdown files.
 
 `TARGET_REVIEW_URL` is the only review this run may change. Treat every other review as read-only context. If a required input is missing, stop before changing code.
+
+## Shared work and proof
+
+Use `<WORK_LOG_PATH>` as one shared `current-working.md`; every worker reads and updates it. If it is `NONE`, create `current-working.md` under the current work directory.
+
+Use only relevant rules from `<SLIM_REVIEWER_PATH>` when provided. Add evidence without rewriting valid work. Reviewers fix supported findings, not only report them. Keep one code writer per review unit, and assign separate workers to build and verify the proof of concept.
+
+Explain the proof of concept for an eighth grader: state the task, copy the relevant metrics, show direct proof, and provide one durable reusable link. Resolve missing access before claiming it works.
 
 ## Extensions
 

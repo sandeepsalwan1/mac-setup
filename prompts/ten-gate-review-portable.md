@@ -24,6 +24,8 @@ REAL_ENVIRONMENT_GUIDE : <path to the dev-environment / integration guide for Ga
 KNOWN_NON_FINDINGS     : <path to the measured list of things that look broken and are not>
 LOCAL_HARNESS          : <path to the local verification harness, where heavy proof lives>
 EXTENSIONS             : <NONE, or an ordered comma-separated list of project-local Markdown files>
+WORK_LOG               : <path to one shared current-working.md, or NONE>
+SLIM_REVIEWER          : <path to the Slim Reviewer prompt, or NONE>
 ```
 
 `TARGET REVIEW` is required. If it is missing, stop before changing code. Every other link in this
@@ -33,6 +35,18 @@ file, and every path above, is context you may read - never an upload destinatio
 
 > **Access:** read the project's access document before access-dependent work. Inherited `AGENTS.md`
 > files own consent and mutation limits.
+
+## Shared work and proof
+
+Use `WORK_LOG` as one shared `current-working.md`; every worker reads and updates it. If it is `NONE`,
+create `current-working.md` under the current work directory.
+
+Use only relevant rules from `SLIM_REVIEWER` when provided. Add evidence without rewriting valid work.
+Reviewers fix supported findings, not only report them. Keep one code writer per review unit, and assign
+separate workers to build and verify the proof of concept.
+
+Explain the proof of concept for an eighth grader: state the task, copy the relevant metrics, show
+direct proof, and provide one durable reusable link. Resolve missing access before claiming it works.
 
 ## Extensions
 
