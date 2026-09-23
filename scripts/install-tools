@@ -134,6 +134,26 @@ install_npm_tools() {
 	[ "$install_status" -eq 0 ] || return "$install_status"
 }
 
+repair_legacy_npm_links() {
+	local legacy_dir link name target
+
+	legacy_dir="$HOME/.local/bin"
+	[ -d "$legacy_dir" ] || return 0
+
+	for target in "$NPM_PREFIX/bin"/*; do
+		[ -e "$target" ] || continue
+		name="$(basename "$target")"
+		link="$legacy_dir/$name"
+		[ -L "$link" ] || continue
+		case "$(readlink "$link")" in
+		"$HOME"/.local/nvm-default/bin/*)
+			ln -sfn "$target" "$link"
+			note "repaired legacy npm link for $name"
+			;;
+		esac
+	done
+}
+
 cleanup_chrome_devtools_hooks() {
 	local settings temp plugin marker
 	marker='chrome-devtools-axi'
@@ -256,5 +276,6 @@ install_command_guard() {
 }
 
 install_npm_tools
+repair_legacy_npm_links
 cleanup_chrome_devtools_hooks
 install_command_guard
