@@ -11,8 +11,16 @@ TEST_PREFIX="$TEST_HOME/.local/share/npm"
 TEST_MANIFEST="$TMP_ROOT/npm-globals.txt"
 INSTALL_LOG="$TMP_ROOT/npm-install.log"
 BRIDGE_LOG="$TMP_ROOT/bridge.log"
-mkdir -p "$TEST_BIN" "$TEST_PREFIX/bin"
+mkdir -p \
+	"$TEST_BIN" \
+	"$TEST_PREFIX/bin" \
+	"$TEST_HOME/.local/bin" \
+	"$TEST_HOME/.local/nvm-default/bin"
 ln -s "$(command -v jq)" "$TEST_BIN/jq"
+ln -s \
+	"$TEST_HOME/.local/nvm-default/bin/missing-tool" \
+	"$TEST_HOME/.local/bin/missing-tool"
+ln -s /opt/user/chrome-devtools-axi "$TEST_HOME/.local/bin/chrome-devtools-axi"
 
 cat >"$TEST_BIN/present-tool" <<'SH'
 #!/usr/bin/env bash
@@ -142,6 +150,12 @@ run_installer() {
 run_installer >/dev/null
 [ "$(cat "$INSTALL_LOG")" = $'missing-tool@2.0.0\nchrome-devtools-axi@0.1.30' ] ||
 	fail 'installer did not skip the already satisfied npm tool'
+[ "$(readlink "$TEST_HOME/.local/bin/missing-tool")" = \
+	"$TEST_PREFIX/bin/missing-tool" ] ||
+	fail 'installer did not repair a managed executable shadowed by a legacy NVM link'
+[ "$(readlink "$TEST_HOME/.local/bin/chrome-devtools-axi")" = \
+	/opt/user/chrome-devtools-axi ] ||
+	fail 'installer replaced a user-owned executable link'
 [ "$(cat "$BRIDGE_LOG")" = $'named:9421\nunset:unset\nunset:unset' ] ||
 	fail 'Chrome tool version changes did not retire every bridge before migration'
 
