@@ -4,15 +4,15 @@ The setup uses released tools where available and snapshots only each repository
 
 | Repository | Commit | Use |
 | --- | --- | --- |
-| [kun](https://github.com/kunchenguid/kun) | `7cbdc87f4e2e50229a94f92fc5ddc82c2fa122c9` | Kun skill |
-| [firstmate](https://github.com/kunchenguid/firstmate) | `c576c2bbb244e06597cb1722729412131158ead0` | FirstMate and stow skill |
-| [no-mistakes](https://github.com/kunchenguid/no-mistakes) | `56f82f2934e807cc0b9ae96a5df93faa88e85e5b` | Review skill and release tool |
+| [kun](https://github.com/kunchenguid/kun) | `1b383a57cb57ec91cc1237707a3ce09ff0c1e8cd` | Kun skill |
+| [firstmate](https://github.com/kunchenguid/firstmate) | `fdd36879df8de0a2b9455b5427227f100758b108` | FirstMate and stow skill |
+| [no-mistakes](https://github.com/kunchenguid/no-mistakes) | `8ba4b646c77c2f1bdb3762bc9f7b637bb4b2456e` | Review skill and release tool |
 | [lavish-axi](https://github.com/kunchenguid/lavish-axi) | `69574a88977553385c485c4eccc93999e7ca2793` | Lavish skill and npm tool |
-| [backpass](https://github.com/kunchenguid/backpass) | `02af5b818a9199f77ed08335ffca413850c92f60` | Memory maintenance tool |
+| [backpass](https://github.com/kunchenguid/backpass) | `036e51033e5e51b76d677b96e9336e736bda110d` | Memory maintenance tool |
 | [dotfiles](https://github.com/kunchenguid/dotfiles) | `9a4a6387d0dd6f4bf9b8a5a732b406916bbbf95d` | Upstream configuration reference |
-| [quota-axi](https://github.com/kunchenguid/quota-axi) | `7054c3699a0db616e7d0f89ab1e120990de4fd6a` | Quota skill and npm tool |
-| [compact-adviser](https://github.com/kunchenguid/compact-adviser) | `f249698f9c963a58a5ffc31605c12efea4aa79ca` | Compaction advice tool |
-| [treehouse](https://github.com/kunchenguid/treehouse) | `02d9f5c2ad2dc79751dcc445b87ddff8802d36a6` | Isolated worktree tool |
+| [quota-axi](https://github.com/kunchenguid/quota-axi) | `abe09a09f2b53ff4cf9f88ac32094e250b259bf0` | Quota skill and npm tool |
+| [compact-adviser](https://github.com/kunchenguid/compact-adviser) | `6f06d046a5c041a74e44a9f21bfd295fd918b4a3` | Compaction advice tool |
+| [treehouse](https://github.com/kunchenguid/treehouse) | `1185dc6cc50e1b66ef5c74b8ac677a6251258abc` | Isolated worktree tool |
 | [chrome-devtools-axi](https://github.com/kunchenguid/chrome-devtools-axi) | `0425edbe291139b6a6f3f1e3384c75203d7c44b4` | Browser skill and npm tool |
 | [gh-axi](https://github.com/kunchenguid/gh-axi) | `4ce029f870b49a061989a2a261e70606ba68eb46` | GitHub skill and npm tool |
 | [vision](https://github.com/kunchenguid/vision) | `7a20c38181151ec67efdf8fa2cb03a60123a7b83` | Visual review skill |
