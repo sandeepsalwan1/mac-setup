@@ -3,11 +3,22 @@
     "ENABLE_CLAUDEAI_MCP_SERVERS": "0",
     "CLAUDE_CODE_DISABLE_BUNDLED_SKILLS": "1"
   },
-  "model": "opus",
+  "model": "claude-opus-5-5",
+  "fallbackModel": [
+    "global.anthropic.claude-opus-5[1m]",
+    "global.anthropic.claude-opus-4-8[1m]"
+  ],
   "modelSettings": {
     "claude-opus-5": {
       "effortLevel": "xhigh"
+    },
+    "claude-opus-5-5": {
+      "effortLevel": "xhigh"
     }
+  },
+  "modelOverrides": {
+    "claude-opus-5-5": "global.anthropic.claude-opus-5-5",
+    "claude-opus-5-5[1m]": "global.anthropic.claude-opus-5-5[1m]"
   },
   "hooks": {
     "SessionStart": [
@@ -28,6 +39,7 @@
     "command": "input=$(cat); model=$(echo \"$input\" | jq -r '.model.display_name'); used=$(echo \"$input\" | jq -r '.context_window.used_percentage // empty'); if [ -n \"$used\" ]; then printf \"%s | ctx: %.0f%% used\" \"$model\" \"$used\"; else printf \"%s\" \"$model\"; fi"
   },
   "effortLevel": "xhigh",
+  "ultracode": true,
   "cleanupPeriodDays": 3650,
   "permissions": {
     "defaultMode": "auto"

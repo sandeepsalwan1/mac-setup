@@ -43,9 +43,17 @@ jq -e '
 ' "$ROOT/home/.pi/agent/settings.json" >/dev/null
 
 jq -e '
-  .model == "opus"
+  .model == "claude-opus-5-5"
+  and .fallbackModel == [
+    "global.anthropic.claude-opus-5[1m]",
+    "global.anthropic.claude-opus-4-8[1m]"
+  ]
   and .modelSettings["claude-opus-5"].effortLevel == "xhigh"
+  and .modelSettings["claude-opus-5-5"].effortLevel == "xhigh"
+  and .modelOverrides["claude-opus-5-5"] == "global.anthropic.claude-opus-5-5"
+  and .modelOverrides["claude-opus-5-5[1m]"] == "global.anthropic.claude-opus-5-5[1m]"
   and .effortLevel == "xhigh"
+  and .ultracode == true
   and .cleanupPeriodDays == 3650
   and .permissions.defaultMode == "auto"
 ' "$ROOT/home/.claude/settings.json" >/dev/null
