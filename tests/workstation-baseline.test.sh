@@ -9,7 +9,7 @@ chrome-devtools-axi@0.1.35
 chrome-devtools-mcp@1.9.0
 gh-axi@0.1.35
 lavish-axi@0.1.78
-quota-axi@0.1.50
+quota-axi@0.1.52
 tasks-axi@0.2.6
 @earendil-works/pi-coding-agent@0.87.0'
 actual_npm="$(grep -Ev '^[[:space:]]*(#|$)' "$ROOT/home/npm-globals.txt")"
@@ -43,7 +43,9 @@ jq -e '
 ' "$ROOT/home/.pi/agent/settings.json" >/dev/null
 
 jq -e '
-  .effortLevel == "xhigh"
+  .model == "opus"
+  and .modelSettings["claude-opus-5"].effortLevel == "xhigh"
+  and .effortLevel == "xhigh"
   and .cleanupPeriodDays == 3650
   and .permissions.defaultMode == "auto"
 ' "$ROOT/home/.claude/settings.json" >/dev/null
@@ -91,3 +93,31 @@ grep -F 'Extensions may only strengthen an existing gate.' "$ROOT/prompts/ten-ga
 if rg -i 'amazon|lineage|code\.amazon\.com|CR-[0-9]+' "$ROOT/prompts/ten-gate-review.md" >/dev/null; then
 	exit 1
 fi
+
+grep -F 'TARGET REVIEW :' "$ROOT/prompts/ten-gate-review-portable.md" >/dev/null
+grep -F 'GOLDEN_EXAMPLE' "$ROOT/prompts/ten-gate-review-portable.md" >/dev/null
+grep -F 'CLEAN_CODE' "$ROOT/prompts/ten-gate-review-portable.md" >/dev/null
+grep -F 'EXTENSIONS' "$ROOT/prompts/ten-gate-review-portable.md" >/dev/null
+grep -F "make it so that the edge case shouldn't exist in the first place" \
+	"$ROOT/prompts/ten-gate-review-portable.md" >/dev/null
+grep -F '/** Gamma regions in the live deployment order, IAD first. */' \
+	"$ROOT/prompts/ten-gate-review-portable.md" >/dev/null
+grep -F '/** Production regions grouped into the live 1/2/2/3 waves, in wave order. */' \
+	"$ROOT/prompts/ten-gate-review-portable.md" >/dev/null
+if rg -i 'amazon|lineage|code\.amazon\.com|CR-[0-9]+' "$ROOT/prompts/ten-gate-review-portable.md" >/dev/null; then
+	exit 1
+fi
+
+for prompt in slim-reviewer slim-builder; do
+	grep -F '<TEN_GATE_PATH>' "$ROOT/prompts/$prompt.md" >/dev/null
+	grep -F '<PROJECT_ROOT>' "$ROOT/prompts/$prompt.md" >/dev/null
+	grep -F '<GOLDEN_EXAMPLE_PATH>' "$ROOT/prompts/$prompt.md" >/dev/null
+	grep -F '<FINDINGS_ROOT>' "$ROOT/prompts/$prompt.md" >/dev/null
+	grep -F 'Set unavailable optional inputs to' "$ROOT/prompts/$prompt.md" >/dev/null
+	if rg -i 'amazon|lineage|code\.amazon\.com|CR-[0-9]+' "$ROOT/prompts/$prompt.md" >/dev/null; then
+		exit 1
+	fi
+done
+
+grep -F 'Never verify your own finding.' "$ROOT/prompts/slim-reviewer.md" >/dev/null
+grep -F 'You are the only writer for the targets listed in' "$ROOT/prompts/slim-builder.md" >/dev/null

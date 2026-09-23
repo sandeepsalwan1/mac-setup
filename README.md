@@ -195,7 +195,8 @@ the reply - past the faked limit `clampMaxTokensToContext` collapses the output 
 to a single token. `home/.pi/agent/extensions/early-compaction.ts` holds the 272K
 threshold instead and leaves every published window alone, so the footer on a 1.05M
 Bedrock model correctly reads a low percentage of 1M while compaction still runs at
-272K. `tests/pi-compaction.test.sh` pins both halves.
+272K. The runtime setup installs the same extension into FirstMate's isolated Pi
+home. `tests/pi-compaction.test.sh` pins both halves.
 
 `home/.pi/agent/settings.json` declares third-party Pi packages as exact npm
 version pins, currently `pi-web-access`,

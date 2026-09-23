@@ -217,6 +217,10 @@ install_runtime_file \
 	"$SOURCE_AGENT_DIR/extensions/command-guard.ts" \
 	"$FIRSTMATE_AGENT_DIR/extensions/command-guard.ts" \
 	"firstmate-command-guard-extension"
+install_runtime_file \
+	"$SOURCE_AGENT_DIR/extensions/early-compaction.ts" \
+	"$FIRSTMATE_AGENT_DIR/extensions/early-compaction.ts" \
+	"firstmate-early-compaction-extension"
 
 install_wrapper
 

@@ -35,6 +35,7 @@ printf '%s\n' '# Test agents' >"$SOURCE_AGENT/AGENTS.md"
 printf '%s\n' 'calm' >"$SOURCE_AGENT/extensions/calm/index.ts"
 printf '%s\n' 'status helper' >"$SOURCE_AGENT/extensions/firstmate-calm-status.ts"
 printf '%s\n' 'command guard' >"$SOURCE_AGENT/extensions/command-guard.ts"
+printf '%s\n' 'early compaction' >"$SOURCE_AGENT/extensions/early-compaction.ts"
 printf '%s\n' 'title' >"$SOURCE_AGENT/extensions/terminal-status-title.js"
 ln -s "$SOURCE_AGENT/settings.json" "$AGENT_DIR/settings.json"
 ln -s "$SOURCE_AGENT/models.json" "$AGENT_DIR/models.json"
@@ -83,6 +84,12 @@ if [ ! -f "$FIRSTMATE_AGENT_DIR/extensions/command-guard.ts" ] ||
 	! cmp -s "$SOURCE_AGENT/extensions/command-guard.ts" \
 		"$FIRSTMATE_AGENT_DIR/extensions/command-guard.ts"; then
 	fail 'Firstmate runtime did not install the shared command guard'
+fi
+if [ ! -f "$FIRSTMATE_AGENT_DIR/extensions/early-compaction.ts" ] ||
+	[ -L "$FIRSTMATE_AGENT_DIR/extensions/early-compaction.ts" ] ||
+	! cmp -s "$SOURCE_AGENT/extensions/early-compaction.ts" \
+		"$FIRSTMATE_AGENT_DIR/extensions/early-compaction.ts"; then
+	fail 'Firstmate runtime did not install the shared early compaction extension'
 fi
 [ "$(readlink "$FIRSTMATE_AGENT_DIR/models.json")" = "$AGENT_DIR/models.json" ] ||
 	fail 'Firstmate runtime did not reuse the declared model catalog'
@@ -195,11 +202,14 @@ mkdir -p \
 	"$DIRECTORY_AGENT/settings.json" \
 	"$DIRECTORY_FIRSTMATE/settings.json" \
 	"$DIRECTORY_FIRSTMATE/extensions/firstmate-calm-status.ts" \
+	"$DIRECTORY_FIRSTMATE/extensions/early-compaction.ts" \
 	"$DIRECTORY_HOME/.local/bin/pi"
 printf '%s\n' 'agent settings directory' >"$DIRECTORY_AGENT/settings.json/sentinel"
 printf '%s\n' 'Firstmate settings directory' >"$DIRECTORY_FIRSTMATE/settings.json/sentinel"
 printf '%s\n' 'helper directory' \
 	>"$DIRECTORY_FIRSTMATE/extensions/firstmate-calm-status.ts/sentinel"
+printf '%s\n' 'early compaction directory' \
+	>"$DIRECTORY_FIRSTMATE/extensions/early-compaction.ts/sentinel"
 printf '%s\n' 'wrapper directory' >"$DIRECTORY_HOME/.local/bin/pi/sentinel"
 HOME="$DIRECTORY_HOME" \
 	PI_DECLARATIVE_AGENT_DIR="$SOURCE_AGENT" \
@@ -212,6 +222,7 @@ for target in \
 	"$DIRECTORY_AGENT/settings.json" \
 	"$DIRECTORY_FIRSTMATE/settings.json" \
 	"$DIRECTORY_FIRSTMATE/extensions/firstmate-calm-status.ts" \
+	"$DIRECTORY_FIRSTMATE/extensions/early-compaction.ts" \
 	"$DIRECTORY_HOME/.local/bin/pi"; do
 	[ -f "$target" ] && [ ! -d "$target" ] ||
 		fail "setup left a directory in place of runtime file $target"
@@ -222,6 +233,7 @@ for backup in \
 	agent-settings.directory/sentinel \
 	firstmate-settings.directory/sentinel \
 	firstmate-calm-status-extension.directory/sentinel \
+	firstmate-early-compaction-extension.directory/sentinel \
 	pi-wrapper.directory/sentinel; do
 	find "$DIRECTORY_BACKUPS" -path "*/$backup" -print -quit |
 		grep -q . || fail "setup did not back up directory target $backup"
