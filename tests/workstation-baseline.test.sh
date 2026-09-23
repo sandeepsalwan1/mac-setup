@@ -89,7 +89,11 @@ grep -F '<TARGET_REVIEW_URL>' "$ROOT/prompts/ten-gate-review.md" >/dev/null
 grep -F '<PROJECT_ROOT>' "$ROOT/prompts/ten-gate-review.md" >/dev/null
 grep -F '<TARGET_PACKAGE>' "$ROOT/prompts/ten-gate-review.md" >/dev/null
 grep -F '<EXTENSION_PATHS>' "$ROOT/prompts/ten-gate-review.md" >/dev/null
+grep -F '<WORK_LOG_PATH>' "$ROOT/prompts/ten-gate-review.md" >/dev/null
+grep -F '<SLIM_REVIEWER_PATH>' "$ROOT/prompts/ten-gate-review.md" >/dev/null
 grep -F 'Extensions may only strengthen an existing gate.' "$ROOT/prompts/ten-gate-review.md" >/dev/null
+grep -F 'Reviewers fix supported findings, not only report them.' "$ROOT/prompts/ten-gate-review.md" >/dev/null
+grep -F 'Explain the proof of concept for an eighth grader' "$ROOT/prompts/ten-gate-review.md" >/dev/null
 if rg -i 'amazon|lineage|code\.amazon\.com|CR-[0-9]+' "$ROOT/prompts/ten-gate-review.md" >/dev/null; then
 	exit 1
 fi
@@ -98,6 +102,12 @@ grep -F 'TARGET REVIEW :' "$ROOT/prompts/ten-gate-review-portable.md" >/dev/null
 grep -F 'GOLDEN_EXAMPLE' "$ROOT/prompts/ten-gate-review-portable.md" >/dev/null
 grep -F 'CLEAN_CODE' "$ROOT/prompts/ten-gate-review-portable.md" >/dev/null
 grep -F 'EXTENSIONS' "$ROOT/prompts/ten-gate-review-portable.md" >/dev/null
+grep -F 'WORK_LOG' "$ROOT/prompts/ten-gate-review-portable.md" >/dev/null
+grep -F 'SLIM_REVIEWER' "$ROOT/prompts/ten-gate-review-portable.md" >/dev/null
+grep -F 'Reviewers fix supported findings, not only report them.' \
+	"$ROOT/prompts/ten-gate-review-portable.md" >/dev/null
+grep -F 'Explain the proof of concept for an eighth grader' \
+	"$ROOT/prompts/ten-gate-review-portable.md" >/dev/null
 grep -F "make it so that the edge case shouldn't exist in the first place" \
 	"$ROOT/prompts/ten-gate-review-portable.md" >/dev/null
 grep -F '/** Gamma regions in the live deployment order, IAD first. */' \
