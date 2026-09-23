@@ -4,6 +4,11 @@
     "CLAUDE_CODE_DISABLE_BUNDLED_SKILLS": "1"
   },
   "model": "opus",
+  "modelSettings": {
+    "claude-opus-5": {
+      "effortLevel": "xhigh"
+    }
+  },
   "hooks": {
     "SessionStart": [
       {

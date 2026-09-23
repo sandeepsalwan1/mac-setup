@@ -10,7 +10,7 @@ The setup uses released tools where available and snapshots only each repository
 | [lavish-axi](https://github.com/kunchenguid/lavish-axi) | `69574a88977553385c485c4eccc93999e7ca2793` | Lavish skill and npm tool |
 | [backpass](https://github.com/kunchenguid/backpass) | `02af5b818a9199f77ed08335ffca413850c92f60` | Memory maintenance tool |
 | [dotfiles](https://github.com/kunchenguid/dotfiles) | `9a4a6387d0dd6f4bf9b8a5a732b406916bbbf95d` | Upstream configuration reference |
-| [quota-axi](https://github.com/kunchenguid/quota-axi) | `1c5f5bbde9ce49524b352a7e5b8dfee901567157` | Quota skill and npm tool |
+| [quota-axi](https://github.com/kunchenguid/quota-axi) | `7054c3699a0db616e7d0f89ab1e120990de4fd6a` | Quota skill and npm tool |
 | [compact-adviser](https://github.com/kunchenguid/compact-adviser) | `f249698f9c963a58a5ffc31605c12efea4aa79ca` | Compaction advice tool |
 | [treehouse](https://github.com/kunchenguid/treehouse) | `02d9f5c2ad2dc79751dcc445b87ddff8802d36a6` | Isolated worktree tool |
 | [chrome-devtools-axi](https://github.com/kunchenguid/chrome-devtools-axi) | `0425edbe291139b6a6f3f1e3384c75203d7c44b4` | Browser skill and npm tool |
