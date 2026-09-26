@@ -22,7 +22,7 @@ These are the ones that will bite, ranked by how badly:
 3. **`clipboard = 'unnamedplus'`.** Every yank *and every delete* goes to the macOS
    clipboard. `x` on a character replaces whatever you had copied.
 4. **Homebrew `cleanup = "none"`.** `configuration.nix`. Rebuilds install the small
-   shared baseline without deleting Amazon-specific or other local packages.
+   shared baseline without deleting work-specific or other local packages.
 5. **The stable checkout path is `~/.dotfiles`.** Home Manager's live symlinks point
    there, regardless of where the repository was cloned originally.
 6. **Nix and npm package versions are pinned.** Homebrew keeps a minimal baseline and
