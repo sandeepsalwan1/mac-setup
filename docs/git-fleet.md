@@ -122,7 +122,7 @@ Anything specific to one machine or one workplace goes in that host's shell
 environment instead, because this repository is public:
 
 ```sh
-export GIT_FLEET_PRUNE="brazil-pkg-cache .brazil .toolbox"   # more directory names
+export GIT_FLEET_PRUNE="vendor-cache .build-cache"           # more directory names
 export GIT_FLEET_EXCLUDE="$HOME/some/backup-tree"            # whole path prefixes
 ```
 

@@ -4,14 +4,14 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 
 expected_npm='acpx@0.18.0
-backpass@0.1.26
+backpass@0.1.28
 chrome-devtools-axi@0.1.35
 chrome-devtools-mcp@1.9.0
 gh-axi@0.1.35
-lavish-axi@0.1.78
-quota-axi@0.1.53
+lavish-axi@0.1.79
+quota-axi@0.1.55
 tasks-axi@0.2.6
-@earendil-works/pi-coding-agent@0.87.0'
+@earendil-works/pi-coding-agent@0.87.1'
 actual_npm="$(grep -Ev '^[[:space:]]*(#|$)' "$ROOT/home/npm-globals.txt")"
 [ "$actual_npm" = "$expected_npm" ]
 
@@ -38,7 +38,7 @@ jq -e '
   and .packages == [
     "npm:pi-web-access@0.30.0",
     "npm:@ryan_nookpi/pi-extension-codex-fast-mode@0.2.7",
-    "npm:compact-adviser@0.1.7"
+    "npm:compact-adviser@0.1.9"
   ]
 ' "$ROOT/home/.pi/agent/settings.json" >/dev/null
 

@@ -37,6 +37,23 @@ It performs these steps:
 The first system switch requests the macOS administrator password. Automic
 Vault setup and secret entry also require direct user interaction.
 
+## Layout
+
+| Path | What it holds |
+| --- | --- |
+| `bootstrap.sh`, `rebuild.sh` | First install, and re-apply after edits |
+| `flake.nix`, `configuration.nix`, `home.nix` | macOS system and home configuration |
+| `home/` | Dotfiles linked into your home folder, including the global `AGENTS.md` |
+| `scripts/` | Setup, sync, and helper commands |
+| `skills/` | Agent skills linked into every agent's skill folder |
+| `prompts/` | Reusable review and builder prompts |
+| `docs/` | Guides for Automic Vault, macOS permissions, and the git fleet view |
+| `data/repos.md` | Public sources and the commit each snapshot was reviewed at |
+| `vault/hardeners.txt` | Automic Vault hardeners to apply |
+| `terminal-mastery/` | Offline terminal course, opened with `learn` |
+| `tests/` | Behavior tests; `tests/check.sh` runs them all |
+| `AGENTS.md`, `CLAUDE.md`, `.backpassrc.json` | Agent notes for this repository and the Backpass config |
+
 ## What it installs
 
 The Homebrew baseline is deliberately small:
@@ -107,32 +124,33 @@ The complete global instructions live in `home/AGENTS.md` and are linked to:
 Claude uses `xhigh` effort, auto permissions, and 3,650-day transcript retention. The global
 instructions protect Kiro, Claude, and Codex session transcripts from cleanup.
 
-The repository keeps reviewed snapshots of these selected authored skills:
+The repository keeps reviewed snapshots of these skills:
 
 - autoreview
 - chrome-devtools-axi
 - computer-use-cli
 - create-project-level-agents-md-file
+- create-readonly-db-role
+- cross-host-workflow
 - defuddle
+- gh-axi
+- global-agent-guardrails
 - grill-me
 - improve-codebase-architecture
 - json-canvas
 - kun
 - lavish
 - no-mistakes
-- quota-axi
-- stow
-- tasks-axi
-- teach
-- vision
-- gh-axi
-- global-agent-guardrails
-- create-readonly-db-role
 - obsidian-bases
 - obsidian-cli
 - obsidian-markdown
 - personal-context
+- quota-axi
 - shadcn
+- stow
+- tasks-axi
+- teach
+- vision
 
 The activation linker exposes each one through `~/.skills`, `~/.agents/skills`,
 `~/.codex/skills`, and `~/.claude/skills`. It preserves unrelated skills and
