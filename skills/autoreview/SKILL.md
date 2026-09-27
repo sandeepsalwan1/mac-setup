@@ -18,6 +18,7 @@ Do not invoke Autoreview automatically unless the user or repository rules expli
   Use `--max-priority P1`, `P2`, or `P3` only when the caller explicitly asks
   for a wider review.
 - Treat review output as advisory. Never blindly apply it.
+- Before every repository inspection command, verify the active worktree and never inspect another worktree unless the task explicitly authorizes it.
 - Verify every finding by reading the real code path and adjacent files.
 - Read dependency docs/source/types when the finding depends on external behavior.
 - Reject unrealistic edge cases, speculative risks, unrelated rewrites, and fixes that over-complicate the codebase.
@@ -25,6 +26,8 @@ Do not invoke Autoreview automatically unless the user or repository rules expli
 - When an accepted finding exposes a bug class or repeated pattern, inspect its owner and relevant sibling implementations before fixing.
 - Fix the same bug class across its owner-boundary neighborhood when practical; stop at unrelated invariants, different owners, and unapproved contract changes.
 - Run one bounded review pass. If an accepted finding changes code, run the smallest relevant test; rerun Autoreview only when the user explicitly requests another pass.
+- After reviewing a code change, run the relevant focused test and build commands before declaring the review complete, or report the exact blocker.
+- Do not make defect-free or proven claims while any required evidence is incomplete, truncated, or contradicted.
 - For security-audit suppression changes, verify accepted findings remain auditable: suppressed findings stay in structured output, active output keeps an unsuppressible suppression notice, and aggregate findings cannot hide unrelated active risk.
 - Never switch or override the requested review engine/model except for the documented Codex Sol-to-Terra account-access fallback. Capacity, rate-limit, and unrelated failures keep the same engine/model.
 - Be patient with large bundles. Structured review can take up to 30 minutes while the model call is active, especially with Codex tools or web search.
