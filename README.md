@@ -88,6 +88,7 @@ an existing path untouched. `scripts/sync-agent-host` applies the same pinned to
 on each configured SSH host.
 The reviewed public source registry is in `data/repos.md`.
 The reusable review prompt is in `prompts/ten-gate-review.md`; it requires runtime review and project inputs and contains no workplace-specific links.
+`prompts/clean-code-review-checklist.md` and `prompts/review-report-template.md` are short, original public companions. Keep the full private codebook and project-specific review reports outside this repository. Pass approved local copies as inputs when a review needs them.
 
 Backpass is pinned there and configured by `.backpassrc.json`. It treats
 `AGENTS.md` as this repository's canonical memory file and places accepted skill
