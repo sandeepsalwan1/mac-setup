@@ -81,6 +81,14 @@ note 'step 6/12: additive Claude Code and Codex'
 note 'step 7/12: pinned agent tools'
 "$DIR/scripts/install-tools"
 
+if command -v no-mistakes >/dev/null 2>&1; then
+	note 'no-mistakes is already installed'
+else
+	note 'installing no-mistakes'
+	curl -fsSL https://raw.githubusercontent.com/kunchenguid/no-mistakes/main/docs/install.sh | sh
+	command -v no-mistakes >/dev/null 2>&1 || die 'no-mistakes installation completed without a command'
+fi
+
 note 'step 8/12: FirstMate'
 if [ -e "$HOME/firstmate" ] || [ -L "$HOME/firstmate" ]; then
 	note 'FirstMate path already exists; leaving it untouched'

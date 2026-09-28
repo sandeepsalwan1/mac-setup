@@ -9,6 +9,7 @@ TEST_HOME="$TMP_ROOT/home"
 TEST_BIN="$TMP_ROOT/bin"
 SUDO_LOG="$TMP_ROOT/sudo.log"
 GIT_LOG="$TMP_ROOT/git.log"
+CURL_LOG="$TMP_ROOT/curl.log"
 CONFIGURED_USER="$("$ROOT/scripts/read-flake-user" "$ROOT/flake.nix")"
 [ -n "$CONFIGURED_USER" ] || fail 'could not read the configured user'
 mkdir -p "$TEST_HOME/.local/bin" "$TEST_BIN"
@@ -50,13 +51,24 @@ case "${1:-}" in
   *) exit 64 ;;
 esac
 SH
-chmod +x "$TEST_BIN/uname" "$TEST_BIN/id" "$TEST_BIN/nix" "$TEST_BIN/sudo" "$TEST_HOME/.local/bin/git" "$TEST_BIN/av"
+cat >"$TEST_BIN/curl" <<'SH'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >>"$CURL_LOG"
+cat <<'INSTALL'
+#!/bin/sh
+mkdir -p "$HOME/.local/bin"
+printf '#!/bin/sh\nexit 0\n' >"$HOME/.local/bin/no-mistakes"
+chmod +x "$HOME/.local/bin/no-mistakes"
+INSTALL
+SH
+chmod +x "$TEST_BIN/uname" "$TEST_BIN/id" "$TEST_BIN/nix" "$TEST_BIN/sudo" "$TEST_HOME/.local/bin/git" "$TEST_BIN/av" "$TEST_BIN/curl"
 
 run_bootstrap() {
 	HOME="$TEST_HOME" \
 		PATH="$TEST_BIN:/usr/bin:/bin" \
 		SUDO_LOG="$SUDO_LOG" \
 		GIT_LOG="$GIT_LOG" \
+		CURL_LOG="$CURL_LOG" \
 		MAC_SETUP_GIT_BIN="$TEST_HOME/.local/bin/git" \
 		CONFIGURED_USER="$CONFIGURED_USER" \
 		MAC_SETUP_SKIP_AGENT_CASKS=1 \
@@ -79,6 +91,10 @@ grep -Fq "flake.nix already matches $CONFIGURED_USER" "$TMP_ROOT/first.out" ||
 	fail 'bootstrap cloned the wrong FirstMate source'
 [ "$(wc -l <"$GIT_LOG" | tr -d ' ')" = 1 ] ||
 	fail 'bootstrap did not clone FirstMate exactly once'
+[ -x "$TEST_HOME/.local/bin/no-mistakes" ] ||
+	fail 'bootstrap did not install no-mistakes'
+[ "$(cat "$CURL_LOG")" = '-fsSL https://raw.githubusercontent.com/kunchenguid/no-mistakes/main/docs/install.sh' ] ||
+	fail 'bootstrap did not fetch the official no-mistakes installer'
 
 run_bootstrap >"$TMP_ROOT/second.out"
 [ "$(wc -l <"$SUDO_LOG" | tr -d ' ')" = 2 ] ||
@@ -87,6 +103,8 @@ grep -Fq 'Nix is already installed' "$TMP_ROOT/second.out" ||
 	fail 'bootstrap did not detect the existing Nix command'
 [ "$(wc -l <"$GIT_LOG" | tr -d ' ')" = 1 ] ||
 	fail 'bootstrap recloned an existing FirstMate checkout'
+[ "$(wc -l <"$CURL_LOG" | tr -d ' ')" = 1 ] ||
+	fail 'bootstrap fetched no-mistakes again on a second run'
 
 stable_user_path="/etc/profiles/per-user/\${user}/bin"
 for stable_path in \

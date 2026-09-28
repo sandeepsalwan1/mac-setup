@@ -162,6 +162,7 @@ The activation linker exposes each one through `~/.skills`, `~/.agents/skills`,
 `~/.codex/skills`, and `~/.claude/skills`. It preserves unrelated skills and
 defers entirely when `~/.local/state/agent-skills/profile-owner` declares an
 external shared profile.
+Bootstrap also installs the no-mistakes CLI on a fresh Mac.
 
 Pi keeps declarative settings in this repository but runs from writable settings
 materialized by `scripts/setup-pi-runtime`, so version bookkeeping cannot modify
