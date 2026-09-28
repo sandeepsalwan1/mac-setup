@@ -1,6 +1,6 @@
 # mac-setup
 
-Sandeep's portable macOS setup for a new work Mac. It is based on
+Sandeep's portable macOS setup for a new Mac. It is based on
 [kunchenguid/dotfiles](https://github.com/kunchenguid/dotfiles) and uses
 nix-darwin plus Home Manager so the same clone can be applied repeatedly.
 
@@ -29,10 +29,12 @@ It performs these steps:
 4. Applies nix-darwin and Home Manager.
 5. Maps the right Command key to F12 and validates it as Herdr's one-key prefix.
 6. Installs Claude Code or Codex only when that command and its Homebrew receipt are both absent.
-7. Installs only the pinned supporting agent tools that are missing or outdated.
-8. Links the locally installed official Codex Computer Use skill when available.
-9. Reports what remains for Automic Vault onboarding.
-10. Opens the complete macOS permission guide in a direct, verified WezTerm tab.
+7. Installs Pi and the pinned supporting agent tools when missing or outdated.
+8. Clones FirstMate into `~/firstmate` if that path is free.
+9. Installs readable diff tools.
+10. Links the portable skills and the official Codex Computer Use skill when available.
+11. Reports what remains for Automic Vault onboarding.
+12. Opens the complete macOS permission guide in a direct, verified WezTerm tab.
 
 The first system switch requests the macOS administrator password. Automic
 Vault setup and secret entry also require direct user interaction.
@@ -62,7 +64,7 @@ The Homebrew baseline is deliberately small:
 - [Herdr](https://herdr.dev/)
 - WezTerm
 
-Nix supplies Bun, `uv`, Node.js, Python, Git, Neovim, ripgrep, fd, fzf, jq,
+Nix supplies Bun, `uv`, Node.js, Python, Git, tmux, Neovim, ripgrep, fd, fzf, jq,
 lazygit, delta, ShellCheck, shfmt, Gitleaks, TruffleHog, and Hack Nerd Font.
 
 This repository is public, so anything specific to one workplace stays out of it
@@ -77,11 +79,13 @@ Claude Code and Codex are declared in `home/agent-casks.txt` and installed by a
 separate additive step, so an existing command or cask receipt satisfies that step
 regardless of how the tool arrived. It never reinstalls or upgrades a satisfied copy.
 
-Pinned npm tools are listed in `home/npm-globals.txt`. `scripts/install-tools`
+Pinned npm tools, including Pi, are listed in `home/npm-globals.txt`. `scripts/install-tools`
 checks each package's installed version before running npm, and installs the
 shared catastrophic-command guard without installing a review harness.
 The guard migrates three legacy broad Claude `rm` denies so named project cleanup remains usable.
-`scripts/sync-agent-host` applies the same pinned tool manifest on each configured SSH host.
+The bootstrap also clones the public FirstMate repository when `~/firstmate` is free; it leaves
+an existing path untouched. `scripts/sync-agent-host` applies the same pinned tool manifest
+on each configured SSH host.
 The reviewed public source registry is in `data/repos.md`.
 The reusable review prompt is in `prompts/ten-gate-review.md`; it requires runtime review and project inputs and contains no workplace-specific links.
 
@@ -121,12 +125,14 @@ The complete global instructions live in `home/AGENTS.md` and are linked to:
 - `~/.pi/agent/AGENTS.md`
 - `~/.config/opencode/AGENTS.md`
 
-Claude uses `xhigh` effort, auto permissions, and 3,650-day transcript retention. The global
-instructions protect Kiro, Claude, and Codex session transcripts from cleanup.
+Claude uses `xhigh` effort, bypass permissions, automatic peer-message delivery, and 3,650-day
+transcript retention. The global instructions protect Kiro, Claude, and Codex session transcripts
+from cleanup.
 
 The repository keeps reviewed snapshots of these skills:
 
 - autoreview
+- chrome-devtools-helper-for-personal
 - chrome-devtools-axi
 - computer-use-cli
 - create-project-level-agents-md-file
@@ -160,10 +166,8 @@ external shared profile.
 Pi keeps declarative settings in this repository but runs from writable settings
 materialized by `scripts/setup-pi-runtime`, so version bookkeeping cannot modify
 tracked files. Firstmate-spawned Pi uses the regular `pi` command through a scoped
-wrapper. Launches marked `FM_PI_HARNESS=pi` receive the dedicated agent directory
-and inherit the parent AWS profile and region. Private host settings can override
-them through `PI_FIRSTMATE_AWS_PROFILE` and `PI_FIRSTMATE_AWS_REGION`. That directory
-omits the global Calm command because Firstmate's project extension owns `/calm`,
+wrapper. Launches marked `FM_PI_HARNESS=pi` receive a dedicated agent directory. That directory
+omits the global Calm command because FirstMate's project extension owns `/calm`,
 while retaining a command-free status helper that suppresses Pi 0.83+ toggle noise.
 
 Browser and Computer Use are proprietary plugins distributed with Codex, so their
@@ -180,9 +184,9 @@ then run:
 ~/.dotfiles/scripts/link-official-codex-skills
 ```
 
-Authenticated personal-profile automation uses the separate `personal-chrome`
-skill. Home Manager links a strict native approval helper for Chrome's exact
-remote-debugging dialog, and the wrapper reuses its approved loopback bridge.
+For an existing personal Chrome profile, read `skills/chrome-devtools-helper-for-personal`
+before connecting. It keeps one approved bridge in use and leaves the upstream
+`chrome-devtools-axi` skill unchanged.
 
 That links the official Computer Use skill into the same four skill locations.
 The `computer-use` and `computer-use-cli` entries share one runtime: the former
@@ -192,12 +196,11 @@ cache, while the tracked CLI skill updates with this repository.
 
 ## Pi
 
-Pi is optional and this repository never installs or vendors it. Install the CLI
-from its owner with the [official Pi instructions](https://pi.dev), for example:
-
-```sh
-npm install -g --ignore-scripts @earendil-works/pi-coding-agent
-```
+The bootstrap installs the version of Pi pinned in `home/npm-globals.txt` with
+`npm install --global --ignore-scripts`. Run `pi` and use `/login` to choose a
+provider. The public settings do not choose one for you. To open FirstMate,
+run `cd ~/firstmate && pi` after bootstrap. Sign in with `gh auth login` before
+asking FirstMate to work with GitHub projects.
 
 Home Manager owns only the authored Pi resources: the `~/.pi/agent/themes` and
 `~/.pi/agent/extensions` directories, plus the individual `settings.json` file.
@@ -211,8 +214,8 @@ for three unrelated jobs: when to compact, what the footer shows, and how many o
 tokens a request may ask for. Shrinking a window to compact sooner therefore starves
 the reply - past the faked limit `clampMaxTokensToContext` collapses the output budget
 to a single token. `home/.pi/agent/extensions/early-compaction.ts` holds the 272K
-threshold instead and leaves every published window alone, so the footer on a 1.05M
-Bedrock model correctly reads a low percentage of 1M while compaction still runs at
+threshold instead and leaves every published window alone, so the footer on a large-window
+model reports the real percentage while compaction still runs at
 272K. The runtime setup installs the same extension into FirstMate's isolated Pi
 home. `tests/pi-compaction.test.sh` pins both halves.
 

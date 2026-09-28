@@ -54,6 +54,15 @@ spec="${*: -1}"
 package_name="${spec%@*}"
 version="${spec##*@}"
 printf '%s\n' "$spec" >>"$INSTALL_LOG"
+if [ "$package_name" = '@earendil-works/pi-coding-agent' ]; then
+	case " $* " in
+	*" --ignore-scripts "*) ;;
+	*) exit 66 ;;
+	esac
+	mkdir -p "$NPM_PREFIX/lib/node_modules/$package_name"
+	printf '{"version":"%s"}\n' "$version" >"$NPM_PREFIX/lib/node_modules/$package_name/package.json"
+	exit 0
+fi
 mkdir -p "$NPM_PREFIX/bin"
 if [ "$package_name" = 'chrome-devtools-axi' ]; then
 	cat >"$NPM_PREFIX/bin/$package_name" <<AXI_EOF
@@ -239,5 +248,14 @@ run_installer >/dev/null
 	fail 'rerunning a terminated Chrome upgrade did not complete bridge recycling'
 [ ! -e "$TEST_PREFIX/.chrome-devtools-axi-recycle-pending" ] ||
 	fail 'completed Chrome bridge recycling left pending state behind'
+
+printf '%s\n' '@earendil-works/pi-coding-agent@0.87.1' >"$TEST_MANIFEST"
+run_installer >/dev/null
+[ "$(tail -n 1 "$INSTALL_LOG")" = '@earendil-works/pi-coding-agent@0.87.1' ] ||
+	fail 'installer did not install the pinned Pi package'
+install_count="$(wc -l <"$INSTALL_LOG" | tr -d ' ')"
+run_installer >/dev/null
+[ "$(wc -l <"$INSTALL_LOG" | tr -d ' ')" = "$install_count" ] ||
+	fail 'installer reinstalled an already satisfied Pi package'
 
 pass 'install-tools migrates Chrome state, installs the command guard, and remains idempotent'
