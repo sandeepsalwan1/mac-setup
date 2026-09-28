@@ -16,7 +16,7 @@ die() {
 
 [ "$(uname -s)" = Darwin ] || die 'this setup supports macOS only'
 
-note 'step 1/11: Determinate Nix'
+note 'step 1/12: Determinate Nix'
 if command -v nix >/dev/null 2>&1; then
 	note 'Nix is already installed'
 else
@@ -26,7 +26,7 @@ else
 	. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
 fi
 
-note 'step 2/11: stable dotfiles path'
+note 'step 2/12: stable dotfiles path'
 if [ -L "$DOTFILES_LINK" ]; then
 	if [ "$(cd "$DOTFILES_LINK" 2>/dev/null && pwd -P || true)" != "$DIR" ]; then
 		ln -sfn "$DIR" "$DOTFILES_LINK"
@@ -37,7 +37,7 @@ else
 	ln -s "$DIR" "$DOTFILES_LINK"
 fi
 
-note 'step 3/11: configured macOS user'
+note 'step 3/12: configured macOS user'
 REAL_USER="$(id -un)"
 FLAKE_USER="$("$DIR/scripts/read-flake-user" "$DIR/flake.nix")"
 [ -n "$FLAKE_USER" ] || die 'could not read the user setting from flake.nix'
@@ -61,39 +61,46 @@ else
 	note "flake.nix already matches $REAL_USER"
 fi
 
-note 'step 4/11: nix-darwin and Home Manager'
+note 'step 4/12: nix-darwin and Home Manager'
 NIX_BIN="$(command -v nix)"
 sudo "$NIX_BIN" run github:nix-darwin/nix-darwin/nix-darwin-26.05#darwin-rebuild -- \
 	switch --flake "$DOTFILES_LINK#mac"
 
 export PATH="/etc/profiles/per-user/$REAL_USER/bin:$HOME/.local/bin:$HOME/.local/share/npm/bin:$PATH"
 
-note 'step 5/11: one-key Herdr prefix'
+note 'step 5/12: one-key Herdr prefix'
 if [ "${MAC_SETUP_SKIP_HERDR_PREFIX_CHECK:-0}" = 1 ]; then
 	note 'Herdr prefix check skipped by MAC_SETUP_SKIP_HERDR_PREFIX_CHECK'
 else
 	"$DIR/scripts/check-herdr-prefix"
 fi
 
-note 'step 6/11: additive Claude Code and Codex'
+note 'step 6/12: additive Claude Code and Codex'
 "$DIR/scripts/install-agent-tools"
 
-note 'step 7/11: pinned agent tools'
+note 'step 7/12: pinned agent tools'
 "$DIR/scripts/install-tools"
 
-note 'step 8/11: readable diffs'
+note 'step 8/12: FirstMate'
+if [ -e "$HOME/firstmate" ] || [ -L "$HOME/firstmate" ]; then
+	note 'FirstMate path already exists; leaving it untouched'
+else
+	"${MAC_SETUP_GIT_BIN:-git}" clone -- https://github.com/kunchenguid/firstmate.git "$HOME/firstmate"
+fi
+
+note 'step 9/12: readable diffs'
 "$DIR/scripts/install-diff-tools"
 
-note 'step 9/11: skill links'
+note 'step 10/12: skill links'
 "$DIR/scripts/link-portable-skills"
 "$DIR/scripts/link-official-codex-skills"
 
-note 'step 10/11: Automic Vault status'
+note 'step 11/12: Automic Vault status'
 if ! "$DIR/scripts/setup-vault"; then
 	note 'Vault is installed but still needs its first app setup'
 fi
 
-note 'step 11/11: complete macOS permission guide'
+note 'step 12/12: complete macOS permission guide'
 if [ "${MAC_SETUP_SKIP_PERMISSION_GUIDE:-0}" = 1 ]; then
 	note 'permission guide skipped by MAC_SETUP_SKIP_PERMISSION_GUIDE'
 elif ! "$DIR/scripts/setup-macos-permissions" --launch; then

@@ -3,10 +3,10 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 
-expected_npm='acpx@0.18.0
-backpass@0.1.28
+expected_npm='acpx@0.19.3
+backpass@0.1.29
 chrome-devtools-axi@0.1.35
-chrome-devtools-mcp@1.9.0
+chrome-devtools-mcp@1.10.1
 gh-axi@0.1.35
 lavish-axi@0.1.79
 quota-axi@0.1.55
@@ -32,8 +32,8 @@ if command -v swiftc >/dev/null 2>&1; then
 fi
 
 jq -e '
-  .defaultProvider == "amazon-bedrock"
-  and .defaultModel == "global.openai.gpt-5.6-sol"
+  .defaultProvider == null
+  and .defaultModel == null
   and .defaultThinkingLevel == "max"
   and .packages == [
     "npm:pi-web-access@0.30.0",
@@ -43,22 +43,19 @@ jq -e '
 ' "$ROOT/home/.pi/agent/settings.json" >/dev/null
 
 jq -e '
-  .model == "claude-opus-5-5"
-  and .fallbackModel == [
-    "global.anthropic.claude-opus-5[1m]",
-    "global.anthropic.claude-opus-4-8[1m]"
-  ]
-  and .modelSettings["claude-opus-5"].effortLevel == "xhigh"
-  and .modelSettings["claude-opus-5-5"].effortLevel == "xhigh"
-  and .modelOverrides["claude-opus-5-5"] == "global.anthropic.claude-opus-5-5"
-  and .modelOverrides["claude-opus-5-5[1m]"] == "global.anthropic.claude-opus-5-5[1m]"
+  .model == "opus"
+  and .fallbackModel == null
+  and .modelSettings == null
+  and .modelOverrides == null
   and .effortLevel == "xhigh"
   and .ultracode == true
   and .cleanupPeriodDays == 3650
-  and .permissions.defaultMode == "auto"
+  and .permissions.defaultMode == "bypassPermissions"
+  and .crossSessionInbound == "accept"
 ' "$ROOT/home/.claude/settings.json" >/dev/null
 
 for skill in \
+	chrome-devtools-helper-for-personal \
 	chrome-devtools-axi \
 	gh-axi \
 	kun \
@@ -75,6 +72,7 @@ done
 grep -F 'https://github.com/davidondrej/skills/tree/main/skills/thinking-and-docs/teach' "$ROOT/data/repos.md" >/dev/null
 
 grep -F 'kc = "kiro-cli";' "$ROOT/home.nix" >/dev/null
+grep -F 'co = "codex";' "$ROOT/home.nix" >/dev/null
 
 for repo in \
 	backpass \

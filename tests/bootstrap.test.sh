@@ -8,9 +8,10 @@ TMP_ROOT="$(dotfiles_test_tmproot bootstrap)"
 TEST_HOME="$TMP_ROOT/home"
 TEST_BIN="$TMP_ROOT/bin"
 SUDO_LOG="$TMP_ROOT/sudo.log"
+GIT_LOG="$TMP_ROOT/git.log"
 CONFIGURED_USER="$("$ROOT/scripts/read-flake-user" "$ROOT/flake.nix")"
 [ -n "$CONFIGURED_USER" ] || fail 'could not read the configured user'
-mkdir -p "$TEST_HOME" "$TEST_BIN"
+mkdir -p "$TEST_HOME/.local/bin" "$TEST_BIN"
 
 cat >"$TEST_BIN/uname" <<'SH'
 #!/usr/bin/env bash
@@ -36,6 +37,12 @@ cat >"$TEST_BIN/sudo" <<'SH'
 #!/usr/bin/env bash
 printf '%s\n' "$*" >>"$SUDO_LOG"
 SH
+cat >"$TEST_HOME/.local/bin/git" <<'SH'
+#!/usr/bin/env bash
+[ "${1:-}" = clone ] && [ "${2:-}" = -- ] || exit 64
+printf '%s\n' "$*" >>"$GIT_LOG"
+mkdir -p "$4"
+SH
 cat >"$TEST_BIN/av" <<'SH'
 #!/usr/bin/env bash
 case "${1:-}" in
@@ -43,12 +50,14 @@ case "${1:-}" in
   *) exit 64 ;;
 esac
 SH
-chmod +x "$TEST_BIN/uname" "$TEST_BIN/id" "$TEST_BIN/nix" "$TEST_BIN/sudo" "$TEST_BIN/av"
+chmod +x "$TEST_BIN/uname" "$TEST_BIN/id" "$TEST_BIN/nix" "$TEST_BIN/sudo" "$TEST_HOME/.local/bin/git" "$TEST_BIN/av"
 
 run_bootstrap() {
 	HOME="$TEST_HOME" \
 		PATH="$TEST_BIN:/usr/bin:/bin" \
 		SUDO_LOG="$SUDO_LOG" \
+		GIT_LOG="$GIT_LOG" \
+		MAC_SETUP_GIT_BIN="$TEST_HOME/.local/bin/git" \
 		CONFIGURED_USER="$CONFIGURED_USER" \
 		MAC_SETUP_SKIP_AGENT_CASKS=1 \
 		MAC_SETUP_SKIP_NPM=1 \
@@ -65,12 +74,19 @@ grep -Fq 'switch --flake' "$SUDO_LOG" ||
 	fail 'bootstrap did not invoke the nix-darwin switch'
 grep -Fq "flake.nix already matches $CONFIGURED_USER" "$TMP_ROOT/first.out" ||
 	fail 'bootstrap did not use the user configured by flake.nix'
+[ -d "$TEST_HOME/firstmate" ] || fail 'bootstrap did not clone FirstMate'
+[ "$(cat "$GIT_LOG")" = "clone -- https://github.com/kunchenguid/firstmate.git $TEST_HOME/firstmate" ] ||
+	fail 'bootstrap cloned the wrong FirstMate source'
+[ "$(wc -l <"$GIT_LOG" | tr -d ' ')" = 1 ] ||
+	fail 'bootstrap did not clone FirstMate exactly once'
 
 run_bootstrap >"$TMP_ROOT/second.out"
 [ "$(wc -l <"$SUDO_LOG" | tr -d ' ')" = 2 ] ||
 	fail 'bootstrap did not complete on a second run'
 grep -Fq 'Nix is already installed' "$TMP_ROOT/second.out" ||
 	fail 'bootstrap did not detect the existing Nix command'
+[ "$(wc -l <"$GIT_LOG" | tr -d ' ')" = 1 ] ||
+	fail 'bootstrap recloned an existing FirstMate checkout'
 
 stable_user_path="/etc/profiles/per-user/\${user}/bin"
 for stable_path in \

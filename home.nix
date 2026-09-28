@@ -27,6 +27,7 @@ in
     ripgrep
     shellcheck
     shfmt
+    tmux
     trufflehog
     uv
   ];
@@ -163,7 +164,7 @@ in
       cx = "codex";
       kc = "kiro-cli";
       fm = "cd ${config.home.homeDirectory}/firstmate";
-      co = "codex --full-auto";
+      co = "codex";
       # Re-link every skill in the dotfiles into all four skill roots. On this
       # machine Home Manager already did it, so this is the escape hatch for a
       # cloud desktop and the way to pick up a newly added skill without a
