@@ -36,7 +36,7 @@ jq -e '
   and .defaultModel == null
   and .defaultThinkingLevel == "max"
   and .packages == [
-    "npm:pi-web-access@0.30.0",
+    "npm:pi-web-access@0.33.0",
     "npm:@ryan_nookpi/pi-extension-codex-fast-mode@0.2.7",
     "npm:compact-adviser@0.1.9"
   ]
