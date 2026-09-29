@@ -111,7 +111,9 @@ fi
 
 LOCAL_SECRET_NAMES="$TMP_ROOT/private/secret-names.local.txt"
 SECRET_NAMES_FILE="$LOCAL_SECRET_NAMES" run_add_secret LOCAL_SECRET >"$TMP_ROOT/local-manifest.out"
-[ "$(stat -f '%Lp' "$LOCAL_SECRET_NAMES" 2>/dev/null || stat -c '%a' "$LOCAL_SECRET_NAMES")" = 600 ] ||
+mode=$(stat -f '%Lp' "$LOCAL_SECRET_NAMES" 2>/dev/null) ||
+	mode=$(stat -c '%a' "$LOCAL_SECRET_NAMES")
+[ "$mode" = 600 ] ||
 	fail 'private Secret Name manifest permissions are not 0600'
 grep -Fxq LOCAL_SECRET "$LOCAL_SECRET_NAMES" ||
 	fail 'new Secret Name was not written to the private manifest'
