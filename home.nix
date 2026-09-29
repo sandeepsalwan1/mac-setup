@@ -47,7 +47,6 @@ in
   ];
   home.sessionVariables = {
     EDITOR = "nvim";
-    CHROME_DEVTOOLS_AXI_AUTO_CONNECT = "1";
     CHROME_DEVTOOLS_AXI_CHANNEL = "stable";
     CHROME_DEVTOOLS_AXI_MCP_PATH = "${config.home.homeDirectory}/.local/share/npm/lib/node_modules/chrome-devtools-mcp/build/src/bin/chrome-devtools-mcp.js";
     NPM_CONFIG_PREFIX = "${config.home.homeDirectory}/.local/share/npm";
@@ -57,13 +56,6 @@ in
     GIT_FLEET_EXCLUDE = "${config.home.homeDirectory}/.claude/jobs";
   };
 
-  launchd.agents.chrome-devtools-axi-auto-connect = {
-    enable = true;
-    config = {
-      ProgramArguments = [ "/bin/launchctl" "setenv" "CHROME_DEVTOOLS_AXI_AUTO_CONNECT" "1" ];
-      RunAtLoad = true;
-    };
-  };
   launchd.agents.chrome-devtools-axi-channel = {
     enable = true;
     config = {
@@ -92,6 +84,9 @@ in
     if [ -x ${dotfiles}/scripts/link-local-extras ]; then
       ${dotfiles}/scripts/link-local-extras >/dev/null || true
     fi
+  '';
+  home.activation.disableChromeAutoConnect = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
+    /bin/launchctl unsetenv CHROME_DEVTOOLS_AXI_AUTO_CONNECT
   '';
   home.activation.piRuntime = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
     PI_DECLARATIVE_AGENT_DIR=${./home/.pi/agent} \
