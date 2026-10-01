@@ -9,6 +9,7 @@ WRAPPER_SOURCE="${PI_WRAPPER_SOURCE:-$ROOT/scripts/pi-firstmate}"
 WRAPPER_TARGET="${PI_WRAPPER_TARGET:-$HOME/.local/bin/pi}"
 BACKUP_ROOT="${PI_RUNTIME_BACKUP_ROOT:-$HOME/.local/state/mac-setup/pi-runtime-backups}"
 JQ_BIN="${JQ_BIN:-jq}"
+PROFILE_OWNER="${XDG_STATE_HOME:-$HOME/.local/state}/agent-skills/profile-owner"
 
 note() {
 	printf 'setup-pi-runtime: %s\n' "$1"
@@ -182,17 +183,28 @@ install_wrapper() {
 	note "installed scoped regular-pi wrapper at $WRAPPER_TARGET"
 }
 
-materialize_settings \
-	"$SOURCE_AGENT_DIR/settings.json" \
-	"$AGENT_DIR/settings.json" \
-	"agent-settings"
-
 mkdir -p "$FIRSTMATE_AGENT_DIR/extensions"
 chmod 700 "$FIRSTMATE_AGENT_DIR" "$FIRSTMATE_AGENT_DIR/extensions"
-materialize_settings \
-	"$AGENT_DIR/settings.json" \
-	"$FIRSTMATE_AGENT_DIR/settings.json" \
-	"firstmate-settings"
+if [ -s "$PROFILE_OWNER" ]; then
+	note "shared agent profile is externally managed; Pi settings and shared extensions unchanged"
+else
+	materialize_settings \
+		"$SOURCE_AGENT_DIR/settings.json" \
+		"$AGENT_DIR/settings.json" \
+		"agent-settings"
+	materialize_settings \
+		"$AGENT_DIR/settings.json" \
+		"$FIRSTMATE_AGENT_DIR/settings.json" \
+		"firstmate-settings"
+	install_runtime_file \
+		"$SOURCE_AGENT_DIR/extensions/command-guard.ts" \
+		"$FIRSTMATE_AGENT_DIR/extensions/command-guard.ts" \
+		"firstmate-command-guard-extension"
+	install_runtime_file \
+		"$SOURCE_AGENT_DIR/extensions/early-compaction.ts" \
+		"$FIRSTMATE_AGENT_DIR/extensions/early-compaction.ts" \
+		"firstmate-early-compaction-extension"
+fi
 
 for asset in models.json themes AGENTS.md skills; do
 	link_runtime_asset "$asset"
@@ -213,14 +225,6 @@ install_runtime_file \
 	"$SOURCE_AGENT_DIR/extensions/firstmate-calm-status.ts" \
 	"$FIRSTMATE_AGENT_DIR/extensions/firstmate-calm-status.ts" \
 	"firstmate-calm-status-extension"
-install_runtime_file \
-	"$SOURCE_AGENT_DIR/extensions/command-guard.ts" \
-	"$FIRSTMATE_AGENT_DIR/extensions/command-guard.ts" \
-	"firstmate-command-guard-extension"
-install_runtime_file \
-	"$SOURCE_AGENT_DIR/extensions/early-compaction.ts" \
-	"$FIRSTMATE_AGENT_DIR/extensions/early-compaction.ts" \
-	"firstmate-early-compaction-extension"
 
 install_wrapper
 

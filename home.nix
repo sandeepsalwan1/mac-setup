@@ -85,6 +85,9 @@ in
       ${dotfiles}/scripts/link-local-extras >/dev/null || true
     fi
   '';
+  home.activation.agentHooks = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
+    ${dotfiles}/scripts/link-agent-hooks >/dev/null
+  '';
   home.activation.disableChromeAutoConnect = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
     /bin/launchctl unsetenv CHROME_DEVTOOLS_AXI_AUTO_CONNECT
   '';
@@ -188,8 +191,6 @@ in
   };
 
   home.file = {
-    ".agents/hooks".source =
-      config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/hooks";
     ".local/libexec/chrome-devtools-axi-native.swift" = {
       source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/scripts/chrome-devtools-axi-native.swift";
       force = true;

@@ -208,6 +208,10 @@ install_command_guard() {
 	local target_dir="$HOME/.agents/hooks"
 	local name mode source target settings temp command_path
 
+	if [ -s "${XDG_STATE_HOME:-$HOME/.local/state}/agent-skills/profile-owner" ]; then
+		note 'command guard is externally managed; 0 files changed'
+		return
+	fi
 	mkdir -p "$target_dir"
 	for name in dangerous-patterns.txt deny-dangerous.sh test-guard.sh; do
 		source="$source_dir/$name"

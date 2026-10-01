@@ -258,4 +258,15 @@ run_installer >/dev/null
 [ "$(wc -l <"$INSTALL_LOG" | tr -d ' ')" = "$install_count" ] ||
 	fail 'installer reinstalled an already satisfied Pi package'
 
-pass 'install-tools migrates Chrome state, installs the command guard, and remains idempotent'
+mkdir -p "$TEST_HOME/.local/state/agent-skills"
+printf '%s\n' external >"$TEST_HOME/.local/state/agent-skills/profile-owner"
+printf '%s\n' 'external pattern' >"$TEST_HOME/.agents/hooks/dangerous-patterns.txt"
+jq -n '{external: true}' >"$TEST_HOME/.claude/settings.json"
+guard_before=$(sha256_file "$TEST_HOME/.agents/hooks/dangerous-patterns.txt")
+claude_before=$(sha256_file "$TEST_HOME/.claude/settings.json")
+run_installer >/dev/null
+[ "$(sha256_file "$TEST_HOME/.agents/hooks/dangerous-patterns.txt")" = "$guard_before" ] &&
+	[ "$(sha256_file "$TEST_HOME/.claude/settings.json")" = "$claude_before" ] ||
+	fail 'installer replaced a command guard owned by an external shared profile'
+
+pass 'install-tools migrates Chrome state, installs the command guard, defers to an external guard owner, and remains idempotent'

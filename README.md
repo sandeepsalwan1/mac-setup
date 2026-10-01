@@ -180,6 +180,8 @@ tracked files. Firstmate-spawned Pi uses the regular `pi` command through a scop
 wrapper. Launches marked `FM_PI_HARNESS=pi` receive a dedicated agent directory. That directory
 omits the global Calm command because FirstMate's project extension owns `/calm`,
 while retaining a command-free status helper that suppresses Pi 0.83+ toggle noise.
+When the shared profile marker above exists, its owner keeps the Pi settings, the Firstmate guard
+and compaction extensions, and `~/.agents/hooks`; setup leaves them unchanged.
 
 Browser and Computer Use are proprietary plugins distributed with Codex, so their
 implementations are not copied into Git. The tracked `computer-use-cli` skill is a
