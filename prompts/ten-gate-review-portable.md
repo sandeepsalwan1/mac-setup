@@ -211,9 +211,10 @@ If this file and a decisions record disagree about authority, the decisions reco
 |---|---|
 | 2 | `HISTORICAL_MISTAKES` - the prior-review mistake report, BUG/RISK list first |
 | 3 | `CLEAN_CODE` - the clean-code book, read in full |
-| 4 | the repository's declared independent review engine, and one documented fallback |
+| 4 | the repository's declared independent review engine and the installed automated-reviewer skill, in parallel, and one documented fallback |
 | 5, 7 | `GOLDEN_EXAMPLE`, its index entry, and the other reference packages beside it |
 | 6 | `REAL_ENVIRONMENT_GUIDE` and `LOCAL_HARNESS` |
+| 8 | `BASE_REVIEW` and the lessons files beside `HISTORICAL_MISTAKES` |
 | 0, all | `KNOWN_NON_FINDINGS` |
 
 ### Prior evidence - read before commissioning any new review
@@ -408,6 +409,12 @@ there, do not rewrite history to hide it. The fix is a clean duplicate: raise a 
 final squashed commit, at revision 1, and say in one line which review it replaces. Cost does not matter
 and a new review is cheap. Never do this to a review that is already published or already merged.
 
+**Clear automated-reviewer comments before publication.** When a draft draws an automated-reviewer
+comment, judge whether the code supports it. If it is a real issue, fix it, take that draft down, and
+raise a fresh private draft from the fix. Repeat until a draft carries no automated-reviewer comments, so
+none show in the review history. Record an unsupported comment in your report with one line of reasoning.
+Never publish the draft yourself.
+
 **Never overwrite text a human wrote.** If the commit message, title, or review description looks
 hand-edited, treat it as frozen and keep it word for word, including through an `--amend` or a squash that
 would otherwise regenerate it. A past run destroyed a message the operator had just rewritten. Read the
@@ -537,11 +544,11 @@ the principles and apply them.
 
 ### Gate 4: Independent second-model review
 
-Run one independent review engine over the current diff. Prefer the repository's declared reviewer
-because it is fast and model-independent. If it cannot run, fall back in this order: the installed
-automated-reviewer skill, then the shortest local review pipeline covering code review, tests, lint,
-and documentation. Do not run all three, do not wait for remote CI, and do not build a substitute
-workflow around any of them.
+Run two independent review engines over the current diff, in parallel: the repository's declared
+reviewer, because it is fast and model-independent, and the installed automated-reviewer skill. If
+either cannot run, use the shortest local review pipeline covering code review, tests, lint, and
+documentation in its place. Do not run all three, do not wait for remote CI, and do not build a
+substitute workflow around any of them.
 
 Treat the output as advisory: fix the findings that qualify under the severity rule, commit them, and
 rerun only this gate. Findings the code does not support are dismissed with one line of reasoning.
@@ -587,26 +594,18 @@ most of that. Where the project deliberately differs, the difference must be jus
 and you say which in one line. The golden's index entry also names the golden's own known defects, which
 must not be inherited, so read that section before copying anything.
 
-### Gate 8: Align with the review behind you, at the very end
+### Gate 8: Critical - merge conflicts and the lessons files, at the very end
 
 Run this last, after every other gate has passed, once. No loop.
 
-**The review behind you wins.** Read the current draft of `BASE_REVIEW` - the unit immediately before
-yours - and make your unit follow it: names, shared helpers, schema and profile identifiers, file and
-directory layout, the cross-repo contract where one exists, and anything that would collide on merge.
-Where the two disagree, you change yours. It landed first, later units are stacked on it, and editing it
-would cascade a conflict through every unit above it. When `BASE_REVIEW` is `NONE`, compare against the
-target branch instead.
+Confirm the unit has no merge conflict with `BASE_REVIEW`, or with the target branch when `BASE_REVIEW`
+is `NONE`. That is a quick check.
 
-**You may not edit the previous review.** Not one line, not a rename, not a "trivial" fix. It is
-read-only context. The single exception is a defect there that is genuinely unacceptable to ship - a
-correctness, safety, or data-loss defect, not a preference and not a style difference. In that case you
-still change nothing: name it in your report, say why following it is worse than diverging, diverge in
-your own unit only, and move on.
-
-Fix only cheap, obvious drift, and only in your own unit. Do not restructure to chase consistency. Note
-what you could not reconcile and move on. FAIL only for a real merge-order or contract break, never for
-cosmetic divergence.
+Then read the lessons files beside `HISTORICAL_MISTAKES` - the condensed core, the full lessons file, and
+the ledger where one exists - and confirm this unit repeats none of their errors. Give each file its own
+parallel worker. A worker may decide which entries apply, but it reads the whole file. When
+`HISTORICAL_MISTAKES` is `NONE`, run only the merge-conflict check. The goal is zero QA findings and no
+new revision.
 
 ### Gate 9: Long-term production thinking
 
@@ -635,9 +634,9 @@ package, leaving it untracked or outside the repository. The draft stays clean.
 - Never publish, approve, merge, deploy, release, add reviewers, or post comments on any review.
 - Never push an origin branch. Updating the assigned private draft through the propagation tool is the
   only push-like action allowed.
-- Never upload to any review other than `TARGET REVIEW`. The one exception is the clean-duplicate case in
-  section 4: a fresh private draft raised to get back to revision 1, registered with the propagation
-  tool and then treated as the target for the rest of the run.
+- Never upload to any review other than `TARGET REVIEW`. The one exception is a fresh private draft
+  raised under section 4, for a clean duplicate or to clear automated-reviewer comments, registered with
+  the propagation tool and then treated as the target for the rest of the run.
 - **Never put a real review id in a scratch or test repository's propagation config.** The post-commit
   hook is installed host-wide, so a throwaway commit in a scratch clone will try to upload to that
   review. When exercising tooling, use an obviously fake id.

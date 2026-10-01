@@ -3,15 +3,15 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 
-expected_npm='acpx@0.19.3
-backpass@0.1.29
-chrome-devtools-axi@0.1.35
+expected_npm='acpx@0.19.4
+backpass@0.1.32
+chrome-devtools-axi@0.1.36
 chrome-devtools-mcp@1.10.1
 gh-axi@0.1.35
-lavish-axi@0.1.79
+lavish-axi@0.1.80
 quota-axi@0.1.55
 tasks-axi@0.2.6
-@earendil-works/pi-coding-agent@0.87.1'
+@earendil-works/pi-coding-agent@0.99.2'
 actual_npm="$(grep -Ev '^[[:space:]]*(#|$)' "$ROOT/home/npm-globals.txt")"
 [ "$actual_npm" = "$expected_npm" ]
 
@@ -38,12 +38,12 @@ jq -e '
   and .packages == [
     "npm:pi-web-access@0.33.0",
     "npm:@ryan_nookpi/pi-extension-codex-fast-mode@0.2.7",
-    "npm:compact-adviser@0.1.9"
+    "npm:compact-adviser@0.1.11"
   ]
 ' "$ROOT/home/.pi/agent/settings.json" >/dev/null
 
 jq -e '
-  .model == "opus"
+  .model == "claude-opus-5-5[1m]"
   and .fallbackModel == null
   and .modelSettings == null
   and .modelOverrides == null
@@ -51,6 +51,7 @@ jq -e '
   and .ultracode == true
   and .cleanupPeriodDays == 3650
   and .permissions.defaultMode == "bypassPermissions"
+  and .skipDangerousModePermissionPrompt == true
   and .crossSessionInbound == "accept"
 ' "$ROOT/home/.claude/settings.json" >/dev/null
 

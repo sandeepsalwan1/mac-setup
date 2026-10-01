@@ -10,12 +10,15 @@ Secret Values, login state, chat history, databases, caches, or logs.
 
 ## Fresh Mac
 
-Run:
+Sign in with an administrator account, then run:
 
 ```sh
 git clone https://github.com/sandeepsalwan1/mac-setup.git ~/.dotfiles
 ~/.dotfiles/bootstrap.sh
 ```
+
+On a brand-new Mac, the first `git` command asks to install the Command Line
+Tools. Accept, wait for the install to finish, and run the clone again.
 
 The bootstrap is safe to rerun. It skips tools already installed at the pinned
 version, adopts an existing Homebrew installation, preserves every undeclared
@@ -87,7 +90,10 @@ The bootstrap also clones the public FirstMate repository when `~/firstmate` is 
 an existing path untouched. `scripts/sync-agent-host` applies the same pinned tool manifest
 on each configured SSH host.
 The reviewed public source registry is in `data/repos.md`.
-The reusable review prompt is in `prompts/ten-gate-review.md`; it requires runtime review and project inputs and contains no workplace-specific links.
+The reusable review prompts are in `prompts/`. `ten-gate-review.md` is the compact Ten Gate review,
+`ten-gate-review-portable.md` is the full version, and `slim-builder.md` and `slim-reviewer.md` are the
+lighter builder and reviewer prompts. Each one takes runtime review and project inputs and contains no
+workplace-specific links.
 `prompts/clean-code-review-checklist.md` and `prompts/review-report-template.md` are short, original public companions. Keep the full private codebook and project-specific review reports outside this repository. Pass approved local copies as inputs when a review needs them.
 
 Backpass is pinned there and configured by `.backpassrc.json`. It treats
@@ -126,9 +132,9 @@ The complete global instructions live in `home/AGENTS.md` and are linked to:
 - `~/.pi/agent/AGENTS.md`
 - `~/.config/opencode/AGENTS.md`
 
-Claude uses `xhigh` effort, bypass permissions, automatic peer-message delivery, and 3,650-day
-transcript retention. The global instructions protect Kiro, Claude, and Codex session transcripts
-from cleanup.
+Claude uses Opus 5.5 with the 1M context window, `xhigh` effort, ultracode, bypass permissions
+without the startup prompt, automatic peer-message delivery, and 3,650-day transcript retention.
+The global instructions protect Kiro, Claude, and Codex session transcripts from cleanup.
 
 The repository keeps reviewed snapshots of these skills:
 
@@ -140,6 +146,7 @@ The repository keeps reviewed snapshots of these skills:
 - create-readonly-db-role
 - cross-host-workflow
 - defuddle
+- development-style
 - gh-axi
 - global-agent-guardrails
 - grill-me
@@ -153,11 +160,13 @@ The repository keeps reviewed snapshots of these skills:
 - obsidian-markdown
 - personal-context
 - quota-axi
+- safe-shell-deletion
 - shadcn
 - stow
 - tasks-axi
 - teach
 - vision
+- writing-br
 
 The activation linker exposes each one through `~/.skills`, `~/.agents/skills`,
 `~/.codex/skills`, and `~/.claude/skills`. It preserves unrelated skills and
