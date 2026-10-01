@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+SOURCE="$ROOT/home/.agents/hooks"
+TARGET="$HOME/.agents/hooks"
+BACKUP="$TARGET.pre-mac-setup"
+PROFILE_OWNER="${XDG_STATE_HOME:-$HOME/.local/state}/agent-skills/profile-owner"
+
+note() {
+	printf 'agent-hooks: %s\n' "$1"
+}
+
+die() {
+	printf 'agent-hooks: %s\n' "$1" >&2
+	exit 1
+}
+
+if [ -s "$PROFILE_OWNER" ] && [ -e "$TARGET" ]; then
+	note "command guard is externally managed; 0 links changed"
+	exit 0
+fi
+
+[ "$(readlink "$TARGET" 2>/dev/null)" = "$SOURCE" ] && exit 0
+
+mkdir -p "$(dirname "$TARGET")"
+if [ -e "$TARGET" ] && [ ! -L "$TARGET" ]; then
+	[ ! -e "$BACKUP" ] && [ ! -L "$BACKUP" ] ||
+		die "refusing to replace $TARGET: $BACKUP already exists"
+	mv "$TARGET" "$BACKUP"
+	note "moved $TARGET to $BACKUP"
+fi
+ln -sfn "$SOURCE" "$TARGET"
+note "linked $TARGET"

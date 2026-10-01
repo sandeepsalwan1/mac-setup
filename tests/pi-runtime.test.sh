@@ -12,6 +12,7 @@ FIRSTMATE_AGENT_DIR="$TEST_HOME/.local/state/pi-firstmate/agent"
 REAL_PI="$TMP_ROOT/real-pi"
 LOG="$TMP_ROOT/pi-env.log"
 JQ_BIN="${JQ_BIN:-jq}"
+unset XDG_STATE_HOME
 
 file_mode() {
 	local path=$1 mode
@@ -239,8 +240,38 @@ for backup in \
 		grep -q . || fail "setup did not back up directory target $backup"
 done
 
+OWNED_HOME="$TMP_ROOT/owned-home"
+OWNED_STATE="$TMP_ROOT/owned-state"
+OWNED_FIRSTMATE="$OWNED_HOME/.local/state/pi-firstmate/agent"
+mkdir -p "$OWNED_HOME/.pi/agent" "$OWNED_FIRSTMATE/extensions" "$OWNED_STATE/agent-skills"
+printf '%s\n' external >"$OWNED_STATE/agent-skills/profile-owner"
+printf '%s\n' '{"defaultProvider":"external"}' >"$OWNED_HOME/.pi/agent/settings.json"
+printf '%s\n' '{"defaultProvider":"external"}' >"$OWNED_FIRSTMATE/settings.json"
+printf '%s\n' 'external guard' >"$OWNED_FIRSTMATE/extensions/command-guard.ts"
+printf '%s\n' 'external compaction' >"$OWNED_FIRSTMATE/extensions/early-compaction.ts"
+owned_files=(
+	"$OWNED_HOME/.pi/agent/settings.json"
+	"$OWNED_FIRSTMATE/settings.json"
+	"$OWNED_FIRSTMATE/extensions/command-guard.ts"
+	"$OWNED_FIRSTMATE/extensions/early-compaction.ts"
+)
+owned_before=$(for file in "${owned_files[@]}"; do sha256_file "$file"; done)
+HOME="$OWNED_HOME" \
+	XDG_STATE_HOME="$OWNED_STATE" \
+	PI_DECLARATIVE_AGENT_DIR="$SOURCE_AGENT" \
+	PI_RUNTIME_BACKUP_ROOT="$TMP_ROOT/owned-backups" \
+	"$ROOT/scripts/setup-pi-runtime" >"$TMP_ROOT/owned.out"
+[ "$(for file in "${owned_files[@]}"; do sha256_file "$file"; done)" = "$owned_before" ] ||
+	fail 'Pi runtime setup replaced settings or extensions owned by an external shared profile'
+grep -Fq 'externally managed' "$TMP_ROOT/owned.out" ||
+	fail 'Pi runtime setup did not report deferring to the external shared profile'
+cmp -s "$SOURCE_AGENT/extensions/firstmate-calm-status.ts" \
+	"$OWNED_FIRSTMATE/extensions/firstmate-calm-status.ts" &&
+	[ -x "$OWNED_HOME/.local/bin/pi" ] ||
+	fail 'Pi runtime setup skipped the Firstmate status helper or wrapper under an external profile'
+
 source_hash_after=$(sha256_file "$SOURCE_AGENT/settings.json")
 [ "$source_hash_after" = "$source_hash_before" ] ||
 	fail 'runtime setup or simulated Pi bookkeeping changed declarative settings'
 
-pass 'Pi runtime setup separates writable settings, preserves an adjacent regular Pi, replaces backed-up directory targets, restores wrapper permissions, validates overrides, resolves PATH and Homebrew Pi without recursion, and scopes inherited and local AWS environment'
+pass 'Pi runtime setup defers externally owned settings, separates writable settings, preserves an adjacent regular Pi, replaces backed-up directory targets, restores wrapper permissions, validates overrides, resolves PATH and Homebrew Pi without recursion, and scopes inherited and local AWS environment'

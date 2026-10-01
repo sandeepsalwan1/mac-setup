@@ -17,6 +17,7 @@ shellcheck -x \
 	"$ROOT/scripts/link-agent-health" \
 	"$ROOT/scripts/read-flake-user" \
 	"$ROOT/scripts/link-portable-skills" \
+	"$ROOT/scripts/link-agent-hooks" \
 	"$ROOT/scripts/sync-agent-host" \
 	"$ROOT/scripts/apply-herdr-prefix" \
 	"$ROOT/scripts/check-herdr-prefix" \
@@ -29,6 +30,7 @@ shellcheck -x \
 	"$ROOT/tests/security-scan.sh" \
 	"$ROOT/tests/backpass-config.test.sh" \
 	"$ROOT/tests/agent-health.test.sh" \
+	"$ROOT/tests/agent-hooks.test.sh" \
 	"$ROOT/tests/bootstrap.test.sh" \
 	"$ROOT/tests/computer-use-cli.test.sh" \
 	"$ROOT/tests/context-keeper.test.sh" \
@@ -65,6 +67,7 @@ shfmt -d \
 	"$ROOT/scripts/link-agent-health" \
 	"$ROOT/scripts/read-flake-user" \
 	"$ROOT/scripts/link-portable-skills" \
+	"$ROOT/scripts/link-agent-hooks" \
 	"$ROOT/scripts/sync-agent-host" \
 	"$ROOT/scripts/apply-herdr-prefix" \
 	"$ROOT/scripts/check-herdr-prefix" \
@@ -76,6 +79,7 @@ shfmt -d \
 	"$ROOT/scripts/setup-pi-runtime" \
 	"$ROOT/tests/security-scan.sh" \
 	"$ROOT/tests/agent-health.test.sh" \
+	"$ROOT/tests/agent-hooks.test.sh" \
 	"$ROOT/tests/backpass-config.test.sh" \
 	"$ROOT/tests/bootstrap.test.sh" \
 	"$ROOT/tests/computer-use-cli.test.sh" \
@@ -101,6 +105,7 @@ shfmt -d \
 
 "$ROOT/tests/backpass-config.test.sh"
 "$ROOT/tests/agent-health.test.sh"
+"$ROOT/tests/agent-hooks.test.sh"
 "$ROOT/tests/bootstrap.test.sh"
 "$ROOT/tests/computer-use-cli.test.sh"
 "$ROOT/tests/context-keeper.test.sh"
