@@ -12,6 +12,7 @@ FIRSTMATE_AGENT_DIR="$TEST_HOME/.local/state/pi-firstmate/agent"
 REAL_PI="$TMP_ROOT/real-pi"
 LOG="$TMP_ROOT/pi-env.log"
 JQ_BIN="${JQ_BIN:-jq}"
+unset XDG_STATE_HOME
 
 file_mode() {
 	local path=$1 mode
@@ -240,8 +241,8 @@ for backup in \
 done
 
 OWNED_HOME="$TMP_ROOT/owned-home"
-OWNED_STATE="$OWNED_HOME/.local/state"
-OWNED_FIRSTMATE="$OWNED_STATE/pi-firstmate/agent"
+OWNED_STATE="$TMP_ROOT/owned-state"
+OWNED_FIRSTMATE="$OWNED_HOME/.local/state/pi-firstmate/agent"
 mkdir -p "$OWNED_HOME/.pi/agent" "$OWNED_FIRSTMATE/extensions" "$OWNED_STATE/agent-skills"
 printf '%s\n' external >"$OWNED_STATE/agent-skills/profile-owner"
 printf '%s\n' '{"defaultProvider":"external"}' >"$OWNED_HOME/.pi/agent/settings.json"

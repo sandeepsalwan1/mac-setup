@@ -143,6 +143,7 @@ EOF
 
 run_installer() {
 	HOME="$TEST_HOME" \
+		XDG_STATE_HOME="$TEST_HOME/.local/state" \
 		PATH="$TEST_BIN:$TEST_PREFIX/bin:/usr/bin:/bin" \
 		NPM_BIN="$TEST_BIN/npm" \
 		NPM_GLOBALS_FILE="$TEST_MANIFEST" \

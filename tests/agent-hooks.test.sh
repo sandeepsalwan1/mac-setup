@@ -30,8 +30,8 @@ link_hooks >/dev/null
 [ "$(cat "$TARGET.pre-mac-setup/deny-dangerous.sh")" = 'external guard' ] ||
 	fail 'hook linker did not preserve the replaced command guard directory'
 
-[ -z "$(link_hooks)" ] ||
-	fail 'hook linker changed an already correct link'
+idempotent_out="$(link_hooks)" || fail 'hook linker failed on an already correct link'
+[ -z "$idempotent_out" ] || fail 'hook linker changed an already correct link'
 
 rm "$TARGET"
 printf '%s\n' external >"$MARKER"
@@ -46,5 +46,7 @@ if link_hooks >/dev/null 2>&1; then
 fi
 [ -d "$TARGET" ] && [ ! -L "$TARGET" ] ||
 	fail 'hook linker removed a real guard directory it could not back up'
+[ "$(cat "$TARGET.pre-mac-setup/deny-dangerous.sh")" = 'external guard' ] ||
+	fail 'hook linker damaged an existing command guard backup'
 
 pass 'agent hook linker defers to an external shared profile, links the repository guard when none is installed, preserves a replaced directory, and stays idempotent'
