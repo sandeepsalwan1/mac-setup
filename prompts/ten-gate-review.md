@@ -71,7 +71,7 @@ Read `<CLEAN_CODE_PATH>` in full. Review the complete diff with strict test-firs
 
 ## Gate 4: Independent review
 
-Run one available independent review engine over the current diff. Prefer the repository's declared reviewer. If it cannot run, use one fallback. Do not run several equivalent reviewers.
+Run two independent review engines over the current diff in parallel: the repository's declared reviewer and the installed automated-reviewer skill. If either cannot run, use one fallback in its place. Do not add more equivalent reviewers.
 
 Treat findings as advisory. Fix evidence-backed findings that meet the project's severity rule. Dismiss unsupported findings with one short reason.
 
@@ -89,9 +89,11 @@ Record commands, counts, and exit codes. If a check cannot run, record the exact
 
 Read `<GOLDEN_EXAMPLE_PATH>` before judging the diff. If it is `NONE`, use the closest existing implementation in the repository. Compare file names, module layout, exports, configuration, tests, build setup, and documentation. Match the golden where no project requirement justifies a difference. Do not inherit defects documented beside the golden.
 
-## Gate 8: Align with the review behind you
+## Gate 8: Merge conflicts and the lessons files
 
-Run this once, after every other gate passes. Read `<BASE_REVIEW_URL>`, or compare against the target branch when it is `NONE`, and align names, shared helpers, schemas, identifiers, layout, and cross-package contracts.
+Run this once, after every other gate passes. Confirm the review has no merge conflict with `<BASE_REVIEW_URL>`, or with the target branch when it is `NONE`.
+
+Then read every lessons file beside `<HISTORICAL_MISTAKES_PATH>` in full, one parallel worker per file, and confirm the review repeats none of their errors. Skip this step when it is `NONE`.
 
 Never edit the previous review. If it has a serious correctness, safety, or data-loss defect, record it and make the smallest safe change in the target review only.
 
