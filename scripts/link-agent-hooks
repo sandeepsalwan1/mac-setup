@@ -16,7 +16,7 @@ die() {
 	exit 1
 }
 
-if [ -s "$PROFILE_OWNER" ]; then
+if [ -s "$PROFILE_OWNER" ] && [ -e "$TARGET" ]; then
 	note "command guard is externally managed; 0 links changed"
 	exit 0
 fi

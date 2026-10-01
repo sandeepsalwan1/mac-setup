@@ -34,6 +34,12 @@ link_hooks >/dev/null
 	fail 'hook linker changed an already correct link'
 
 rm "$TARGET"
+printf '%s\n' external >"$MARKER"
+link_hooks >/dev/null
+[ "$(readlink "$TARGET")" = "$ROOT/home/.agents/hooks" ] ||
+	fail 'hook linker left no command guard when the external owner had none installed'
+
+rm "$TARGET" "$MARKER"
 mkdir "$TARGET"
 if link_hooks >/dev/null 2>&1; then
 	fail 'hook linker overwrote an existing command guard backup'
@@ -41,4 +47,4 @@ fi
 [ -d "$TARGET" ] && [ ! -L "$TARGET" ] ||
 	fail 'hook linker removed a real guard directory it could not back up'
 
-pass 'agent hook linker defers to an external shared profile, links the repository guard, preserves a replaced directory, and stays idempotent'
+pass 'agent hook linker defers to an external shared profile, links the repository guard when none is installed, preserves a replaced directory, and stays idempotent'
