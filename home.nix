@@ -1,4 +1,4 @@
-{ config, lib, pkgs, user, ... }:
+{ config, lib, pkgs, user, treehouse, ... }:
 
 let
   dotfiles = "${config.home.homeDirectory}/.dotfiles";
@@ -28,6 +28,7 @@ in
     shellcheck
     shfmt
     tmux
+    treehouse.packages.${pkgs.stdenv.hostPlatform.system}.default
     trufflehog
     uv
   ];

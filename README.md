@@ -68,7 +68,7 @@ The Homebrew baseline is deliberately small:
 - WezTerm
 
 Nix supplies Bun, `uv`, Node.js, Python, Git, tmux, Neovim, ripgrep, fd, fzf, jq,
-lazygit, delta, ShellCheck, shfmt, Gitleaks, TruffleHog, and Hack Nerd Font.
+lazygit, delta, ShellCheck, shfmt, Gitleaks, TruffleHog, Treehouse, and Hack Nerd Font.
 
 This repository is public, so anything specific to one workplace stays out of it
 and the checkout is built to work without it. Every skill in `skills/` is exposed,
@@ -91,8 +91,9 @@ an existing path untouched. `scripts/sync-agent-host` applies the same pinned to
 on each configured SSH host.
 The reviewed public source registry is in `data/repos.md`.
 The reusable review prompts are in `prompts/`. `ten-gate-review.md` is the compact Ten Gate review,
-`ten-gate-review-portable.md` is the full version, and `slim-builder.md` and `slim-reviewer.md` are the
-lighter builder and reviewer prompts. Each one takes runtime review and project inputs and contains no
+`ten-gate-review-portable.md` is the full version, and `ten-gate-review-runtime.md` takes explicit tool
+and evidence inputs. `slim-builder.md` and `slim-reviewer.md` define the single writer and parallel
+reviewer roles. Each one takes runtime review and project inputs and contains no
 workplace-specific links.
 `prompts/clean-code-review-checklist.md` and `prompts/review-report-template.md` are short, original public companions. Keep the full private codebook and project-specific review reports outside this repository. Pass approved local copies as inputs when a review needs them.
 
@@ -177,7 +178,8 @@ Bootstrap also installs the no-mistakes CLI on a fresh Mac.
 Pi keeps declarative settings in this repository but runs from writable settings
 materialized by `scripts/setup-pi-runtime`, so version bookkeeping cannot modify
 tracked files. Firstmate-spawned Pi uses the regular `pi` command through a scoped
-wrapper. Launches marked `FM_PI_HARNESS=pi` receive a dedicated agent directory. That directory
+wrapper. Launches marked `FM_PI_HARNESS=pi` receive a dedicated agent directory and `--approve`
+to trust project files for that run. An explicit `--no-approve` overrides it. That directory
 omits the global Calm command because FirstMate's project extension owns `/calm`,
 while retaining a command-free status helper that suppresses Pi 0.83+ toggle noise.
 When the shared profile marker above exists, its owner keeps the Pi settings, the Firstmate guard

@@ -13,6 +13,9 @@ CURL_LOG="$TMP_ROOT/curl.log"
 CONFIGURED_USER="$("$ROOT/scripts/read-flake-user" "$ROOT/flake.nix")"
 [ -n "$CONFIGURED_USER" ] || fail 'could not read the configured user'
 mkdir -p "$TEST_HOME/.local/bin" "$TEST_BIN"
+TEST_REPO="$TEST_HOME/.dotfiles"
+git clone --quiet --no-hardlinks "$ROOT" "$TEST_REPO"
+cp "$ROOT/bootstrap.sh" "$TEST_REPO/bootstrap.sh"
 
 cat >"$TEST_BIN/uname" <<'SH'
 #!/usr/bin/env bash
@@ -75,13 +78,12 @@ run_bootstrap() {
 		MAC_SETUP_SKIP_NPM=1 \
 		MAC_SETUP_SKIP_HERDR_PREFIX_CHECK=1 \
 		MAC_SETUP_SKIP_PERMISSION_GUIDE=1 \
-		"$ROOT/bootstrap.sh"
+		"${1:-$TEST_REPO}/bootstrap.sh"
 }
 
 run_bootstrap >"$TMP_ROOT/first.out"
-[ -L "$TEST_HOME/.dotfiles" ] || fail 'bootstrap did not create the stable dotfiles link'
-[ "$(cd "$TEST_HOME/.dotfiles" && pwd -P)" = "$ROOT" ] ||
-	fail 'bootstrap linked the wrong repository'
+[ -d "$TEST_HOME/.dotfiles/.git" ] || fail 'bootstrap did not preserve the fresh clone'
+[ ! -L "$TEST_HOME/.dotfiles" ] || fail 'bootstrap replaced the fresh clone with a symlink'
 grep -Fq 'switch --flake' "$SUDO_LOG" ||
 	fail 'bootstrap did not invoke the nix-darwin switch'
 grep -Fq "flake.nix already matches $CONFIGURED_USER" "$TMP_ROOT/first.out" ||
@@ -105,6 +107,14 @@ grep -Fq 'Nix is already installed' "$TMP_ROOT/second.out" ||
 	fail 'bootstrap recloned an existing FirstMate checkout'
 [ "$(wc -l <"$CURL_LOG" | tr -d ' ')" = 1 ] ||
 	fail 'bootstrap fetched no-mistakes again on a second run'
+
+TEST_HOME="$TMP_ROOT/linked-home"
+mkdir -p "$TEST_HOME/.local/bin"
+cp "$TMP_ROOT/home/.local/bin/git" "$TEST_HOME/.local/bin/git"
+run_bootstrap "$ROOT" >"$TMP_ROOT/linked.out"
+[ -L "$TEST_HOME/.dotfiles" ] || fail 'bootstrap did not create the stable dotfiles link'
+[ "$(cd "$TEST_HOME/.dotfiles" && pwd -P)" = "$ROOT" ] ||
+	fail 'bootstrap linked the wrong repository'
 
 stable_user_path="/etc/profiles/per-user/\${user}/bin"
 for stable_path in \
