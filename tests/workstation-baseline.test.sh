@@ -5,15 +5,17 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 
 expected_npm='acpx@0.19.4
 backpass@0.1.32
-chrome-devtools-axi@0.1.36
+chrome-devtools-axi@0.1.37
 chrome-devtools-mcp@1.10.1
 gh-axi@0.1.35
 lavish-axi@0.1.80
 quota-axi@0.1.55
 tasks-axi@0.2.6
-@earendil-works/pi-coding-agent@0.99.2'
+@earendil-works/pi-coding-agent@1.0.0'
 actual_npm="$(grep -Ev '^[[:space:]]*(#|$)' "$ROOT/home/npm-globals.txt")"
 [ "$actual_npm" = "$expected_npm" ]
+grep -F 'treehouse.url = "github:kunchenguid/treehouse/v3.1.1";' "$ROOT/flake.nix" >/dev/null
+grep -F "treehouse.packages.\${pkgs.stdenv.hostPlatform.system}.default" "$ROOT/home.nix" >/dev/null
 
 chrome_approval_helper="$ROOT/scripts/chrome-devtools-axi-native.swift"
 [ -x "$chrome_approval_helper" ]
@@ -36,9 +38,9 @@ jq -e '
   and .defaultModel == null
   and .defaultThinkingLevel == "max"
   and .packages == [
-    "npm:pi-web-access@0.33.0",
+    "npm:pi-web-access@0.35.0",
     "npm:@ryan_nookpi/pi-extension-codex-fast-mode@0.2.7",
-    "npm:compact-adviser@0.1.11"
+    "npm:compact-adviser@0.1.12"
   ]
 ' "$ROOT/home/.pi/agent/settings.json" >/dev/null
 
@@ -125,16 +127,26 @@ if rg -i 'amazon|lineage|code\.amazon\.com|CR-[0-9]+' "$ROOT/prompts/ten-gate-re
 	exit 1
 fi
 
-for prompt in slim-reviewer slim-builder; do
-	grep -F '<TEN_GATE_PATH>' "$ROOT/prompts/$prompt.md" >/dev/null
-	grep -F '<PROJECT_ROOT>' "$ROOT/prompts/$prompt.md" >/dev/null
-	grep -F '<GOLDEN_EXAMPLE_PATH>' "$ROOT/prompts/$prompt.md" >/dev/null
-	grep -F '<FINDINGS_ROOT>' "$ROOT/prompts/$prompt.md" >/dev/null
-	grep -F 'Set unavailable optional inputs to' "$ROOT/prompts/$prompt.md" >/dev/null
+for prompt in ten-gate-review-runtime slim-reviewer slim-builder; do
+	grep -F '<ACCESS_GUIDE>' "$ROOT/prompts/$prompt.md" >/dev/null
+	grep -F '<GOLDEN_EXAMPLE>' "$ROOT/prompts/$prompt.md" >/dev/null
+	grep -F 'missing evidence cannot produce a PASS.' "$ROOT/prompts/$prompt.md" >/dev/null
+	tr '\n' ' ' <"$ROOT/prompts/$prompt.md" |
+		grep -F "Inherited \`AGENTS.md\` files own consent and mutation limits." >/dev/null
 	if rg -i 'amazon|lineage|code\.amazon\.com|CR-[0-9]+' "$ROOT/prompts/$prompt.md" >/dev/null; then
 		exit 1
 	fi
 done
 
-grep -F 'Never verify your own finding.' "$ROOT/prompts/slim-reviewer.md" >/dev/null
-grep -F 'You are the only writer for the targets listed in' "$ROOT/prompts/slim-builder.md" >/dev/null
+grep -F '<TARGET_REVIEW>' "$ROOT/prompts/ten-gate-review-runtime.md" >/dev/null
+for prompt in slim-reviewer slim-builder; do
+	grep -F '<TEN_GATE_CONTRACT>' "$ROOT/prompts/$prompt.md" >/dev/null
+	grep -F '<FINDINGS_ROOT>' "$ROOT/prompts/$prompt.md" >/dev/null
+done
+
+grep -F 'Reviewers write findings and scratch outputs only; product code is read-only.' \
+	"$ROOT/prompts/slim-reviewer.md" >/dev/null
+tr '\n' ' ' <"$ROOT/prompts/slim-reviewer.md" |
+	grep -F 'Never verify your own finding.' >/dev/null
+grep -F 'The builder is the only code writer for WRITABLE_UNITS.' \
+	"$ROOT/prompts/slim-builder.md" >/dev/null

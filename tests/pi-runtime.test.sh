@@ -166,23 +166,28 @@ ln -s "$REAL_PI" "$TMP_ROOT/homebrew/bin/pi"
 HOME="$TEST_HOME" PI_TEST_LOG="$LOG" HOMEBREW_PREFIX="$TMP_ROOT/homebrew" \
 	PATH="$TEST_HOME/.local/bin:/usr/bin:/bin" \
 	"$TEST_HOME/.local/bin/pi" --homebrew-install
+HOME="$TEST_HOME" PI_TEST_LOG="$LOG" PI_FIRSTMATE_REAL_PI="$REAL_PI" \
+	FM_PI_HARNESS=pi "$TEST_HOME/.local/bin/pi" --no-approve --model untrusted
 
 first=$(sed -n '1p' "$LOG")
 second=$(sed -n '2p' "$LOG")
 third=$(sed -n '3p' "$LOG")
 fourth=$(sed -n '4p' "$LOG")
 fifth=$(sed -n '5p' "$LOG")
+sixth=$(sed -n '6p' "$LOG")
 assert_contains "$first" 'profile= region= agent=' \
 	"ordinary Pi inherited Firstmate-only AWS or agent-directory settings"
+assert_not_contains "$first" '--approve' \
+	"ordinary Pi received Firstmate-only project approval"
 assert_contains "$second" \
 	"profile=test-inherited-profile region=test-inherited-region agent=$FIRSTMATE_AGENT_DIR" \
 	"Firstmate Pi did not preserve its inherited AWS profile, region, and runtime directory"
-assert_contains "$second" 'args=--model inherited' \
+assert_contains "$second" 'args=--approve --model inherited' \
 	"the Pi wrapper did not preserve arguments"
 assert_contains "$third" \
 	"profile=test-local-profile region=test-local-region agent=$FIRSTMATE_AGENT_DIR" \
 	"Firstmate Pi did not apply its explicit local AWS profile and region"
-assert_contains "$third" 'args=--model local' \
+assert_contains "$third" 'args=--approve --model local' \
 	"the Pi wrapper did not preserve local-environment arguments"
 assert_contains "$fourth" 'args=--path-install' \
 	"the Pi wrapper did not find a regular Pi later on PATH"
@@ -192,7 +197,9 @@ assert_contains "$fifth" 'args=--homebrew-install' \
 	"the Pi wrapper did not find a regular Pi under Homebrew"
 assert_contains "$fifth" "source=$TMP_ROOT/homebrew/bin/pi" \
 	"the Homebrew regression did not execute the Homebrew Pi"
-[ "$(wc -l <"$LOG" | tr -d ' ')" = 5 ] ||
+assert_contains "$sixth" 'args=--approve --no-approve --model untrusted' \
+	"the Pi wrapper did not preserve an explicit project trust override"
+[ "$(wc -l <"$LOG" | tr -d ' ')" = 6 ] ||
 	fail 'the Pi wrapper recursed while resolving a regular Pi executable'
 
 DIRECTORY_HOME="$TMP_ROOT/directory-target-home"

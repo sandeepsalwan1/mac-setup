@@ -32,7 +32,8 @@ if [ -L "$DOTFILES_LINK" ]; then
 		ln -sfn "$DIR" "$DOTFILES_LINK"
 	fi
 elif [ -e "$DOTFILES_LINK" ]; then
-	die "$DOTFILES_LINK already exists and is not a symlink; move it aside and rerun"
+	[ "$(cd "$DOTFILES_LINK" 2>/dev/null && pwd -P || true)" = "$DIR" ] ||
+		die "$DOTFILES_LINK already exists and is not a symlink; move it aside and rerun"
 else
 	ln -s "$DIR" "$DOTFILES_LINK"
 fi
