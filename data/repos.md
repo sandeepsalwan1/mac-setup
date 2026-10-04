@@ -12,7 +12,7 @@ The setup uses released tools where available and snapshots only each repository
 | [dotfiles](https://github.com/kunchenguid/dotfiles) | `9a4a6387d0dd6f4bf9b8a5a732b406916bbbf95d` | Upstream configuration reference |
 | [quota-axi](https://github.com/kunchenguid/quota-axi) | `6f27edfde64d39bd8e58e639869eeb96b2156ab7` | Quota 0.1.57; skill kept at its released form |
 | [compact-adviser](https://github.com/kunchenguid/compact-adviser) | `ef216af7cb639947bb4642fdf063117f12a91fc6` | Compaction advice tool |
-| [treehouse](https://github.com/kunchenguid/treehouse) | `a5ab29f88f9dc57c06b5ffb43b9f25c79a7acf33` | Latest v3.1.2; Nix stays on v3.1.1 |
+| [treehouse](https://github.com/kunchenguid/treehouse) | `a5ab29f88f9dc57c06b5ffb43b9f25c79a7acf33` | Nix package v3.1.2 |
 | [chrome-devtools-axi](https://github.com/kunchenguid/chrome-devtools-axi) | `c8c6e1b82a4afe272a1dcac4b0870add8a45268d` | Released 0.1.38; skill unchanged |
 | [gh-axi](https://github.com/kunchenguid/gh-axi) | `d221ffabfe106e2c7a5998bde30bf58528678d22` | GitHub skill and npm tool |
 | [vision](https://github.com/kunchenguid/vision) | `7a20c38181151ec67efdf8fa2cb03a60123a7b83` | Visual review skill |
@@ -41,9 +41,9 @@ manifest is `home/npm-globals.txt`; Pi extensions are in `home/.pi/agent/setting
 
 ## Compatibility choices
 
-- Treehouse remains locked at v3.1.1 (`476002d1a7eb381574c3345299e6bfcc66ecbb1a`).
-  v3.1.2 changes the Go module path to `/v3`; it adds no runtime behavior needed by
-  this Nix installation. The generated Nix and Neovim lockfiles are preserved.
+- Treehouse v3.1.2 changes its Go module path to `/v3`. Its lock entry was
+  regenerated with `nix flake update treehouse`; all other Nix inputs and the
+  Neovim lockfile are preserved.
 - Chrome DevTools AXI 0.1.38 is the published screenshot fix at
   `99696727fd3554cd7ef2b4223c0c0d8873de2228`. The later PATH-discovery fix is
   unreleased. The explicit MCP path in `home.nix` works with the released tool.

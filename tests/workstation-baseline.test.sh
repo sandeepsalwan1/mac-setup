@@ -14,7 +14,7 @@ tasks-axi@0.2.6
 @earendil-works/pi-coding-agent@1.0.2'
 actual_npm="$(grep -Ev '^[[:space:]]*(#|$)' "$ROOT/home/npm-globals.txt")"
 [ "$actual_npm" = "$expected_npm" ]
-grep -F 'treehouse.url = "github:kunchenguid/treehouse/v3.1.1";' "$ROOT/flake.nix" >/dev/null
+grep -F 'treehouse.url = "github:kunchenguid/treehouse/v3.1.2";' "$ROOT/flake.nix" >/dev/null
 grep -F "treehouse.packages.\${pkgs.stdenv.hostPlatform.system}.default" "$ROOT/home.nix" >/dev/null
 
 chrome_approval_helper="$ROOT/scripts/chrome-devtools-axi-native.swift"

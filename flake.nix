@@ -11,7 +11,7 @@
     home-manager.url = "github:nix-community/home-manager/release-26.05";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
 
-    treehouse.url = "github:kunchenguid/treehouse/v3.1.1";
+    treehouse.url = "github:kunchenguid/treehouse/v3.1.2";
     treehouse.inputs.nixpkgs.follows = "nixpkgs";
 
     nix-homebrew.url = "github:zhaofengli/nix-homebrew";
