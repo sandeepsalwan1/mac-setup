@@ -67,7 +67,10 @@ if [ "${FM_PI_HARNESS:-}" = "pi" ]; then
 		export AWS_REGION="$PI_FIRSTMATE_AWS_REGION"
 	fi
 	export PI_CODING_AGENT_DIR="${PI_FIRSTMATE_AGENT_DIR:-$HOME/.local/state/pi-firstmate/agent}"
-	set -- --approve "$@"
+	case "${1:-}" in
+	install | remove | uninstall | update | list | config | auth | mcp | -h | --help | -v | --version) ;;
+	*) set -- --approve "$@" ;;
+	esac
 fi
 
 REAL_PI=$(find_real_pi)
