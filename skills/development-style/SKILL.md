@@ -1,6 +1,6 @@
 ---
 name: development-style
-description: 'Load this before you write or change production code. Covers the core code-design tenets: DRY, SRP, single source of truth, open/closed, correctness and idempotency, YAGNI and minimal diffs, composition and DI, and package boundaries. For prose quality load writing-br; for language rules load the matching language skill.'
+description: 'Load this before you write or change production code. Covers the core code-design tenets: DRY, SRP, single source of truth, open/closed, correctness and idempotency, YAGNI and minimal diffs, composition and DI, and package boundaries. For comments and docs load technical-writing; for language rules load the matching language skill.'
 tags: [dev, code-quality, principles]
 triggers: code style, design principles, write production code, code review, refactor
 ---
@@ -11,7 +11,7 @@ Core code-design tenets for writing production software, distilled from actual r
 Apply these proactively - most manual review feedback exists because one was missed.
 
 This is the always-on **code-design** core. Its companions load before their specific action:
-- **`writing-br`** - before you write or edit a comment, design doc, or package doc (Simplified Technical English and concision).
+- **`technical-writing`** - before you write or edit a comment, javadoc, design doc, or package doc.
 - Build changed packages in dependency order and verify the actual build result.
 - The matching per-language skill, when one exists - language conventions.
 
@@ -100,4 +100,5 @@ the default choice** with the deviation as the alternative needing justification
 - **Language-specific rules live in a per-language skill** the coding agent loads alongside this one. Always load the skill matching the language you're editing, when one exists.
 
 ## Peer skills
+- `technical-writing` - comments/javadoc and behavior-focused documentation.
 - `writing-br` - Simplified Technical English and concision for any prose.

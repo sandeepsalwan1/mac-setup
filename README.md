@@ -166,6 +166,7 @@ The repository keeps reviewed snapshots of these skills:
 - stow
 - tasks-axi
 - teach
+- technical-writing
 - vision
 - writing-br
 

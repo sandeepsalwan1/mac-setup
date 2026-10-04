@@ -117,6 +117,8 @@ run_bootstrap "$ROOT" >"$TMP_ROOT/linked.out"
 	fail 'bootstrap linked the wrong repository'
 
 stable_user_path="/etc/profiles/per-user/\${user}/bin"
+grep -Fq 'export NOSYSZSHRC=1' "$ROOT/home.nix" ||
+	fail 'zshenv does not skip duplicate system zshrc initialization'
 for stable_path in \
 	"$stable_user_path" \
 	'/run/current-system/sw/bin' \
