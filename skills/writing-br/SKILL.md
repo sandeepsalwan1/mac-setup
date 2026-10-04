@@ -1,6 +1,6 @@
 ---
 name: writing-br
-description: 'Load this before you write or review ANY prose for quality -- a design doc, wiki page, standup update, chat message, comment, or any other writing where clarity and concision matter, not just technical documentation. Provides a generic checklist: Simplified Technical English (ASD-STE100) principles, the concision checklist, and the slop-word table (plain-term substitutions such as blocked on over gated on). Fires even when the writing has nothing to do with code, and when the ask is only "reword this" or "which word should I use". For code comments and package documentation, also follow the project's own documentation rules.'
+description: 'Load this before you write or review ANY prose for quality -- a design doc, wiki page, standup update, chat message, comment, or any other writing where clarity and concision matter, not just technical documentation. Provides a generic checklist: Simplified Technical English (ASD-STE100) principles, the concision checklist, and the slop-word table (plain-term substitutions such as blocked on over gated on). Fires even when the writing has nothing to do with code, and when the ask is only "reword this" or "which word should I use". For code comments and package documentation, also follow technical-writing.'
 tags: [writing, ste, concision, review, editing]
 triggers: writing quality, review this writing, is this clear, concision, simplified technical english, ASD-STE100, edit for clarity, tighten this, proofread, slop words, word choice, reword
 ---
@@ -10,6 +10,8 @@ triggers: writing quality, review this writing, is this clear, concision, simpli
 Generic checklist for reviewing or writing any prose for quality: clarity, concision, and
 plain, unambiguous language. Use this for design docs, wiki pages, standups, chat
 messages, comments, emails -- anything written, technical or not.
+
+Use `technical-writing` for comment, javadoc, and package documentation rules.
 
 ## Simplified Technical English (ASD-STE100)
 

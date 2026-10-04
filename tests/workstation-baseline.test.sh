@@ -5,13 +5,13 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 
 expected_npm='acpx@0.19.4
 backpass@0.1.32
-chrome-devtools-axi@0.1.37
+chrome-devtools-axi@0.1.38
 chrome-devtools-mcp@1.10.1
 gh-axi@0.1.35
-lavish-axi@0.1.80
-quota-axi@0.1.55
+lavish-axi@0.1.82
+quota-axi@0.1.57
 tasks-axi@0.2.6
-@earendil-works/pi-coding-agent@1.0.0'
+@earendil-works/pi-coding-agent@1.0.2'
 actual_npm="$(grep -Ev '^[[:space:]]*(#|$)' "$ROOT/home/npm-globals.txt")"
 [ "$actual_npm" = "$expected_npm" ]
 grep -F 'treehouse.url = "github:kunchenguid/treehouse/v3.1.1";' "$ROOT/flake.nix" >/dev/null
@@ -39,7 +39,7 @@ jq -e '
   and .defaultThinkingLevel == "max"
   and .packages == [
     "npm:pi-web-access@0.35.0",
-    "npm:@ryan_nookpi/pi-extension-codex-fast-mode@0.2.7",
+    "npm:@ryan_nookpi/pi-extension-codex-fast-mode@0.2.8",
     "npm:compact-adviser@0.1.12"
   ]
 ' "$ROOT/home/.pi/agent/settings.json" >/dev/null

@@ -14,7 +14,7 @@
   "collapseChangelog": true,
   "packages": [
     "npm:pi-web-access@0.35.0",
-    "npm:@ryan_nookpi/pi-extension-codex-fast-mode@0.2.7",
+    "npm:@ryan_nookpi/pi-extension-codex-fast-mode@0.2.8",
     "npm:compact-adviser@0.1.12"
   ]
 }

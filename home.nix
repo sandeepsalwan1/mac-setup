@@ -139,6 +139,7 @@ in
     autosuggestion.enable = true;
     syntaxHighlighting.enable = true;
     envExtra = ''
+      export NOSYSZSHRC=1
       typeset -U path
       path=(
         /etc/profiles/per-user/${user}/bin
