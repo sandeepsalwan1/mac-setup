@@ -202,6 +202,111 @@ assert_contains "$sixth" 'args=--approve --no-approve --model untrusted' \
 [ "$(wc -l <"$LOG" | tr -d ' ')" = 6 ] ||
 	fail 'the Pi wrapper recursed while resolving a regular Pi executable'
 
+ARGV_PI="$TMP_ROOT/argv-pi"
+cat >"$ARGV_PI" <<'SH'
+#!/usr/bin/env bash
+printf '%s\0' "$@" >"$PI_TEST_ARGV_LOG"
+SH
+chmod +x "$ARGV_PI"
+python3 - "$TEST_HOME/.local/bin/pi" "$ARGV_PI" "$TMP_ROOT" <<'PY'
+import concurrent.futures
+import os
+from pathlib import Path
+import subprocess
+import sys
+
+wrapper, native, root = map(Path, sys.argv[1:])
+commands = ["install", "remove", "uninstall", "update", "list", "config", "auth", "mcp"]
+cases = [([command, "--help"], [command, "--help"]) for command in commands]
+cases += [([flag], [flag]) for flag in ["-h", "--help", "-v", "--version"]]
+cases += [
+    (["install", "npm:package@1.0.0", "--no-approve"],
+     ["install", "npm:package@1.0.0", "--no-approve"]),
+    (["install", "path with spaces"], ["install", "path with spaces"]),
+    ([], ["--approve"]),
+    (["-p", "install"], ["--approve", "-p", "install"]),
+    (["--model", "list", "prompt"], ["--approve", "--model", "list", "prompt"]),
+    (["installing"], ["--approve", "installing"]),
+    (["help"], ["--approve", "help"]),
+    (["--", "install"], ["--approve", "--", "install"]),
+]
+
+def check_case(index, args, expected):
+    log = root / f"argv-{index}"
+    env = dict(os.environ, FM_PI_HARNESS="pi", PI_FIRSTMATE_REAL_PI=str(native),
+               PI_TEST_ARGV_LOG=str(log), HOME=str(root / f"argv-home-{index}"))
+    subprocess.run([str(wrapper), *args], env=env, check=True, timeout=10)
+    actual = log.read_bytes().split(b"\0")[:-1]
+    assert actual == [arg.encode() for arg in expected], (args, actual, expected)
+
+with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
+    futures = [pool.submit(check_case, index, args, expected)
+               for index, (args, expected) in enumerate(cases)]
+    errors = [error for future in futures if (error := future.exception()) is not None]
+assert not errors, errors
+PY
+
+PI_PACKAGE_DIR=${PI_RUNTIME_TEST_PACKAGE_DIR:-${PI_CALM_TEST_PACKAGE_DIR:-"$(npm root -g 2>/dev/null)/@earendil-works/pi-coding-agent"}}
+if [ -f "$PI_PACKAGE_DIR/dist/cli.js" ] && command -v node >/dev/null 2>&1; then
+	python3 - "$ROOT/scripts/pi-firstmate" "$PI_PACKAGE_DIR" "$TMP_ROOT" <<'PY'
+import concurrent.futures
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+
+wrapper, package, root = map(Path, sys.argv[1:])
+assert json.loads((package / "package.json").read_text())["version"] == "1.0.2"
+
+def run_native(args, name):
+    home = root / name
+    home.mkdir(exist_ok=True)
+    env = {"HOME": str(home), "PATH": os.environ["PATH"], "FM_PI_HARNESS": "pi",
+           "PI_FIRSTMATE_REAL_PI": str(package / "dist/cli.js"),
+           "PI_FIRSTMATE_AGENT_DIR": str(home / "agent"), "PI_OFFLINE": "1",
+           "PI_SKIP_VERSION_CHECK": "1", "TERM": "dumb", "NO_COLOR": "1"}
+    result = subprocess.run([str(wrapper), *args], cwd=home, env=env,
+                            capture_output=True, text=True, timeout=20)
+    assert result.returncode == 0, (args, result.stdout, result.stderr)
+    assert not list(home.rglob("*.jsonl")), "maintenance entered an agent session"
+    return result.stdout
+
+commands = ["install", "remove", "uninstall", "update", "list", "config", "auth", "mcp"]
+with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+    futures = [pool.submit(run_native, [command, "--help"], f"native-{command}")
+               for command in commands]
+    results, errors = [], []
+    for future in futures:
+        try:
+            results.append(future.result())
+        except Exception as error:
+            errors.append(error)
+assert not errors, errors
+assert "Install a package and add it to settings." in results[0]
+assert "1.0.2" == run_native(["--version"], "native-version").strip()
+
+cached = root / "cached package"
+cached.mkdir()
+(cached / "package.json").write_text(json.dumps({
+    "name": "pi-wrapper-maintenance-fixture", "version": "1.0.0",
+    "pi": {"extensions": []},
+}))
+source = str(cached)
+assert f"Installed {source}" in run_native(["install", source], "native-maintenance")
+settings = root / "native-maintenance/agent/settings.json"
+stored = json.loads(settings.read_text())["packages"]
+assert len(stored) == 1 and (settings.parent / stored[0]).resolve() == cached.resolve(), stored
+assert cached.name in run_native(["list"], "native-maintenance")
+assert f"Removed {source}" in run_native(["uninstall", source], "native-maintenance")
+assert json.loads(settings.read_text())["packages"] == []
+assert "No packages installed." in run_native(["list"], "native-maintenance")
+PY
+else
+	echo 'skip: native Pi 1.0.2 maintenance proof requires its installed package and Node'
+fi
+pass 'Firstmate Pi preserves native maintenance dispatch and exact arguments while approving agent launches'
+
 DIRECTORY_HOME="$TMP_ROOT/directory-target-home"
 DIRECTORY_AGENT="$DIRECTORY_HOME/.pi/agent"
 DIRECTORY_FIRSTMATE="$DIRECTORY_HOME/.local/state/pi-firstmate/agent"
