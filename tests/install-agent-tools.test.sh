@@ -32,15 +32,32 @@ set -euo pipefail
 printf '%s\n' "$*" >>"$BREW_LOG"
 
 case "${1:-} ${2:-}" in
+"update ")
+	exit 0
+	;;
 "list --cask")
 	test -e "$BREW_STATE/${3:-}"
+	;;
+"fetch --cask")
+	[ "${HOMEBREW_NO_AUTO_UPDATE:-}" = 1 ] || exit 65
+	;;
+"upgrade --cask")
+	[ "${HOMEBREW_NO_AUTO_UPDATE:-}" = 1 ] || exit 65
+	test -e "$BREW_STATE/${3:-}"
+	;;
+"uninstall --cask")
+	[ "${HOMEBREW_NO_AUTO_UPDATE:-}" = 1 ] || exit 65
+	rm -f "$BREW_STATE/${3:-}" "$FAKE_TOOL_BIN/claude"
 	;;
 "install --cask")
 	[ "${HOMEBREW_NO_AUTO_UPDATE:-}" = 1 ] || exit 65
 	cask_name=${3:-}
+	if [ "${BREW_FAIL_LATEST_INSTALL:-0}" = 1 ] && [ "$cask_name" = claude-code@latest ]; then
+		exit 42
+	fi
 	touch "$BREW_STATE/$cask_name"
 	case "$cask_name" in
-	claude-code) command_name=claude ;;
+	claude-code | claude-code@latest) command_name=claude ;;
 	codex) command_name=codex ;;
 	*) exit 64 ;;
 	esac
@@ -62,8 +79,9 @@ run_installer() {
 		BREW_BIN="$TEST_BIN/brew" \
 		BREW_LOG="$BREW_LOG" \
 		BREW_STATE="$BREW_STATE" \
+		BREW_FAIL_LATEST_INSTALL="${BREW_FAIL_LATEST_INSTALL:-0}" \
 		FAKE_TOOL_BIN="$TEST_BIN" \
-		"$ROOT/scripts/install-agent-tools"
+		"$ROOT/scripts/install-agent-tools" "$@"
 }
 
 write_tool claude
@@ -92,3 +110,51 @@ run_installer >"$TMP_ROOT/receipt.out"
 	fail 'installer reinstalled an existing Homebrew cask whose command was outside PATH'
 
 pass 'agent tool installation is additive across existing, missing, receipt-only, and rerun states'
+
+cp "$ROOT/home/agent-casks.txt" "$TEST_MANIFEST"
+write_tool claude
+write_tool codex
+rm -f "$BREW_STATE/claude-code"
+touch "$BREW_STATE/claude-code@latest" "$BREW_STATE/codex"
+: >"$BREW_LOG"
+run_installer --update >"$TMP_ROOT/update.out"
+[ "$(grep -Fxc update "$BREW_LOG")" = 1 ] ||
+	fail 'update did not refresh Homebrew exactly once'
+[ "$(grep -Fxc 'upgrade --cask claude-code@latest' "$BREW_LOG")" = 1 ] ||
+	fail 'update did not upgrade the latest Claude Code channel'
+[ "$(grep -Fxc 'upgrade --cask codex' "$BREW_LOG")" = 1 ] ||
+	fail 'update did not upgrade managed Codex'
+
+rm -f "$BREW_STATE/claude-code@latest"
+touch "$BREW_STATE/claude-code"
+: >"$BREW_LOG"
+run_installer --update >"$TMP_ROOT/channel.out"
+channel_calls="$(grep -E '^(update|fetch|uninstall|install|upgrade)' "$BREW_LOG")"
+[ "$channel_calls" = $'update\nfetch --cask claude-code@latest\nuninstall --cask claude-code\ninstall --cask claude-code@latest\nupgrade --cask codex' ] ||
+	fail 'Claude channel switch did not fetch first and update Codex'
+[ ! -e "$BREW_STATE/claude-code" ] && [ -e "$BREW_STATE/claude-code@latest" ] ||
+	fail 'Claude channel switch did not replace the stable cask receipt'
+
+rm -f "$BREW_STATE/claude-code@latest"
+touch "$BREW_STATE/claude-code"
+if BREW_FAIL_LATEST_INSTALL=1 run_installer --update >"$TMP_ROOT/rollback.out" 2>&1; then
+	fail 'failed latest installation reported success'
+fi
+[ -e "$BREW_STATE/claude-code" ] && [ -x "$TEST_BIN/claude" ] ||
+	fail 'failed latest installation did not restore stable Claude'
+
+rm -f "$BREW_STATE/claude-code" "$BREW_STATE/codex"
+: >"$BREW_LOG"
+run_installer --update >"$TMP_ROOT/external.out"
+if grep -Eq '^(update|fetch|uninstall|install|upgrade)' "$BREW_LOG"; then
+	fail 'update replaced tools owned outside Homebrew'
+fi
+
+rm -f "$TEST_BIN/claude" "$TEST_BIN/codex"
+: >"$BREW_LOG"
+run_installer --update >"$TMP_ROOT/fresh.out"
+fresh_calls="$(grep -E '^(update|fetch|uninstall|install|upgrade)' "$BREW_LOG")"
+[ "$fresh_calls" = $'update\ninstall --cask claude-code@latest\ninstall --cask codex' ] ||
+	fail 'fresh setup did not refresh Homebrew before installing both current CLIs'
+
+pass 'agent updates refresh Homebrew once, upgrade managed CLIs, switch Claude to latest, roll back failures, and preserve other owners'

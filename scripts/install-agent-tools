@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 AGENT_CASKS_FILE="${AGENT_CASKS_FILE:-$ROOT/home/agent-casks.txt}"
+UPDATE_AGENT_TOOLS=0
 
 note() {
 	printf 'install-agent-tools: %s\n' "$1"
@@ -28,7 +29,7 @@ find_brew() {
 }
 
 install_agent_tools() {
-	local cask_name command_name extra brew_bin
+	local cask_name command_name extra brew_bin managed_cask refreshed
 
 	if [ "${MAC_SETUP_SKIP_AGENT_CASKS:-0}" = "1" ]; then
 		note 'Claude Code and Codex installation skipped by environment'
@@ -37,6 +38,10 @@ install_agent_tools() {
 
 	[ -r "$AGENT_CASKS_FILE" ] || die "missing agent cask manifest: $AGENT_CASKS_FILE"
 	brew_bin=''
+	refreshed=0
+	if [ "$UPDATE_AGENT_TOOLS" = 1 ]; then
+		brew_bin="$(find_brew || true)"
+	fi
 
 	while IFS='|' read -r cask_name command_name extra ||
 		[ -n "${cask_name:-}${command_name:-}${extra:-}" ]; do
@@ -52,7 +57,15 @@ install_agent_tools() {
 		'' | *[!A-Za-z0-9._+-]*) die "invalid command name for $cask_name" ;;
 		esac
 
-		if command -v "$command_name" >/dev/null 2>&1; then
+		managed_cask=''
+		if [ -n "$brew_bin" ] && "$brew_bin" list --cask "$cask_name" >/dev/null 2>&1; then
+			managed_cask="$cask_name"
+		elif [ "$cask_name" = claude-code@latest ] && [ -n "$brew_bin" ] &&
+			"$brew_bin" list --cask claude-code >/dev/null 2>&1; then
+			managed_cask=claude-code
+		fi
+
+		if command -v "$command_name" >/dev/null 2>&1 && [ -z "$managed_cask" ]; then
 			note "$command_name is already installed; leaving it untouched"
 			continue
 		fi
@@ -61,7 +74,27 @@ install_agent_tools() {
 			brew_bin="$(find_brew)" || die "Homebrew is required to install missing $command_name"
 		fi
 
-		if "$brew_bin" list --cask "$cask_name" >/dev/null 2>&1; then
+		if [ "$UPDATE_AGENT_TOOLS" = 1 ]; then
+			if [ "$refreshed" = 0 ]; then
+				"$brew_bin" update
+				refreshed=1
+			fi
+			if [ "$managed_cask" = claude-code ] && [ "$cask_name" = claude-code@latest ]; then
+				note 'switching Claude Code to the latest release channel'
+				HOMEBREW_NO_AUTO_UPDATE=1 "$brew_bin" fetch --cask "$cask_name"
+				HOMEBREW_NO_AUTO_UPDATE=1 "$brew_bin" uninstall --cask "$managed_cask"
+				if ! HOMEBREW_NO_AUTO_UPDATE=1 "$brew_bin" install --cask "$cask_name"; then
+					HOMEBREW_NO_AUTO_UPDATE=1 "$brew_bin" install --cask "$managed_cask" ||
+						die 'Claude latest installation and stable rollback failed'
+					die 'Claude latest installation failed; restored the stable cask'
+				fi
+				continue
+			elif [ -n "$managed_cask" ]; then
+				note "updating $command_name with Homebrew cask $cask_name"
+				HOMEBREW_NO_AUTO_UPDATE=1 "$brew_bin" upgrade --cask "$cask_name"
+				continue
+			fi
+		elif "$brew_bin" list --cask "$cask_name" >/dev/null 2>&1; then
 			note "$cask_name is already managed by Homebrew; leaving it untouched"
 			continue
 		fi
@@ -74,5 +107,12 @@ install_agent_tools() {
 		fi
 	done <"$AGENT_CASKS_FILE"
 }
+
+case "${1:-}" in
+'') ;;
+--update) UPDATE_AGENT_TOOLS=1 ;;
+*) die 'usage: install-agent-tools [--update]' ;;
+esac
+[ "$#" -le 1 ] || die 'usage: install-agent-tools [--update]'
 
 install_agent_tools

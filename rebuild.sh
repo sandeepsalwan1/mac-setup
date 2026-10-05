@@ -7,7 +7,7 @@ REAL_USER="$(id -un)"
 sudo darwin-rebuild switch --flake "$DIR#mac"
 export PATH="/etc/profiles/per-user/$REAL_USER/bin:$HOME/.local/bin:$HOME/.local/share/npm/bin:$PATH"
 "$DIR/scripts/check-herdr-prefix"
-"$DIR/scripts/install-agent-tools"
+"$DIR/scripts/install-agent-tools" --update
 "$DIR/scripts/install-tools"
 "$DIR/scripts/install-diff-tools"
 "$DIR/scripts/link-portable-skills"
