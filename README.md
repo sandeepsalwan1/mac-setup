@@ -189,6 +189,11 @@ The complete global instructions live in `home/AGENTS.md` and are linked to:
 - `~/.pi/agent/AGENTS.md`
 - `~/.config/opencode/AGENTS.md`
 
+Interactive zsh launches through `codex`, `cx`, and `co` bypass command approvals,
+sandboxing, and hook trust review. Enabled hooks, including the shared command
+guard, still run. These launch flags do not persist hook trust. `.zshrc.local`
+loads after the defaults and can replace them.
+
 Bootstrap fills missing Claude settings from `home/.claude/settings.json`.
 It applies bypass mode to the standalone profile. The shell and macOS login
 environment export `CLAUDE_CODE_DISABLE_INLINE_SHELL_RM_PROMPT=1`, supported in
