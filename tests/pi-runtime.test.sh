@@ -257,7 +257,7 @@ import subprocess
 import sys
 
 wrapper, package, root = map(Path, sys.argv[1:])
-assert json.loads((package / "package.json").read_text())["version"] == "1.0.2"
+assert json.loads((package / "package.json").read_text())["version"] == "1.0.4"
 
 def run_native(args, name):
     home = root / name
@@ -284,7 +284,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
             errors.append(error)
 assert not errors, errors
 assert "Install a package and add it to settings." in results[0]
-assert "1.0.2" == run_native(["--version"], "native-version").strip()
+assert "1.0.4" == run_native(["--version"], "native-version").strip()
 
 cached = root / "cached package"
 cached.mkdir()
@@ -303,7 +303,7 @@ assert json.loads(settings.read_text())["packages"] == []
 assert "No packages installed." in run_native(["list"], "native-maintenance")
 PY
 else
-	echo 'skip: native Pi 1.0.2 maintenance proof requires its installed package and Node'
+	echo 'skip: native Pi 1.0.4 maintenance proof requires its installed package and Node'
 fi
 pass 'Firstmate Pi preserves native maintenance dispatch and exact arguments while approving agent launches'
 
