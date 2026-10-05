@@ -152,7 +152,7 @@ in
       export PATH
       [[ -f "$HOME/.zshenv.local" ]] && source "$HOME/.zshenv.local"
     '';
-    initContent = ''
+    initContent = lib.mkAfter ''
       bindkey '^f' autosuggest-accept
       [[ -f "$HOME/.zshrc.local" ]] && source "$HOME/.zshrc.local"
     '';
@@ -163,6 +163,7 @@ in
       pull = "git pull";
       m = "git switch main";
       cc = "claude";
+      codex = "codex --dangerously-bypass-approvals-and-sandbox --dangerously-bypass-hook-trust";
       cx = "codex";
       kc = "kiro-cli";
       fm = "cd ${config.home.homeDirectory}/firstmate";
