@@ -51,6 +51,7 @@ in
   ];
   home.sessionVariables = {
     EDITOR = "nvim";
+    CLAUDE_CODE_DISABLE_INLINE_SHELL_RM_PROMPT = "1";
     CHROME_DEVTOOLS_AXI_CHANNEL = "stable";
     CHROME_DEVTOOLS_AXI_MCP_PATH = "${config.home.homeDirectory}/.local/share/npm/lib/node_modules/chrome-devtools-mcp/build/src/bin/chrome-devtools-mcp.js";
     NPM_CONFIG_PREFIX = "${config.home.homeDirectory}/.local/share/npm";
@@ -64,6 +65,18 @@ in
     enable = true;
     config = {
       ProgramArguments = [ "/bin/launchctl" "setenv" "CHROME_DEVTOOLS_AXI_CHANNEL" "stable" ];
+      RunAtLoad = true;
+    };
+  };
+  launchd.agents.claude-inline-shell = {
+    enable = true;
+    config = {
+      ProgramArguments = [
+        "/bin/launchctl"
+        "setenv"
+        "CLAUDE_CODE_DISABLE_INLINE_SHELL_RM_PROMPT"
+        config.home.sessionVariables.CLAUDE_CODE_DISABLE_INLINE_SHELL_RM_PROMPT
+      ];
       RunAtLoad = true;
     };
   };
@@ -128,6 +141,7 @@ in
     syntaxHighlighting.enable = true;
     envExtra = ''
       export NOSYSZSHRC=1
+      export CLAUDE_CODE_DISABLE_INLINE_SHELL_RM_PROMPT=${config.home.sessionVariables.CLAUDE_CODE_DISABLE_INLINE_SHELL_RM_PROMPT}
       typeset -U path
       path=(
         /etc/profiles/per-user/${user}/bin

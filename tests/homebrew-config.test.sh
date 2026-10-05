@@ -34,3 +34,31 @@ nix eval --json \
 	fail 'Home Manager did not preserve the captured Rectangle preferences'
 
 pass 'Rectangle is installed with the captured keybinds and preferences'
+
+claude_env_json="$(nix eval --json \
+	"$ROOT#darwinConfigurations.mac.config.home-manager.users.\"$rectangle_user\"" \
+	--apply 'hm: {
+	  flag = hm.home.sessionVariables.CLAUDE_CODE_DISABLE_INLINE_SHELL_RM_PROMPT;
+	  shell = hm.programs.zsh.envExtra;
+	  login = hm.launchd.agents.claude-inline-shell.config;
+	}')"
+jq -e '
+	.flag == "1"
+	and .login.RunAtLoad == true
+	and .login.ProgramArguments == [
+		"/bin/launchctl", "setenv", "CLAUDE_CODE_DISABLE_INLINE_SHELL_RM_PROMPT", "1"
+	]
+' >/dev/null <<<"$claude_env_json" ||
+	fail 'Claude inline-shell setting is absent from the launch environment'
+
+claude_test_home="$(dotfiles_test_tmproot claude-launch-env)"
+jq -r .shell <<<"$claude_env_json" >"$claude_test_home/.zshenv"
+if ! env -u CLAUDE_CODE_DISABLE_INLINE_SHELL_RM_PROMPT \
+	HOME="$claude_test_home" ZDOTDIR="$claude_test_home" \
+	/bin/zsh -d <<'ZSH'; then
+test "$CLAUDE_CODE_DISABLE_INLINE_SHELL_RM_PROMPT" = 1
+ZSH
+	fail 'a fresh native zsh did not export the Claude inline-shell setting'
+fi
+
+pass 'Claude inline-shell approval setting reaches native zsh and macOS login launches'

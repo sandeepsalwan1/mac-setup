@@ -102,7 +102,11 @@ printf '%s\n' '{"name":"data-only-tool","version":"3.0.0"}' >"$TEST_PREFIX/lib/n
 cat >"$TEST_HOME/.claude/settings.json" <<'EOF'
 {
   "theme": "dark",
+  "env": {
+    "KEEP_ENV": "keep"
+  },
   "permissions": {
+    "defaultMode": "auto",
     "deny": [
       "Bash(rm -rf ~*)",
       "Read(keep-this-rule)"
@@ -171,6 +175,7 @@ run_installer >/dev/null
 
 jq -e '
 	.theme == "dark"
+	and .env.KEEP_ENV == "keep"
 	and .model == "claude-opus-5-5[1m]"
 	and .permissions.defaultMode == "bypassPermissions"
 	and .crossSessionInbound == "accept"

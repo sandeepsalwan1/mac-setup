@@ -9,6 +9,8 @@ The setup installs one shared guard under `~/.agents/hooks/` and wires it into C
 
 The guard is a seatbelt against accidents, not a sandbox. It blocks only catastrophic operations such as deleting root or an entire home, writing raw disks, piping downloads into a shell, destroying remote Git history, deleting repositories, and extracting credentials.
 
+Claude's native inline-shell removal check can prompt in bypass mode; set `CLAUDE_CODE_DISABLE_INLINE_SHELL_RM_PROMPT=1` at launch while keeping the catastrophic-command guard.
+
 Targeted cleanup stays allowed. This includes `rm`, `rm -rf` on a named project or temporary path, and targeted `sudo rm`. Do not broaden the denylist merely because a command is destructive. The normal agent and user authorization rules still govern targeted deletion.
 
 Installation removes only the three legacy Claude deny entries that treated root, every root child, and every home path as the same operation. The shared guard still blocks whole-root and whole-home deletion while allowing a named path such as `~/old-project`.
