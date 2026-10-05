@@ -3,7 +3,7 @@
 Deliberate decisions in this repo:
 
 - `configuration.nix` intentionally declares only a small portable Homebrew baseline, sets cleanup to `none`, and disables activation updates. Preserve work-specific packages and do not add package self-recording or automatic pushes.
-- `home/agent-casks.txt` is the additive Claude Code and Codex manifest. Existing commands or Homebrew receipts must remain satisfied without replacement or upgrade.
+- `home/agent-casks.txt` declares Claude Code's latest channel and Codex. Bootstrap and rebuild use `install-agent-tools --update` to refresh Homebrew and upgrade its managed casks. Preserve installations owned by other tooling and never use `--zap`.
 - Keep the secret-name inventory in ignored `vault/secret-names.local.txt`. Secret values, credentials, auth state, histories, databases, caches, logs, and Automic Vault exports must never enter this repository. Use configured aliases or redacted variables instead of exposing hostnames or machine identifiers in commands and responses.
 - Setup, sync, and cleanup must preserve all agent transcripts under `~/.kiro`, `~/.claude`, and `~/.codex`. Never move, truncate, or delete those histories.
 - Never bypass macOS TCC or edit its database. Use supported user or MDM consent, and keep Vault authority scoped to exact verified launchers with All Other Apps at Approval Required.

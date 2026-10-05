@@ -34,7 +34,7 @@ It performs these steps:
 3. Checks the configured macOS username.
 4. Applies nix-darwin and Home Manager.
 5. Maps the right Command key to F12 and validates it as Herdr's one-key prefix.
-6. Installs Claude Code or Codex only when that command and its Homebrew receipt are both absent.
+6. Refreshes Homebrew, installs Claude Code's latest channel and Codex, and updates their managed installations.
 7. Installs Pi and the pinned supporting agent tools when missing or outdated.
 8. Clones FirstMate into `~/firstmate` if that path is free.
 9. Installs readable diff tools.
@@ -118,9 +118,24 @@ points at and Git ignores.
 
 Homebrew activation uses `cleanup = "none"` and `autoUpdate = false`. It neither
 deletes work-specific packages nor records later `brew install` commands in Git.
-Claude Code and Codex are declared in `home/agent-casks.txt` and installed by a
-separate additive step, so an existing command or cask receipt satisfies that step
-regardless of how the tool arrived. It never reinstalls or upgrades a satisfied copy.
+Claude Code and Codex are declared in `home/agent-casks.txt`. Bootstrap and rebuild
+refresh Homebrew and install or upgrade these managed CLIs. Claude uses the
+`claude-code@latest` release channel. An existing stable Homebrew installation
+switches to that channel. Installations owned by other tooling keep their own
+update path.
+
+To update the setup and its tools:
+
+```bash
+git -C ~/.dotfiles pull --ff-only
+~/.dotfiles/rebuild.sh
+```
+
+To update only Homebrew-managed Claude Code and Codex:
+
+```bash
+~/.dotfiles/scripts/install-agent-tools --update
+```
 
 Pinned npm tools, including Pi, are listed in
 `home/npm-globals.txt`. `scripts/install-tools`

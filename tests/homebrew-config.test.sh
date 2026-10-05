@@ -17,6 +17,7 @@ CASKS_JSON="$(nix eval --json "$ROOT#darwinConfigurations.mac.config.homebrew.ca
 jq -e '
   map(.name) as $names
   | ($names | index("claude-code") | not)
+    and ($names | index("claude-code@latest") | not)
     and ($names | index("codex") | not)
     and ($names | index("automic-vault/isotopes/automic-vault") != null)
     and ($names | index("rectangle") != null)
@@ -24,7 +25,7 @@ jq -e '
 ' >/dev/null <<<"$CASKS_JSON" ||
 	fail 'nix-darwin Homebrew activation still owns Claude Code or Codex, or lost a required baseline cask'
 
-pass 'nix-darwin leaves Claude Code and Codex to the additive installer'
+pass 'nix-darwin leaves Claude Code and Codex to their dedicated installer'
 
 rectangle_user="$("$ROOT/scripts/read-flake-user" "$ROOT/flake.nix")"
 nix eval --json \

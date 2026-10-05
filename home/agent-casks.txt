@@ -1,4 +1,4 @@
 # cask|command
-# Existing commands and existing Homebrew receipts are treated as satisfied.
-claude-code|claude
+# --update refreshes Homebrew-managed installs; other tooling keeps ownership.
+claude-code@latest|claude
 codex|codex

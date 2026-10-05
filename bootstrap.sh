@@ -76,8 +76,8 @@ else
 	"$DIR/scripts/check-herdr-prefix"
 fi
 
-note 'step 6/12: additive Claude Code and Codex'
-"$DIR/scripts/install-agent-tools"
+note 'step 6/12: current Claude Code and Codex'
+"$DIR/scripts/install-agent-tools" --update
 
 note 'step 7/12: pinned agent tools'
 "$DIR/scripts/install-tools"
