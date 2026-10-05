@@ -19,8 +19,17 @@ jq -e '
   | ($names | index("claude-code") | not)
     and ($names | index("codex") | not)
     and ($names | index("automic-vault/isotopes/automic-vault") != null)
+    and ($names | index("rectangle") != null)
     and ($names | index("wezterm") != null)
 ' >/dev/null <<<"$CASKS_JSON" ||
 	fail 'nix-darwin Homebrew activation still owns Claude Code or Codex, or lost a required baseline cask'
 
 pass 'nix-darwin leaves Claude Code and Codex to the additive installer'
+
+rectangle_user="$("$ROOT/scripts/read-flake-user" "$ROOT/flake.nix")"
+nix eval --json \
+	"$ROOT#darwinConfigurations.mac.config.home-manager.users.\"$rectangle_user\".targets.darwin.defaults.\"com.knollsoft.Rectangle\"" |
+	jq -e --slurpfile expected "$ROOT/home/rectangle.json" '. == $expected[0]' >/dev/null ||
+	fail 'Home Manager did not preserve the captured Rectangle preferences'
+
+pass 'Rectangle is installed with the captured keybinds and preferences'

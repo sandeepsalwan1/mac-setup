@@ -84,10 +84,31 @@ The Homebrew baseline is deliberately small:
 
 - [Automic Vault](https://www.automicvault.com/) and its hardened GitHub CLI
 - [Herdr](https://herdr.dev/)
+- Rectangle with your saved window shortcuts
 - WezTerm
 
 Nix supplies Bun, `uv`, Node.js, Python, Git, tmux, Neovim, ripgrep, fd, fzf, jq,
 lazygit, delta, ShellCheck, shfmt, Gitleaks, TruffleHog, Treehouse, and Hack Nerd Font.
+
+Rectangle preferences live in `home/rectangle.json`. Bootstrap and rebuild apply
+them through Home Manager. All eight custom shortcuts use Left Command + Option.
+Right Command remains the Herdr prefix:
+
+| Keys | Window position |
+| --- | --- |
+| Command + Option + A | Left half |
+| Command + Option + Z | Right half |
+| Command + Option + S | Top half |
+| Command + Option + X | Bottom half |
+| Command + Option + 1 | Top left |
+| Command + Option + 2 | Top right |
+| Command + Option + E | Bottom left |
+| Command + Option + R | Bottom right |
+
+The snapshot also preserves snapping, menu-bar visibility, disabled shortcuts,
+and your other portable preferences. Open Rectangle after setup and allow its
+Accessibility access. If Rectangle was already running during a rebuild,
+quit and reopen it to load the updated settings.
 
 This repository is public, so anything specific to one workplace stays out of it
 and the checkout is built to work without it. Every skill in `skills/` is exposed,
