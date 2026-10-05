@@ -17,8 +17,10 @@ TEST_REPO="$TEST_HOME/.dotfiles"
 git clone --quiet --no-hardlinks "$ROOT" "$TEST_REPO"
 cp "$ROOT/bootstrap.sh" "$TEST_REPO/bootstrap.sh"
 cp "$ROOT/scripts/install-tools" "$TEST_REPO/scripts/install-tools"
+cp "$ROOT/scripts/link-portable-skills" "$TEST_REPO/scripts/link-portable-skills"
 cp "$ROOT/home/.claude/settings.json" "$TEST_REPO/home/.claude/settings.json"
-cp -R "$ROOT/skills/." "$TEST_REPO/skills/"
+git -C "$TEST_REPO" rm -qr -- skills
+cp -R "$ROOT/skills" "$TEST_REPO/skills"
 
 cat >"$TEST_BIN/uname" <<'SH'
 #!/usr/bin/env bash

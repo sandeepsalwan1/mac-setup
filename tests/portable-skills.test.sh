@@ -16,8 +16,13 @@ for skill_root in .skills .agents/skills .claude/skills .codex/skills; do
 done
 
 rm "$portable_test_home/state/agent-skills/profile-owner"
+mkdir -p "$portable_test_home/.claude/skills"
+ln -s /missing/retired-skill "$portable_test_home/.claude/skills/safe-shell-deletion"
+ln -s /missing/retired-skill "$portable_test_home/.claude/skills/find-skills"
 HOME="$portable_test_home" XDG_STATE_HOME="$portable_test_home/state" \
 	"$ROOT/scripts/link-portable-skills" >"$portable_test_home/fallback.out"
+[ ! -L "$portable_test_home/.claude/skills/safe-shell-deletion" ]
+[ ! -L "$portable_test_home/.claude/skills/find-skills" ]
 
 for skill_source in "$ROOT"/skills/*; do
 	[ -d "$skill_source" ] || continue

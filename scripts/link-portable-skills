@@ -30,6 +30,22 @@ fi
 
 [ -d "$SKILLS_DIR" ] || die "missing skills directory: $SKILLS_DIR"
 
+for root in "${ROOTS[@]}"; do
+	for name in \
+		find-skills chrome-devtools-helper-for-personal cross-host-workflow \
+		safe-shell-deletion obsidian-bases obsidian-cli obsidian-markdown \
+		json-canvas personal-context; do
+		target="$root/$name"
+		if [ -L "$target" ]; then
+			rm -f "$target"
+		elif [ -e "$target" ]; then
+			root_label="$(printf '%s' "$root" | tr '/' '_')"
+			mkdir -p "$BACKUP_DIR/$root_label"
+			mv "$target" "$BACKUP_DIR/$root_label/$name"
+		fi
+	done
+done
+
 linked=0
 skipped=0
 

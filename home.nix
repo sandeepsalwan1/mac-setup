@@ -105,21 +105,6 @@ in
       RunAtLoad = true;
     };
   };
-  launchd.agents.context-keeper = {
-    enable = true;
-    config = {
-      ProgramArguments = [ "${config.home.homeDirectory}/bin/context-keeper" "run" ];
-      RunAtLoad = true;
-      KeepAlive = true;
-      ProcessType = "Background";
-      ThrottleInterval = 30;
-      StandardOutPath = "${config.home.homeDirectory}/Library/Logs/context-keeper.out.log";
-      StandardErrorPath = "${config.home.homeDirectory}/Library/Logs/context-keeper.err.log";
-      EnvironmentVariables = {
-        PATH = "${config.home.homeDirectory}/.local/bin:/usr/local/bin:/usr/bin:/bin:/etc/profiles/per-user/${user}/bin:/run/current-system/sw/bin";
-      };
-    };
-  };
 
   # The global identity is the personal one, because this repository is public and
   # the committed address is world-readable. Work repositories set their own
@@ -277,27 +262,6 @@ in
     };
     "bin/learn" = {
       source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/bin/learn";
-      force = true;
-    };
-    "bin/context-keeper" = {
-      source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/bin/context-keeper";
-      force = true;
-    };
-    # ob goes on PATH because it is meant to be typed; the broker does not, because
-    # only launchd should start it. Copy this same ob byte-for-byte to any ssh host
-    # and it works there through the reverse-forwarded broker socket.
-    ".local/bin/ob" = {
-      source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/bin/ob";
-      force = true;
-    };
-    "bin/obsidian-broker" = {
-      source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/bin/obsidian-broker";
-      force = true;
-    };
-    # The only way the vault reaches an ssh host, and only for as long as the
-    # session it opens. Mac-only by design: it is the thing that starts the broker.
-    ".local/bin/ob-link" = {
-      source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/bin/ob-link";
       force = true;
     };
   };

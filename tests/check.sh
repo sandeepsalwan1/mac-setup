@@ -33,7 +33,6 @@ shellcheck -x \
 	"$ROOT/tests/agent-hooks.test.sh" \
 	"$ROOT/tests/bootstrap.test.sh" \
 	"$ROOT/tests/computer-use-cli.test.sh" \
-	"$ROOT/tests/context-keeper.test.sh" \
 	"$ROOT/tests/git-fleet-status.test.sh" \
 	"$ROOT/tests/git-fleet-diff.test.sh" \
 	"$ROOT/tests/global-agents.test.sh" \
@@ -83,7 +82,6 @@ shfmt -d \
 	"$ROOT/tests/backpass-config.test.sh" \
 	"$ROOT/tests/bootstrap.test.sh" \
 	"$ROOT/tests/computer-use-cli.test.sh" \
-	"$ROOT/tests/context-keeper.test.sh" \
 	"$ROOT/tests/git-fleet-status.test.sh" \
 	"$ROOT/tests/git-fleet-diff.test.sh" \
 	"$ROOT/tests/global-agents.test.sh" \
@@ -108,7 +106,6 @@ shfmt -d \
 "$ROOT/tests/agent-hooks.test.sh"
 "$ROOT/tests/bootstrap.test.sh"
 "$ROOT/tests/computer-use-cli.test.sh"
-"$ROOT/tests/context-keeper.test.sh"
 "$ROOT/tests/git-fleet-status.test.sh"
 "$ROOT/tests/git-fleet-diff.test.sh"
 "$ROOT/tests/global-agents.test.sh"
