@@ -16,6 +16,9 @@ mkdir -p "$TEST_HOME/.local/bin" "$TEST_BIN"
 TEST_REPO="$TEST_HOME/.dotfiles"
 git clone --quiet --no-hardlinks "$ROOT" "$TEST_REPO"
 cp "$ROOT/bootstrap.sh" "$TEST_REPO/bootstrap.sh"
+cp "$ROOT/scripts/install-tools" "$TEST_REPO/scripts/install-tools"
+cp "$ROOT/home/.claude/settings.json" "$TEST_REPO/home/.claude/settings.json"
+cp -R "$ROOT/skills/." "$TEST_REPO/skills/"
 
 cat >"$TEST_BIN/uname" <<'SH'
 #!/usr/bin/env bash
@@ -97,6 +100,21 @@ grep -Fq "flake.nix already matches $CONFIGURED_USER" "$TMP_ROOT/first.out" ||
 	fail 'bootstrap did not install no-mistakes'
 [ "$(cat "$CURL_LOG")" = '-fsSL https://raw.githubusercontent.com/kunchenguid/no-mistakes/main/docs/install.sh' ] ||
 	fail 'bootstrap did not fetch the official no-mistakes installer'
+jq -e '
+	.model == "claude-opus-5-5[1m]"
+	and .permissions.defaultMode == "bypassPermissions"
+	and .crossSessionInbound == "accept"
+	and .cleanupPeriodDays == 365000
+' "$TEST_HOME/.claude/settings.json" >/dev/null ||
+	fail 'bootstrap did not initialize the portable Claude defaults'
+for skill_source in "$TEST_REPO"/skills/*; do
+	[ -f "$skill_source/SKILL.md" ] || continue
+	skill_name="$(basename "$skill_source")"
+	for skill_root in .skills .agents/skills .claude/skills .codex/skills; do
+		cmp -s "$skill_source/SKILL.md" "$TEST_HOME/$skill_root/$skill_name/SKILL.md" ||
+			fail "bootstrap did not install $skill_name into $skill_root"
+	done
+done
 
 run_bootstrap >"$TMP_ROOT/second.out"
 [ "$(wc -l <"$SUDO_LOG" | tr -d ' ')" = 2 ] ||

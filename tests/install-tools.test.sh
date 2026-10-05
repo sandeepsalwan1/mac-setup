@@ -171,6 +171,9 @@ run_installer >/dev/null
 
 jq -e '
 	.theme == "dark"
+	and .model == "claude-opus-5-5[1m]"
+	and .permissions.defaultMode == "bypassPermissions"
+	and .crossSessionInbound == "accept"
 	and .permissions.deny == ["Read(keep-this-rule)"]
 	and ([.hooks.SessionStart[].hooks[].command] == ["keep-claude-hook"])
 ' "$TEST_HOME/.claude/settings.json" >/dev/null ||

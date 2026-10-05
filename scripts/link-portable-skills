@@ -1,17 +1,4 @@
 #!/usr/bin/env bash
-# Expose every skill in this repo's skills/ directory to all four skill roots.
-#
-# On macOS this is redundant: Home Manager already links the same set from
-# home.nix `managedSkills`, and re-linking to the identical target is a no-op.
-# It exists for the cloud desktops, where bootstrap.sh refuses to run at all
-# (it is nix-darwin only), so the links there were previously made by hand and
-# silently drifted - which is how a host ended up missing three skills entirely
-# while looking correctly configured. It is also how the untracked,
-# workplace-specific skills get linked, since a pure flake cannot see them.
-#
-# Idempotent. A pre-existing real file or directory is moved aside rather than
-# deleted, because a hand-written skill is not recoverable from this repo.
-
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"

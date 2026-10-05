@@ -6,7 +6,8 @@ nix-darwin plus Home Manager so the same clone can be applied repeatedly.
 
 This repository is public. It contains personal configuration, generic agent
 instructions, and selected skill snapshots. It never contains
-Secret Values, login state, chat history, databases, caches, or logs.
+secrets, login state, chat history, databases, caches, or logs.
+Mac setup works without MyCLI or an Amazon account. Private workplace setup stays separate.
 
 ## Fresh Mac
 
@@ -19,6 +20,8 @@ git clone https://github.com/sandeepsalwan1/mac-setup.git ~/.dotfiles
 
 On a brand-new Mac, the first `git` command asks to install the Command Line
 Tools. Accept, wait for the install to finish, and run the clone again.
+The default is Apple silicon. For an Intel Mac, change `nixpkgs.hostPlatform`
+in `configuration.nix` to `x86_64-darwin` before running bootstrap.
 
 The bootstrap is safe to rerun. It skips tools already installed at the pinned
 version, adopts an existing Homebrew installation, preserves every undeclared
@@ -39,8 +42,24 @@ It performs these steps:
 11. Reports what remains for Automic Vault onboarding.
 12. Opens the complete macOS permission guide in a direct, verified WezTerm tab.
 
-The first system switch requests the macOS administrator password. Automic
-Vault setup and secret entry also require direct user interaction.
+Enter your administrator password when requested. Accept the username change
+if bootstrap detects a different macOS account. Finish the macOS permission guide
+in its WezTerm tab, then complete Vault onboarding. Sign in to each agent with
+your own account and choose a model available to that account.
+
+To ask an agent to do the setup, paste:
+
+```text
+Set up this Mac from https://github.com/sandeepsalwan1/mac-setup.
+Read the repo instructions and README. Clone to ~/.dotfiles, or reuse an
+existing checkout without discarding changes. Use bootstrap.sh and the
+repo's verified WezTerm launchers. You may install the declared public
+tools and apply the settings and bundled skills, including Kun and find-skills.
+Preserve existing packages, secrets, and all agent histories. Keep private
+workplace setup separate. Continue independently; pause only for my admin
+password, account login, macOS permissions, or Vault onboarding.
+Report what works and any remaining blockers.
+```
 
 ## Layout
 
@@ -82,7 +101,8 @@ Claude Code and Codex are declared in `home/agent-casks.txt` and installed by a
 separate additive step, so an existing command or cask receipt satisfies that step
 regardless of how the tool arrived. It never reinstalls or upgrades a satisfied copy.
 
-Pinned npm tools, including Pi, are listed in `home/npm-globals.txt`. `scripts/install-tools`
+Pinned npm tools, including Pi and Vercel's `skills@1.7.0` CLI, are listed in
+`home/npm-globals.txt`. `scripts/install-tools`
 checks each package's installed version before running npm, and installs the
 shared catastrophic-command guard without installing a review harness.
 The guard migrates three legacy broad Claude `rm` denies so named project cleanup remains usable.
@@ -133,48 +153,76 @@ The complete global instructions live in `home/AGENTS.md` and are linked to:
 - `~/.pi/agent/AGENTS.md`
 - `~/.config/opencode/AGENTS.md`
 
-Claude uses Opus 5.5 with the 1M context window, `xhigh` effort, ultracode, bypass permissions
-without the startup prompt, automatic peer-message delivery, and 3,650-day transcript retention.
+Bootstrap fills missing Claude settings from `home/.claude/settings.json`.
+Existing values win, and an external shared profile keeps control of its settings.
+The defaults request Opus 5.5 with the 1M context window, `xhigh` effort, ultracode,
+bypass permissions without the startup prompt, automatic peer-message delivery,
+and 365,000-day transcript retention. Select a model your account supports
+if this default is unavailable.
 The global instructions protect Kiro, Claude, and Codex session transcripts from cleanup.
 
-The repository keeps reviewed snapshots of these skills:
+Bootstrap automatically links every bundled skill, including Kun and find-skills.
+The repository keeps reviewed snapshots of:
 
-- autoreview
-- chrome-devtools-helper-for-personal
-- chrome-devtools-axi
-- computer-use-cli
-- create-project-level-agents-md-file
-- create-readonly-db-role
-- cross-host-workflow
-- defuddle
-- development-style
-- gh-axi
-- global-agent-guardrails
-- grill-me
-- improve-codebase-architecture
-- json-canvas
-- kun
-- lavish
-- no-mistakes
-- obsidian-bases
-- obsidian-cli
-- obsidian-markdown
-- personal-context
-- quota-axi
-- safe-shell-deletion
-- shadcn
-- stow
-- tasks-axi
-- teach
-- technical-writing
-- vision
-- writing-br
+- autoreview: structured code reviews
+- chrome-devtools-helper-for-personal: reuse an approved personal Chrome bridge
+- chrome-devtools-axi: browser inspection and automation
+- computer-use-cli: native app control through the official local runtime
+- create-project-level-agents-md-file: project memory and shared instructions
+- create-readonly-db-role: Postgres access limited to reading
+- cross-host-workflow: validate local and remote workflows
+- defuddle: extract clean Markdown from web pages
+- development-style: code design rules
+- find-skills: discover and install skills from the public ecosystem
+- gh-axi: GitHub operations
+- global-agent-guardrails: maintain the shared command guard
+- grill-me: test plans through focused questions
+- improve-codebase-architecture: improve module boundaries
+- json-canvas: create and edit JSON Canvas files
+- kun: load Kun's public problem-solving instructions with `/kun`
+- lavish: create HTML artifacts for visual review
+- no-mistakes: validate changes before publication
+- obsidian-bases: Obsidian views, filters, and formulas
+- obsidian-cli: operate an open Obsidian vault
+- obsidian-markdown: write Obsidian notes
+- personal-context: read a local context knowledge base
+- quota-axi: report agent usage and remaining quota
+- safe-shell-deletion: rules for shell deletion
+- shadcn: build React interfaces with shadcn/ui
+- stow: save durable knowledge from a conversation
+- tasks-axi: manage a task backlog
+- teach: teach a skill or concept
+- technical-writing: write concise technical documentation
+- vision: draft and review a project vision
+- writing-br: review prose for clarity and concision
+
+Kun and find-skills are unmodified upstream snapshots. Reviewed source commits
+are recorded in [data/repos.md](data/repos.md).
 
 The activation linker exposes each one through `~/.skills`, `~/.agents/skills`,
 `~/.codex/skills`, and `~/.claude/skills`. It preserves unrelated skills and
 defers entirely when `~/.local/state/agent-skills/profile-owner` declares an
 external shared profile.
 Bootstrap also installs the no-mistakes CLI on a fresh Mac.
+Some skills need an account, app, or local resource when invoked. For example,
+`computer-use-cli` needs the official Codex runtime, and the personal Chrome helper
+needs an existing approved bridge. Linking their instructions does not install those resources.
+
+Vercel's Skills CLI is installed automatically. Use the pinned `skills` command
+to find and add optional skills:
+
+```sh
+skills find "react performance"
+skills add vercel-labs/agent-skills --skill web-design-guidelines --global --agent claude-code codex --yes
+skills list --global
+skills update --global
+```
+
+`add` normally installs into the current project; `--global` makes the skill
+available across projects. Review the source and choose the skill and agents
+you need. `list` shows installed skills; `update` refreshes skills managed by
+the CLI. Bundled snapshots follow this repository and `rebuild.sh`.
+See the [official Skills CLI documentation](https://github.com/vercel-labs/skills/blob/18f96ea131dab3b0fcc9b27cf7c6f6cbb6174680/README.md).
 
 Pi keeps declarative settings in this repository but runs from writable settings
 materialized by `scripts/setup-pi-runtime`, so version bookkeeping cannot modify
@@ -218,8 +266,9 @@ provider. The public settings do not choose one for you. To open FirstMate,
 run `cd ~/firstmate && pi` after bootstrap. Sign in with `gh auth login` before
 asking FirstMate to work with GitHub projects.
 
-Home Manager owns only the authored Pi resources: the `~/.pi/agent/themes` and
-`~/.pi/agent/extensions` directories, plus the individual `settings.json` file.
+Home Manager links the authored Pi resources in `~/.pi/agent/themes` and
+`~/.pi/agent/extensions`. `scripts/setup-pi-runtime` materializes the writable
+`settings.json` file from the tracked settings.
 Pi's credentials, session history, and other runtime state
 stay local and untracked. The local extensions directory is for public
 repository-authored extensions only; third-party package code never belongs
@@ -351,9 +400,6 @@ filename together, Enter reads the diff full screen, and every key returns to th
 list. See [docs/git-fleet.md](docs/git-fleet.md), which also covers what each diff
 is measured against, how delta is wired in on every host, and the two environment
 variables that keep machine-specific noise out of the scan.
-
-For an Intel Mac, change `nixpkgs.hostPlatform` in `configuration.nix` to
-`x86_64-darwin` before the first bootstrap.
 
 ## Attribution
 

@@ -10,4 +10,5 @@ export PATH="/etc/profiles/per-user/$REAL_USER/bin:$HOME/.local/bin:$HOME/.local
 "$DIR/scripts/install-agent-tools"
 "$DIR/scripts/install-tools"
 "$DIR/scripts/install-diff-tools"
+"$DIR/scripts/link-portable-skills"
 "$DIR/scripts/link-official-codex-skills"

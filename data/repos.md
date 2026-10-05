@@ -1,6 +1,6 @@
 # Public setup sources
 
-The setup uses released tools where available and snapshots only each repository's authored skill folder. Some skills are adapted for this setup. These commits record the latest default branches inspected on October 4, 2026; they do not select unreleased tool builds.
+The setup uses released tools where available and snapshots only each repository's authored skill folder. Some skills are adapted for this setup. These commits record the default branches inspected on October 4 and 5, 2026; they do not select unreleased tool builds.
 
 | Repository | Commit | Use |
 | --- | --- | --- |
@@ -18,10 +18,11 @@ The setup uses released tools where available and snapshots only each repository
 | [vision](https://github.com/kunchenguid/vision) | `7a20c38181151ec67efdf8fa2cb03a60123a7b83` | Visual review skill |
 | [tasks-axi](https://github.com/kunchenguid/tasks-axi) | `9401ff899c0d1d8ae6b4fd8727b9025abda2032c` | Tasks skill and npm tool |
 | [teach](https://github.com/davidondrej/skills/tree/main/skills/thinking-and-docs/teach) | `f025cb43cbbfe5810b130a207c4353c8555af7cb` | Teaching formats unchanged; explicit invocation retained |
+| [skills](https://github.com/vercel-labs/skills) | `18f96ea131dab3b0fcc9b27cf7c6f6cbb6174680` | Skills CLI 1.7.0 and the unmodified find-skills snapshot |
 
 ## Released tool pins
 
-The npm registry verified these latest releases on October 4, 2026. The global
+The npm registry verified these releases on October 4 and 5, 2026. The global
 manifest is `home/npm-globals.txt`; Pi extensions are in `home/.pi/agent/settings.json`.
 
 | Tool | Pinned release |
@@ -33,6 +34,7 @@ manifest is `home/npm-globals.txt`; Pi extensions are in `home/.pi/agent/setting
 | gh-axi | 0.1.35 |
 | lavish-axi | 0.1.82 |
 | quota-axi | 0.1.57 |
+| skills | 1.7.0 |
 | tasks-axi | 0.2.6 |
 | @earendil-works/pi-coding-agent | 1.0.2 |
 | pi-web-access | 0.35.0 |

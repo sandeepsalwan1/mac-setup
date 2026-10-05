@@ -235,12 +235,14 @@ install_command_guard() {
 		if ! jq \
 			--arg command "$command_path" \
 			--arg settings "$settings" \
-			--arg claude_settings "$HOME/.claude/settings.json" '
+			--arg claude_settings "$HOME/.claude/settings.json" \
+			--slurpfile defaults "$ROOT/home/.claude/settings.json" '
 			def managed:
 				type == "object"
 				and .type? == "command"
 				and (.command? | type == "string" and endswith("/.agents/hooks/deny-dangerous.sh"));
-			if $settings == $claude_settings
+			if $settings == $claude_settings then $defaults[0] * . else . end
+			| if $settings == $claude_settings
 			   and (.permissions? | type) == "object"
 			   and (.permissions.deny? | type) == "array"
 			then .permissions.deny |= map(select(
