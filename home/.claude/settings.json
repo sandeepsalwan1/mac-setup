@@ -24,7 +24,7 @@
   },
   "effortLevel": "xhigh",
   "ultracode": true,
-  "cleanupPeriodDays": 3650,
+  "cleanupPeriodDays": 365000,
   "permissions": {
     "defaultMode": "bypassPermissions"
   },
