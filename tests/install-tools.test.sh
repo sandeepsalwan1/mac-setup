@@ -11,6 +11,7 @@ TEST_PREFIX="$TEST_HOME/.local/share/npm"
 TEST_MANIFEST="$TMP_ROOT/npm-globals.txt"
 INSTALL_LOG="$TMP_ROOT/npm-install.log"
 BRIDGE_LOG="$TMP_ROOT/bridge.log"
+BRIDGE_STATE="$TEST_HOME/.chrome-devtools-axi/sessions/named/bridge.pid"
 mkdir -p \
 	"$TEST_BIN" \
 	"$TEST_PREFIX/bin" \
@@ -97,7 +98,11 @@ EOF
 
 mkdir -p "$TEST_HOME/.claude" "$TEST_HOME/.codex" "$TEST_HOME/.config/opencode/plugins"
 mkdir -p "$TEST_HOME/.chrome-devtools-axi/sessions/named" "$TEST_PREFIX/lib/node_modules/data-only-tool"
-printf '%s\n' '{"pid":123,"port":9421}' >"$TEST_HOME/.chrome-devtools-axi/sessions/named/bridge.pid"
+sleep 600 &
+BRIDGE_PID=$!
+trap 'kill "$BRIDGE_PID" 2>/dev/null || true; wait "$BRIDGE_PID" 2>/dev/null || true; dotfiles_test_cleanup' EXIT
+printf '{"pid":%s,"port":9421}\n' "$BRIDGE_PID" >"$BRIDGE_STATE"
+bridge_before="$(sha256_file "$BRIDGE_STATE")"
 printf '%s\n' '{"name":"data-only-tool","version":"3.0.0"}' >"$TEST_PREFIX/lib/node_modules/data-only-tool/package.json"
 cat >"$TEST_HOME/.claude/settings.json" <<'EOF'
 {
@@ -161,6 +166,16 @@ run_installer() {
 		"$ROOT/scripts/install-tools"
 }
 
+assert_bridge_preserved() {
+	[ ! -s "$BRIDGE_LOG" ] ||
+		fail "Chrome tool update requested $(wc -l <"$BRIDGE_LOG" | tr -d ' ') bridge stops"
+	[ -f "$BRIDGE_STATE" ] &&
+		[ "$(sha256_file "$BRIDGE_STATE")" = "$bridge_before" ] ||
+		fail 'Chrome tool update changed the live bridge metadata'
+	kill -0 "$BRIDGE_PID" 2>/dev/null ||
+		fail 'Chrome tool update stopped the live bridge process'
+}
+
 run_installer >/dev/null
 [ "$(cat "$INSTALL_LOG")" = $'missing-tool@2.0.0\nchrome-devtools-axi@0.1.30' ] ||
 	fail 'installer did not skip the already satisfied npm tool'
@@ -170,8 +185,7 @@ run_installer >/dev/null
 [ "$(readlink "$TEST_HOME/.local/bin/chrome-devtools-axi")" = \
 	/opt/user/chrome-devtools-axi ] ||
 	fail 'installer replaced a user-owned executable link'
-[ "$(cat "$BRIDGE_LOG")" = $'named:9421\nunset:unset\nunset:unset' ] ||
-	fail 'Chrome tool version changes did not retire every bridge before migration'
+assert_bridge_preserved
 
 jq -e '
 	.theme == "dark"
@@ -217,8 +231,7 @@ EOF
 run_installer >/dev/null
 [ "$(wc -l <"$INSTALL_LOG" | tr -d ' ')" = 2 ] ||
 	fail 'a second run reinstalled an already satisfied npm tool'
-[ "$(wc -l <"$BRIDGE_LOG" | tr -d ' ')" = 3 ] ||
-	fail 'an unchanged Chrome tool version recycled the bridge'
+assert_bridge_preserved
 [ "$(cat "$TEST_HOME/.config/opencode/plugins/axi-chrome-devtools-axi.js")" = 'export const userPlugin = true;' ] ||
 	fail 'Chrome cleanup changed an unmanaged OpenCode plugin'
 
@@ -230,15 +243,17 @@ chrome-devtools-mcp@1.7.1
 EOF
 if NPM_FAIL_AFTER_CHROME_INSTALL=1 run_installer >/dev/null 2>&1; then
 	fail 'interrupted Chrome package installation unexpectedly succeeded'
+else
+	install_status=$?
 fi
+[ "$install_status" -eq 42 ] ||
+	fail 'installer did not preserve the npm failure status'
 [ "$(tail -n 1 "$INSTALL_LOG")" = 'chrome-devtools-mcp@1.7.1' ] ||
 	fail 'installer did not adopt the changed MCP version'
-[ "$(wc -l <"$BRIDGE_LOG" | tr -d ' ')" = 5 ] ||
-	fail 'an interrupted MCP version change did not guard both sides of the migration'
+assert_bridge_preserved
 
 run_installer >/dev/null
-[ "$(wc -l <"$BRIDGE_LOG" | tr -d ' ')" = 5 ] ||
-	fail 'rerunning an interrupted Chrome upgrade recycled the bridge again'
+assert_bridge_preserved
 
 cat >"$TEST_MANIFEST" <<'EOF'
 present-tool@1.2.3
@@ -249,14 +264,13 @@ EOF
 if NPM_INTERRUPT_AFTER_CHROME_INSTALL=1 run_installer >/dev/null 2>&1; then
 	fail 'terminated Chrome package installation unexpectedly succeeded'
 fi
-[ "$(wc -l <"$BRIDGE_LOG" | tr -d ' ')" = 6 ] ||
-	fail 'terminated Chrome upgrade unexpectedly reached its final bridge stop'
+assert_bridge_preserved
 
+printf '%s\n' legacy >"$TEST_PREFIX/.chrome-devtools-axi-recycle-pending"
 run_installer >/dev/null
-[ "$(wc -l <"$BRIDGE_LOG" | tr -d ' ')" = 8 ] ||
-	fail 'rerunning a terminated Chrome upgrade did not complete bridge recycling'
-[ ! -e "$TEST_PREFIX/.chrome-devtools-axi-recycle-pending" ] ||
-	fail 'completed Chrome bridge recycling left pending state behind'
+assert_bridge_preserved
+[ "$(cat "$TEST_PREFIX/.chrome-devtools-axi-recycle-pending")" = legacy ] ||
+	fail 'installer changed obsolete bridge recycling state'
 
 printf '%s\n' '@earendil-works/pi-coding-agent@0.87.1' >"$TEST_MANIFEST"
 run_installer >/dev/null
@@ -278,4 +292,4 @@ run_installer >/dev/null
 	[ "$(sha256_file "$TEST_HOME/.claude/settings.json")" = "$claude_before" ] ||
 	fail 'installer replaced a command guard owned by an external shared profile'
 
-pass 'install-tools migrates Chrome state, installs the command guard, defers to an external guard owner, and remains idempotent'
+pass 'install-tools preserves live Chrome bridges across updates and failures, installs the command guard, and remains idempotent'
