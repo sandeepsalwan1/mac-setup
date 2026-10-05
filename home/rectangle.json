@@ -1,0 +1,51 @@
+{
+  "SUEnableAutomaticChecks": false,
+  "allowAnyShortcut": true,
+  "alternateDefaultShortcuts": false,
+  "bottomHalf": {
+    "keyCode": 7,
+    "modifierFlags": 1572864
+  },
+  "bottomLeft": {
+    "keyCode": 14,
+    "modifierFlags": 1572864
+  },
+  "bottomRight": {
+    "keyCode": 15,
+    "modifierFlags": 1572864
+  },
+  "center": {},
+  "hideMenubarIcon": true,
+  "larger": {},
+  "launchOnLogin": false,
+  "leftHalf": {
+    "keyCode": 0,
+    "modifierFlags": 1572864
+  },
+  "maximizeHeight": {},
+  "nextDisplay": {},
+  "previousDisplay": {},
+  "reflowTodo": {},
+  "relaunchOpensMenu": false,
+  "restore": {},
+  "rightHalf": {
+    "keyCode": 6,
+    "modifierFlags": 1572864
+  },
+  "smaller": {},
+  "subsequentExecutionMode": 2,
+  "toggleTodo": {},
+  "topHalf": {
+    "keyCode": 1,
+    "modifierFlags": 1572864
+  },
+  "topLeft": {
+    "keyCode": 18,
+    "modifierFlags": 1572864
+  },
+  "topRight": {
+    "keyCode": 19,
+    "modifierFlags": 1572864
+  },
+  "windowSnapping": 2
+}

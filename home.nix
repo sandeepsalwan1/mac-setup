@@ -9,6 +9,9 @@ in
   home.homeDirectory = "/Users/${user}";
   home.stateVersion = "24.11";
 
+  targets.darwin.defaults."com.knollsoft.Rectangle" =
+    lib.importJSON ./home/rectangle.json;
+
   home.packages = with pkgs; [
     bun
     # Renders every diff on this machine, wired in by
