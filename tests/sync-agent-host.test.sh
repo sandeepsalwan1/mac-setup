@@ -9,31 +9,23 @@ TMP=$(dotfiles_test_tmproot sync-agent-host)
 
 test -x "$SCRIPT" || fail 'sync-agent-host is not executable'
 
-# --- host discovery ----------------------------------------------------------
-#
-# The host list is context-keeper's `remote_hosts` so that adding a desktop to
-# the knowledge-base mirror also adds it here. A second list would drift.
-
-printf '{}\n' >"$TMP/empty.json"
-if CONTEXT_KEEPER_CONFIG="$TMP/empty.json" "$SCRIPT" >"$TMP/none.out" 2>&1; then
+if "$SCRIPT" >"$TMP/none.out" 2>&1; then
 	fail 'sync-agent-host succeeded with no hosts to sync'
 fi
-rg -q 'no hosts given' "$TMP/none.out" ||
-	fail 'sync-agent-host did not explain that it found no hosts'
+rg -q 'usage: sync-agent-host <ssh-host>.*pass at least one SSH host' "$TMP/none.out" ||
+	fail 'sync-agent-host did not ask for an explicit SSH host'
 
-cat >"$TMP/config.json" <<'EOF'
-{
-  "remote_hosts": [
-    { "name": "nowhere", "ssh": "sync-agent-host-test.invalid" },
-    { "name": "no-ssh-key-so-ignored" }
-  ]
-}
-EOF
+mkdir -p "$TMP/bin"
+cat >"$TMP/bin/ssh" <<'SH'
+#!/usr/bin/env bash
+exit 1
+SH
+chmod +x "$TMP/bin/ssh"
 
 # An unreachable host is reported and counted, not silently skipped, and the run
 # exits nonzero. Silent per-host success is the failure mode this whole script
 # exists to prevent, so it must not reappear in the script itself.
-if CONTEXT_KEEPER_CONFIG="$TMP/config.json" "$SCRIPT" >"$TMP/unreachable.out" 2>&1; then
+if PATH="$TMP/bin:$PATH" "$SCRIPT" sync-agent-host-test.invalid >"$TMP/unreachable.out" 2>&1; then
 	fail 'sync-agent-host reported success for an unreachable host'
 fi
 rg -q 'sync-agent-host-test.invalid' "$TMP/unreachable.out" ||
@@ -41,7 +33,7 @@ rg -q 'sync-agent-host-test.invalid' "$TMP/unreachable.out" ||
 rg -q 'unreachable, skipped' "$TMP/unreachable.out" ||
 	fail 'sync-agent-host did not report the host as unreachable'
 rg -q '1 of 1 hosts did not sync' "$TMP/unreachable.out" ||
-	fail 'sync-agent-host did not summarize the failure, or counted the entry with no ssh target'
+	fail 'sync-agent-host did not summarize the failure'
 
 # --- the bundle carries its own history --------------------------------------
 #

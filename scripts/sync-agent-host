@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Bring an SSH host's agent setup up to this Mac's: the dotfiles commits, pinned
-# supporting tools, skill links, and a report on the knowledge-base mirror.
+# supporting tools, and skill links.
 #
 # Why this exists rather than `git pull` on the host: origin is a public GitHub
 # repository and local commits are deliberately never pushed there, so a host
@@ -9,19 +9,13 @@
 # configured (see scripts/link-portable-skills). A self-contained bundle carried
 # over ssh moves the commits with no publication and no second source of truth.
 #
-# Hosts come from context-keeper's `remote_hosts`, so adding a desktop to the
-# knowledge-base mirror also adds it here - one place to edit, not two. Pass ssh
-# targets as arguments to override that.
-#
 # Idempotent, and read-mostly on the host: it fast-forwards or refuses. It never
 # force-updates a ref, never merges non-linearly, and never touches origin.
 
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
-CONFIG="${CONTEXT_KEEPER_CONFIG:-$HOME/.config/context-keeper/config.json}"
 BRANCH=main
-REMOTE_KB=".local/state/context-keeper/kb"
 
 note() {
 	printf 'sync-agent-host: %s\n' "$1"
@@ -32,25 +26,8 @@ die() {
 	exit 1
 }
 
-hosts_from_config() {
-	[ -f "$CONFIG" ] || return 0
-	command -v jq >/dev/null || die "jq is required to read $CONFIG"
-	jq -r '.remote_hosts // [] | .[] | select(.ssh) | .ssh' "$CONFIG"
-}
-
-# Built with a read loop rather than `mapfile`, which macOS's /bin/bash 3.2 does
-# not have. This script is only ever run by hand from a shell whose PATH resolves
-# a modern bash, but a launcher with a bare PATH would not, and the loop is free.
-HOSTS=()
-if [ "$#" -gt 0 ]; then
-	HOSTS=("$@")
-else
-	while IFS= read -r line; do
-		[ -n "$line" ] && HOSTS+=("$line")
-	done < <(hosts_from_config)
-fi
-
-[ "${#HOSTS[@]}" -gt 0 ] || die "no hosts given and none listed in $CONFIG"
+[ "$#" -gt 0 ] || die "usage: sync-agent-host <ssh-host> [ssh-host ...]; pass at least one SSH host"
+HOSTS=("$@")
 
 git -C "$ROOT" rev-parse --verify "$BRANCH" >/dev/null 2>&1 ||
 	die "$ROOT has no $BRANCH branch"
@@ -135,13 +112,6 @@ for host in "${HOSTS[@]}"; do
 		set -eu
 		printf 'sync-agent-host:   HEAD %s\n' \"\$(git -C \"\$HOME/mac-setup\" rev-parse --short HEAD)\"
 		printf 'sync-agent-host:   skills %s linked\n' \"\$(ls \"\$HOME/.claude/skills\" | wc -l | tr -d ' ')\"
-		if [ -f \"\$HOME/$REMOTE_KB/index.md\" ]; then
-			printf 'sync-agent-host:   kb mirror %s topics, %s entities\n' \
-				\"\$(ls \"\$HOME/$REMOTE_KB/wiki/topics\" 2>/dev/null | wc -l | tr -d ' ')\" \
-				\"\$(ls \"\$HOME/$REMOTE_KB/wiki/entities\" 2>/dev/null | wc -l | tr -d ' ')\"
-		else
-			printf 'sync-agent-host:   kb mirror absent - add this host to remote_hosts in %s\n' '$CONFIG'
-		fi
 	"
 done
 

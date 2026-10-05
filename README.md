@@ -54,7 +54,7 @@ Set up this Mac from https://github.com/sandeepsalwan1/mac-setup.
 Read the repo instructions and README. Clone to ~/.dotfiles, or reuse an
 existing checkout without discarding changes. Use bootstrap.sh and the
 repo's verified WezTerm launchers. You may install the declared public
-tools and apply the settings and bundled skills, including Kun and find-skills.
+tools and apply the settings and bundled skills, including Kun.
 Preserve existing packages, secrets, and all agent histories. Keep private
 workplace setup separate. Continue independently; pause only for my admin
 password, account login, macOS permissions, or Vault onboarding.
@@ -101,14 +101,14 @@ Claude Code and Codex are declared in `home/agent-casks.txt` and installed by a
 separate additive step, so an existing command or cask receipt satisfies that step
 regardless of how the tool arrived. It never reinstalls or upgrades a satisfied copy.
 
-Pinned npm tools, including Pi and Vercel's `skills@1.7.0` CLI, are listed in
+Pinned npm tools, including Pi, are listed in
 `home/npm-globals.txt`. `scripts/install-tools`
 checks each package's installed version before running npm, and installs the
 shared catastrophic-command guard without installing a review harness.
 The guard migrates three legacy broad Claude `rm` denies so named project cleanup remains usable.
 The bootstrap also clones the public FirstMate repository when `~/firstmate` is free; it leaves
 an existing path untouched. `scripts/sync-agent-host` applies the same pinned tool manifest
-on each configured SSH host.
+to explicitly named SSH hosts.
 The reviewed public source registry is in `data/repos.md`.
 The reusable review prompts are in `prompts/`. `ten-gate-review.md` is the compact Ten Gate review,
 `ten-gate-review-portable.md` is the full version, and `ten-gate-review-runtime.md` takes explicit tool
@@ -161,33 +161,24 @@ and 365,000-day transcript retention. Select a model your account supports
 if this default is unavailable.
 The global instructions protect Kiro, Claude, and Codex session transcripts from cleanup.
 
-Bootstrap automatically links every bundled skill, including Kun and find-skills.
+Bootstrap automatically links all 22 bundled skills, including Kun.
 The repository keeps reviewed snapshots of:
 
 - autoreview: structured code reviews
-- chrome-devtools-helper-for-personal: reuse an approved personal Chrome bridge
 - chrome-devtools-axi: browser inspection and automation
 - computer-use-cli: native app control through the official local runtime
 - create-project-level-agents-md-file: project memory and shared instructions
 - create-readonly-db-role: Postgres access limited to reading
-- cross-host-workflow: validate local and remote workflows
 - defuddle: extract clean Markdown from web pages
 - development-style: code design rules
-- find-skills: discover and install skills from the public ecosystem
 - gh-axi: GitHub operations
 - global-agent-guardrails: maintain the shared command guard
 - grill-me: test plans through focused questions
 - improve-codebase-architecture: improve module boundaries
-- json-canvas: create and edit JSON Canvas files
 - kun: load Kun's public problem-solving instructions with `/kun`
 - lavish: create HTML artifacts for visual review
 - no-mistakes: validate changes before publication
-- obsidian-bases: Obsidian views, filters, and formulas
-- obsidian-cli: operate an open Obsidian vault
-- obsidian-markdown: write Obsidian notes
-- personal-context: read a local context knowledge base
 - quota-axi: report agent usage and remaining quota
-- safe-shell-deletion: rules for shell deletion
 - shadcn: build React interfaces with shadcn/ui
 - stow: save durable knowledge from a conversation
 - tasks-axi: manage a task backlog
@@ -196,7 +187,7 @@ The repository keeps reviewed snapshots of:
 - vision: draft and review a project vision
 - writing-br: review prose for clarity and concision
 
-Kun and find-skills are unmodified upstream snapshots. Reviewed source commits
+Kun is an unmodified upstream snapshot. Reviewed source commits
 are recorded in [data/repos.md](data/repos.md).
 
 The activation linker exposes each one through `~/.skills`, `~/.agents/skills`,
@@ -204,25 +195,9 @@ The activation linker exposes each one through `~/.skills`, `~/.agents/skills`,
 defers entirely when `~/.local/state/agent-skills/profile-owner` declares an
 external shared profile.
 Bootstrap also installs the no-mistakes CLI on a fresh Mac.
-Some skills need an account, app, or local resource when invoked. For example,
-`computer-use-cli` needs the official Codex runtime, and the personal Chrome helper
-needs an existing approved bridge. Linking their instructions does not install those resources.
-
-Vercel's Skills CLI is installed automatically. Use the pinned `skills` command
-to find and add optional skills:
-
-```sh
-skills find "react performance"
-skills add vercel-labs/agent-skills --skill web-design-guidelines --global --agent claude-code codex --yes
-skills list --global
-skills update --global
-```
-
-`add` normally installs into the current project; `--global` makes the skill
-available across projects. Review the source and choose the skill and agents
-you need. `list` shows installed skills; `update` refreshes skills managed by
-the CLI. Bundled snapshots follow this repository and `rebuild.sh`.
-See the [official Skills CLI documentation](https://github.com/vercel-labs/skills/blob/18f96ea131dab3b0fcc9b27cf7c6f6cbb6174680/README.md).
+Some skills need an account, app, or local resource when invoked.
+`computer-use-cli` needs the official Codex runtime. Bundled snapshots follow
+this repository and `rebuild.sh`.
 
 Pi keeps declarative settings in this repository but runs from writable settings
 materialized by `scripts/setup-pi-runtime`, so version bookkeeping cannot modify
@@ -248,11 +223,7 @@ then run:
 ~/.dotfiles/scripts/link-official-codex-skills
 ```
 
-For an existing personal Chrome profile, read `skills/chrome-devtools-helper-for-personal`
-before connecting. It keeps one approved bridge in use and leaves the upstream
-`chrome-devtools-axi` skill unchanged.
-
-That links the official Computer Use skill into the same four skill locations.
+The command links the official Computer Use skill into the same four skill locations.
 The `computer-use` and `computer-use-cli` entries share one runtime: the former
 exposes the native tool integration, while the latter exposes `cua-cli`. Every
 bootstrap and rebuild refreshes the official skill link to the installed plugin

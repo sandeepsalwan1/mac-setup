@@ -10,7 +10,6 @@ chrome-devtools-mcp@1.10.1
 gh-axi@0.1.35
 lavish-axi@0.1.82
 quota-axi@0.1.57
-skills@1.7.0
 tasks-axi@0.2.6
 @earendil-works/pi-coding-agent@1.0.2'
 actual_npm="$(grep -Ev '^[[:space:]]*(#|$)' "$ROOT/home/npm-globals.txt")"
@@ -59,9 +58,7 @@ jq -e '
 ' "$ROOT/home/.claude/settings.json" >/dev/null
 
 for skill in \
-	chrome-devtools-helper-for-personal \
 	chrome-devtools-axi \
-	find-skills \
 	gh-axi \
 	kun \
 	lavish \
