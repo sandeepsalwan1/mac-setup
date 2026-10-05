@@ -190,7 +190,12 @@ The complete global instructions live in `home/AGENTS.md` and are linked to:
 - `~/.config/opencode/AGENTS.md`
 
 Bootstrap fills missing Claude settings from `home/.claude/settings.json`.
-Existing values win, and an external shared profile keeps control of its settings.
+It applies bypass mode to the standalone profile. The shell and macOS login
+environment export `CLAUDE_CODE_DISABLE_INLINE_SHELL_RM_PROMPT=1`, supported in
+Claude v2.1.288 and later. Claude ignores this variable in `settings.json`.
+Start a new Claude session after an update to pick up the launch environment.
+The shared catastrophic-command guard stays active.
+Other existing values win, and an external shared profile keeps control of its settings.
 The defaults request Opus 5.5 with the 1M context window, `xhigh` effort, ultracode,
 bypass permissions without the startup prompt, automatic peer-message delivery,
 and 365,000-day transcript retention. Select a model your account supports

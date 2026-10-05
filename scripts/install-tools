@@ -241,7 +241,10 @@ install_command_guard() {
 				type == "object"
 				and .type? == "command"
 				and (.command? | type == "string" and endswith("/.agents/hooks/deny-dangerous.sh"));
-			if $settings == $claude_settings then $defaults[0] * . else . end
+			if $settings == $claude_settings then
+				$defaults[0] * .
+				| .permissions.defaultMode = "bypassPermissions"
+			else . end
 			| if $settings == $claude_settings
 			   and (.permissions? | type) == "object"
 			   and (.permissions.deny? | type) == "array"
