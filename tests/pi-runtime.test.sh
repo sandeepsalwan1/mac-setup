@@ -42,6 +42,11 @@ ln -s "$SOURCE_AGENT/settings.json" "$AGENT_DIR/settings.json"
 ln -s "$SOURCE_AGENT/models.json" "$AGENT_DIR/models.json"
 ln -s "$SOURCE_AGENT/themes" "$AGENT_DIR/themes"
 ln -s "$SOURCE_AGENT/AGENTS.md" "$AGENT_DIR/AGENTS.md"
+printf '%s\n' \
+	'{"version":1,"mode":"hint","autoAcknowledged":false,"minContextTokens":60000,"contextBudgetTokens":250000,"logRequests":true,"typesafeApiKey":"runtime-test-key","futureSetting":{"keep":true}}' \
+	>"$AGENT_DIR/compact-adviser.json"
+mkdir -p "$FIRSTMATE_AGENT_DIR"
+ln -s "$AGENT_DIR/compact-adviser.json" "$FIRSTMATE_AGENT_DIR/compact-adviser.json"
 
 cat >"$REAL_PI" <<'SH'
 #!/usr/bin/env bash
@@ -96,6 +101,24 @@ fi
 	fail 'Firstmate runtime did not reuse the declared model catalog'
 [ "$(readlink "$FIRSTMATE_AGENT_DIR/skills")" = "$AGENT_DIR/skills" ] ||
 	fail 'Firstmate runtime did not expose global Pi skills'
+[ "$("$JQ_BIN" -r .mode "$AGENT_DIR/compact-adviser.json")" = auto ] &&
+	[ "$("$JQ_BIN" -r .autoAcknowledged "$AGENT_DIR/compact-adviser.json")" = true ] &&
+	[ "$("$JQ_BIN" -r .logRequests "$AGENT_DIR/compact-adviser.json")" = false ] ||
+	fail 'Pi runtime did not enforce acknowledged adviser auto mode with logging off'
+"$JQ_BIN" -e \
+	'.typesafeApiKey == "runtime-test-key" and .minContextTokens == 60000 and .contextBudgetTokens == 250000 and .futureSetting.keep == true' \
+	"$AGENT_DIR/compact-adviser.json" >/dev/null ||
+	fail 'Pi runtime adviser migration discarded the key, threshold, budget, or unknown fields'
+[ "$(file_mode "$AGENT_DIR/compact-adviser.json")" = 600 ] ||
+	fail 'Pi runtime adviser settings are not private'
+if [ ! -f "$FIRSTMATE_AGENT_DIR/compact-adviser.json" ] ||
+	[ -L "$FIRSTMATE_AGENT_DIR/compact-adviser.json" ] ||
+	[ "$(file_mode "$FIRSTMATE_AGENT_DIR/compact-adviser.json")" != 600 ] ||
+	! cmp -s "$FIRSTMATE_AGENT_DIR/compact-adviser.json" "$AGENT_DIR/compact-adviser.json"; then
+	fail 'Firstmate runtime did not migrate its rejected adviser link to a private regular file'
+fi
+adviser_hash_before=$(sha256_file "$AGENT_DIR/compact-adviser.json")
+firstmate_adviser_hash_before=$(sha256_file "$FIRSTMATE_AGENT_DIR/compact-adviser.json")
 [ -x "$TEST_HOME/.local/bin/pi" ] && [ ! -L "$TEST_HOME/.local/bin/pi" ] ||
 	fail 'setup did not atomically replace the old Pi shim with the scoped wrapper'
 [ -L "$TEST_HOME/.local/bin/pi.real" ] &&
@@ -125,6 +148,10 @@ HOME="$TEST_HOME" \
 	"$ROOT/scripts/setup-pi-runtime" >/dev/null
 [ "$("$JQ_BIN" -r .lastChangelogVersion "$AGENT_DIR/settings.json")" = "0.85.0" ] ||
 	fail 'idempotent setup discarded Pi runtime bookkeeping'
+[ "$(sha256_file "$AGENT_DIR/compact-adviser.json")" = "$adviser_hash_before" ] ||
+	fail 'idempotent setup changed saved adviser settings'
+[ "$(sha256_file "$FIRSTMATE_AGENT_DIR/compact-adviser.json")" = "$firstmate_adviser_hash_before" ] ||
+	fail 'idempotent setup changed Firstmate adviser settings'
 [ "$(file_mode "$AGENT_DIR/settings.json")" = 600 ] &&
 	[ "$(file_mode "$FIRSTMATE_AGENT_DIR/settings.json")" = 600 ] ||
 	fail 'idempotent setup did not restore owner read/write settings permissions'
@@ -324,6 +351,9 @@ printf '%s\n' 'helper directory' \
 printf '%s\n' 'early compaction directory' \
 	>"$DIRECTORY_FIRSTMATE/extensions/early-compaction.ts/sentinel"
 printf '%s\n' 'wrapper directory' >"$DIRECTORY_HOME/.local/bin/pi/sentinel"
+printf '%s\n' \
+	'{"version":1,"mode":"hint","autoAcknowledged":false,"minContextTokens":80000,"contextBudgetTokens":220000,"typesafeApiKey":"firstmate-test-key","futureSetting":{"local":true}}' \
+	>"$DIRECTORY_FIRSTMATE/compact-adviser.json"
 HOME="$DIRECTORY_HOME" \
 	PI_DECLARATIVE_AGENT_DIR="$SOURCE_AGENT" \
 	PI_AGENT_DIR="$DIRECTORY_AGENT" \
@@ -342,6 +372,14 @@ for target in \
 done
 [ -x "$DIRECTORY_HOME/.local/bin/pi" ] ||
 	fail 'setup did not make a directory-blocked wrapper executable'
+"$JQ_BIN" -e \
+	'.mode == "auto" and .autoAcknowledged == true and .minContextTokens == 40000 and .logRequests == false and (has("typesafeApiKey") | not)' \
+	"$DIRECTORY_AGENT/compact-adviser.json" >/dev/null ||
+	fail 'fresh Pi runtime did not configure adviser auto without inventing a key'
+"$JQ_BIN" -e \
+	'.mode == "auto" and .autoAcknowledged == true and .typesafeApiKey == "firstmate-test-key" and .minContextTokens == 80000 and .contextBudgetTokens == 220000 and .futureSetting.local == true' \
+	"$DIRECTORY_FIRSTMATE/compact-adviser.json" >/dev/null ||
+	fail 'Firstmate adviser migration discarded its local key, threshold, budget, or unknown fields'
 for backup in \
 	agent-settings.directory/sentinel \
 	firstmate-settings.directory/sentinel \
@@ -361,11 +399,17 @@ printf '%s\n' '{"defaultProvider":"external"}' >"$OWNED_HOME/.pi/agent/settings.
 printf '%s\n' '{"defaultProvider":"external"}' >"$OWNED_FIRSTMATE/settings.json"
 printf '%s\n' 'external guard' >"$OWNED_FIRSTMATE/extensions/command-guard.ts"
 printf '%s\n' 'external compaction' >"$OWNED_FIRSTMATE/extensions/early-compaction.ts"
+printf '%s\n' '{"mode":"hint","typesafeApiKey":"external-test-key"}' \
+	>"$OWNED_HOME/.pi/agent/compact-adviser.json"
+printf '%s\n' '{"mode":"hint","typesafeApiKey":"external-test-key"}' \
+	>"$OWNED_FIRSTMATE/compact-adviser.json"
 owned_files=(
 	"$OWNED_HOME/.pi/agent/settings.json"
 	"$OWNED_FIRSTMATE/settings.json"
 	"$OWNED_FIRSTMATE/extensions/command-guard.ts"
 	"$OWNED_FIRSTMATE/extensions/early-compaction.ts"
+	"$OWNED_HOME/.pi/agent/compact-adviser.json"
+	"$OWNED_FIRSTMATE/compact-adviser.json"
 )
 owned_before=$(for file in "${owned_files[@]}"; do sha256_file "$file"; done)
 HOME="$OWNED_HOME" \

@@ -117,6 +117,36 @@ materialize_settings() {
 	note "materialized $target"
 }
 
+configure_adviser() {
+	local target="$1/compact-adviser.json" label=$2 input=/dev/null tmp
+	if [ -f "$AGENT_DIR/compact-adviser.json" ]; then
+		input="$AGENT_DIR/compact-adviser.json"
+	fi
+	if [ -e "$target" ] || [ -L "$target" ]; then
+		[ -f "$target" ] || die "adviser settings must be a JSON file"
+		input=$target
+	fi
+	tmp=$(mktemp "$1/.compact-adviser.json.XXXXXX")
+	if ! "$JQ_BIN" -Ss '
+		if length > 1 or (length == 1 and (.[0] | type) != "object")
+		then error("adviser settings must be one JSON object")
+		else {version: 1, minContextTokens: 40000} + (.[0] // {}) +
+			{mode: "auto", autoAcknowledged: true, logRequests: false}
+		end' "$input" >"$tmp"; then
+		rm -f "$tmp"
+		die "cannot read adviser settings"
+	fi
+	chmod 600 "$tmp"
+	if [ ! -L "$target" ] && cmp -s "$tmp" "$target"; then
+		chmod 600 "$target"
+		rm -f "$tmp"
+		return
+	fi
+	backup_path "$target" "$label"
+	mv -f "$tmp" "$target"
+	note "configured automatic adviser mode"
+}
+
 link_runtime_asset() {
 	local name=$1
 	local source="$AGENT_DIR/$name" target="$FIRSTMATE_AGENT_DIR/$name"
@@ -196,6 +226,8 @@ else
 		"$AGENT_DIR/settings.json" \
 		"$FIRSTMATE_AGENT_DIR/settings.json" \
 		"firstmate-settings"
+	configure_adviser "$AGENT_DIR" "agent-compact-adviser"
+	configure_adviser "$FIRSTMATE_AGENT_DIR" "firstmate-compact-adviser"
 	install_runtime_file \
 		"$SOURCE_AGENT_DIR/extensions/command-guard.ts" \
 		"$FIRSTMATE_AGENT_DIR/extensions/command-guard.ts" \
