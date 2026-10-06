@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PROFILE_OWNER="${XDG_STATE_HOME:-$HOME/.local/state}/agent-skills/profile-owner"
+if [ -s "$PROFILE_OWNER" ]; then
+	printf '%s\n' 'firstmate: use your externally managed FirstMate launcher' >&2
+	exit 1
+fi
+
+cd "$HOME/firstmate"
+exec codex --dangerously-bypass-approvals-and-sandbox \
+	--dangerously-bypass-hook-trust -p mac-firstmate "$@"

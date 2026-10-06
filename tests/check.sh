@@ -26,6 +26,7 @@ shellcheck -x \
 	"$ROOT/scripts/setup-vault" \
 	"$ROOT/scripts/setup-vault-access" \
 	"$ROOT/scripts/pi-firstmate" \
+	"$ROOT/scripts/firstmate" \
 	"$ROOT/scripts/setup-pi-runtime" \
 	"$ROOT/tests/security-scan.sh" \
 	"$ROOT/tests/backpass-config.test.sh" \
@@ -75,6 +76,7 @@ shfmt -d \
 	"$ROOT/scripts/setup-vault" \
 	"$ROOT/scripts/setup-vault-access" \
 	"$ROOT/scripts/pi-firstmate" \
+	"$ROOT/scripts/firstmate" \
 	"$ROOT/scripts/setup-pi-runtime" \
 	"$ROOT/tests/security-scan.sh" \
 	"$ROOT/tests/agent-health.test.sh" \

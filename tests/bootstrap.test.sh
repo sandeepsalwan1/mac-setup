@@ -5,12 +5,14 @@ set -euo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 TMP_ROOT="$(dotfiles_test_tmproot bootstrap)"
+TMP_ROOT="$(cd "$TMP_ROOT" && pwd -P)"
 TEST_HOME="$TMP_ROOT/home"
 TEST_BIN="$TMP_ROOT/bin"
 SUDO_LOG="$TMP_ROOT/sudo.log"
 GIT_LOG="$TMP_ROOT/git.log"
 CURL_LOG="$TMP_ROOT/curl.log"
 CONFIGURED_USER="$("$ROOT/scripts/read-flake-user" "$ROOT/flake.nix")"
+TEST_PYTHON="$(python3 -c 'import sys; print(sys.executable)')"
 [ -n "$CONFIGURED_USER" ] || fail 'could not read the configured user'
 mkdir -p "$TEST_HOME/.local/bin" "$TEST_BIN"
 TEST_REPO="$TEST_HOME/.dotfiles"
@@ -18,6 +20,12 @@ git clone --quiet --no-hardlinks "$ROOT" "$TEST_REPO"
 cp "$ROOT/bootstrap.sh" "$TEST_REPO/bootstrap.sh"
 cp "$ROOT/scripts/install-tools" "$TEST_REPO/scripts/install-tools"
 cp "$ROOT/scripts/link-portable-skills" "$TEST_REPO/scripts/link-portable-skills"
+cp "$ROOT/scripts/setup-firstmate.py" "$TEST_REPO/scripts/setup-firstmate.py"
+cp "$ROOT/scripts/firstmate" "$TEST_REPO/scripts/firstmate"
+mkdir -p "$TEST_REPO/home/.codex"
+cp "$ROOT/home/.codex/"*.toml "$TEST_REPO/home/.codex/"
+mkdir -p "$TEST_REPO/home/firstmate"
+cp -R "$ROOT/home/firstmate/." "$TEST_REPO/home/firstmate/"
 cp "$ROOT/home/.claude/settings.json" "$TEST_REPO/home/.claude/settings.json"
 git -C "$TEST_REPO" rm -qr -- skills
 cp -R "$ROOT/skills" "$TEST_REPO/skills"
@@ -51,6 +59,7 @@ cat >"$TEST_HOME/.local/bin/git" <<'SH'
 [ "${1:-}" = clone ] && [ "${2:-}" = -- ] || exit 64
 printf '%s\n' "$*" >>"$GIT_LOG"
 mkdir -p "$4"
+printf '%s\n' '# Upstream FirstMate instructions' >"$4/AGENTS.md"
 SH
 cat >"$TEST_BIN/av" <<'SH'
 #!/usr/bin/env bash
@@ -73,11 +82,14 @@ chmod +x "$TEST_BIN/uname" "$TEST_BIN/id" "$TEST_BIN/nix" "$TEST_BIN/sudo" "$TES
 
 run_bootstrap() {
 	HOME="$TEST_HOME" \
+		CODEX_HOME="$TEST_HOME/.codex" \
+		XDG_STATE_HOME="$TEST_HOME/.local/state" \
 		PATH="$TEST_BIN:/usr/bin:/bin" \
 		SUDO_LOG="$SUDO_LOG" \
 		GIT_LOG="$GIT_LOG" \
 		CURL_LOG="$CURL_LOG" \
 		MAC_SETUP_GIT_BIN="$TEST_HOME/.local/bin/git" \
+		MAC_SETUP_PYTHON_BIN="$TEST_PYTHON" \
 		CONFIGURED_USER="$CONFIGURED_USER" \
 		MAC_SETUP_SKIP_AGENT_CASKS=1 \
 		MAC_SETUP_SKIP_NPM=1 \
@@ -94,6 +106,38 @@ grep -Fq 'switch --flake' "$SUDO_LOG" ||
 grep -Fq "flake.nix already matches $CONFIGURED_USER" "$TMP_ROOT/first.out" ||
 	fail 'bootstrap did not use the user configured by flake.nix'
 [ -d "$TEST_HOME/firstmate" ] || fail 'bootstrap did not clone FirstMate'
+cmp -s "$TEST_REPO/home/firstmate/data/captain.md" "$TEST_HOME/firstmate/data/captain.md" ||
+	fail 'bootstrap did not initialize the FirstMate workflow preferences'
+cmp -s "$TEST_REPO/home/.codex/mac-firstmate.config.toml" "$TEST_HOME/.codex/mac-firstmate.config.toml" ||
+	fail 'bootstrap did not initialize the FirstMate model profile'
+[ "$(cat "$TEST_HOME/firstmate/AGENTS.md")" = '# Upstream FirstMate instructions' ] ||
+	fail 'bootstrap changed upstream FirstMate instructions'
+jq -e '.default == {"harness":"codex","model":"gpt-5.5","effort":"xhigh"} and .rules == []' \
+	"$TEST_HOME/firstmate/config/crew-dispatch.json" >/dev/null ||
+	fail 'bootstrap did not initialize the fixed worker default'
+"$TEST_PYTHON" - "$TEST_HOME/.codex/config.toml" <<'PY'
+import sys
+import tomllib
+from pathlib import Path
+
+settings = tomllib.loads(Path(sys.argv[1]).read_text())
+assert settings["model"] == "gpt-6-astra"
+assert settings["model_reasoning_effort"] == "max"
+assert settings["model_context_window"] == 1050000
+PY
+mkdir -p "$TMP_ROOT/launch-bin"
+cat >"$TMP_ROOT/launch-bin/codex" <<'SH'
+#!/usr/bin/env bash
+printf '%s\n' "$(pwd -P)" "$*" >"$FIRSTMATE_LAUNCH_LOG"
+SH
+chmod +x "$TMP_ROOT/launch-bin/codex"
+HOME="$TEST_HOME" XDG_STATE_HOME="$TEST_HOME/.local/state" \
+	PATH="$TMP_ROOT/launch-bin:/usr/bin:/bin" FIRSTMATE_LAUNCH_LOG="$TMP_ROOT/launch.log" \
+	"$ROOT/scripts/firstmate" --version
+grep -Fqx "$(cd "$TEST_HOME/firstmate" && pwd -P)" "$TMP_ROOT/launch.log" ||
+	fail 'FirstMate launcher did not use the project directory'
+grep -Fq -- '-p mac-firstmate --version' "$TMP_ROOT/launch.log" ||
+	fail 'FirstMate launcher did not use its dedicated profile'
 [ "$(cat "$GIT_LOG")" = "clone -- https://github.com/kunchenguid/firstmate.git $TEST_HOME/firstmate" ] ||
 	fail 'bootstrap cloned the wrong FirstMate source'
 [ "$(wc -l <"$GIT_LOG" | tr -d ' ')" = 1 ] ||
@@ -127,6 +171,38 @@ grep -Fq 'Nix is already installed' "$TMP_ROOT/second.out" ||
 	fail 'bootstrap recloned an existing FirstMate checkout'
 [ "$(wc -l <"$CURL_LOG" | tr -d ' ')" = 1 ] ||
 	fail 'bootstrap fetched no-mistakes again on a second run'
+printf '%s\n' 'custom preferences' >>"$TEST_HOME/firstmate/data/captain.md"
+printf '%s\n' '{"customField":"preserved"}' >"$TEST_HOME/.codex/hooks.json"
+printf '%s\n' '[features]' 'multi_agent = true' >"$TEST_HOME/.codex/config.toml"
+run_bootstrap >"$TMP_ROOT/custom.out"
+grep -Fqx 'custom preferences' "$TEST_HOME/firstmate/data/captain.md" ||
+	fail 'bootstrap replaced existing FirstMate preferences'
+jq -e '.customField == "preserved"' "$TEST_HOME/.codex/hooks.json" >/dev/null ||
+	fail 'bootstrap changed unrelated Codex state'
+"$TEST_PYTHON" - "$TEST_HOME" <<'PY'
+import sys
+import tomllib
+from pathlib import Path
+
+home = Path(sys.argv[1])
+settings = tomllib.loads((home / ".codex/config.toml").read_text())
+assert settings["model"] == "gpt-6-astra"
+assert settings["features"]["multi_agent"] is True
+backup = home / ".local/state/mac-setup/codex-before-model-defaults.toml"
+assert backup.read_text() == "[features]\nmulti_agent = true\n"
+PY
+
+owner_home="$TMP_ROOT/owned-home"
+mkdir -p "$owner_home/.local/state/agent-skills"
+printf '%s\n' external >"$owner_home/.local/state/agent-skills/profile-owner"
+HOME="$owner_home" CODEX_HOME="$owner_home/.codex" XDG_STATE_HOME="$owner_home/.local/state" \
+	"$TEST_PYTHON" "$ROOT/scripts/setup-firstmate.py" >"$TMP_ROOT/owned.out"
+[ ! -e "$owner_home/firstmate" ] ||
+	fail 'setup changed an externally managed FirstMate profile'
+if HOME="$owner_home" XDG_STATE_HOME="$owner_home/.local/state" \
+	"$ROOT/scripts/firstmate" >"$TMP_ROOT/owned-launch.out" 2>&1; then
+	fail 'standalone launcher took over an externally managed FirstMate profile'
+fi
 
 TEST_HOME="$TMP_ROOT/linked-home"
 mkdir -p "$TEST_HOME/.local/bin"
