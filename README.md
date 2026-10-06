@@ -304,9 +304,16 @@ home. `tests/pi-compaction.test.sh` pins both halves.
 `home/.pi/agent/settings.json` declares third-party Pi packages as exact npm
 version pins, currently `pi-web-access`,
 `@ryan_nookpi/pi-extension-codex-fast-mode`, and `compact-adviser`. The adviser
-defaults to hint-only mode and remains inert until a TypeSafe API key is supplied.
-It can suggest a useful completed checkpoint before 272K, but it does not replace
-the exact automatic threshold. Upgrade a pin deliberately by
+uses acknowledged automatic mode in regular Pi and remains inert until a TypeSafe
+API key is supplied. Runtime setup preserves saved keys, thresholds, budgets, and
+unknown settings, and defers to the shared profile owner. It can compact at a
+completed checkpoint before 272K, but it does not replace
+the exact automatic threshold. FirstMate uses a separate private adviser JSON file;
+runtime setup backs up and replaces old shared links that the native adviser rejects.
+Regular Pi and FirstMate default to the AWS SDK's standard retry mode with up to
+eight attempts per request. Explicit `AWS_RETRY_MODE` and `AWS_MAX_ATTEMPTS`
+values take precedence. The wrapper keeps the selected model and account.
+Upgrade a pin deliberately by
 editing that version. Do not declare packages from a Git URL: a commit pin
 fetches unreviewed source at Pi startup, and any such package belongs in local
 state until it ships a released npm version. `tests/pi-calm.test.sh` enforces

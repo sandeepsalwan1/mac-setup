@@ -73,5 +73,8 @@ if [ "${FM_PI_HARNESS:-}" = "pi" ]; then
 	esac
 fi
 
+export AWS_MAX_ATTEMPTS="${AWS_MAX_ATTEMPTS:-8}"
+export AWS_RETRY_MODE="${AWS_RETRY_MODE:-standard}"
+
 REAL_PI=$(find_real_pi)
 exec "$REAL_PI" "$@"
