@@ -1,0 +1,5 @@
+model = "gpt-6-astra"
+model_provider = "openai"
+model_reasoning_effort = "max"
+model_context_window = 1050000
+model_auto_compact_token_limit = 272000

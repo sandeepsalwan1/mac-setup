@@ -91,11 +91,7 @@ else
 fi
 
 note 'step 8/12: FirstMate'
-if [ -e "$HOME/firstmate" ] || [ -L "$HOME/firstmate" ]; then
-	note 'FirstMate path already exists; leaving it untouched'
-else
-	"${MAC_SETUP_GIT_BIN:-git}" clone -- https://github.com/kunchenguid/firstmate.git "$HOME/firstmate"
-fi
+"${MAC_SETUP_PYTHON_BIN:-python3}" "$DIR/scripts/setup-firstmate.py"
 
 note 'step 9/12: readable diffs'
 "$DIR/scripts/install-diff-tools"

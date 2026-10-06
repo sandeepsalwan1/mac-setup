@@ -9,6 +9,7 @@ export PATH="/etc/profiles/per-user/$REAL_USER/bin:$HOME/.local/bin:$HOME/.local
 "$DIR/scripts/check-herdr-prefix"
 "$DIR/scripts/install-agent-tools" --update
 "$DIR/scripts/install-tools"
+"${MAC_SETUP_PYTHON_BIN:-python3}" "$DIR/scripts/setup-firstmate.py"
 "$DIR/scripts/install-diff-tools"
 "$DIR/scripts/link-portable-skills"
 "$DIR/scripts/link-official-codex-skills"

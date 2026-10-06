@@ -36,7 +36,7 @@ It performs these steps:
 5. Maps the right Command key to F12 and validates it as Herdr's one-key prefix.
 6. Refreshes Homebrew, installs Claude Code's latest channel and Codex, and updates their managed installations.
 7. Installs Pi and the pinned supporting agent tools when missing or outdated.
-8. Clones FirstMate into `~/firstmate` if that path is free.
+8. Sets up FirstMate in `~/firstmate` with its Codex profile and normal-workflow preferences.
 9. Installs readable diff tools.
 10. Links the portable skills and the official Codex Computer Use skill when available.
 11. Reports what remains for Automic Vault onboarding.
@@ -142,8 +142,9 @@ Pinned npm tools, including Pi, are listed in
 checks each package's installed version before running npm, and installs the
 shared catastrophic-command guard without installing a review harness.
 The guard migrates three legacy broad Claude `rm` denies so named project cleanup remains usable.
-The bootstrap also clones the public FirstMate repository when `~/firstmate` is free; it leaves
-an existing path untouched. `scripts/sync-agent-host` applies the same pinned tool manifest
+The bootstrap also clones the public FirstMate repository when `~/firstmate` is free and
+seeds missing preferences. Existing preferences and externally managed profiles stay intact.
+`scripts/sync-agent-host` applies the same pinned tool manifest
 to explicitly named SSH hosts.
 The reviewed public source registry is in `data/repos.md`.
 The reusable review prompts are in `prompts/`. `ten-gate-review.md` is the compact Ten Gate review,
@@ -275,12 +276,42 @@ exposes the native tool integration, while the latter exposes `cua-cli`. Every
 bootstrap and rebuild refreshes the official skill link to the installed plugin
 cache, while the tracked CLI skill updates with this repository.
 
+## FirstMate defaults
+
+After bootstrap, run `fm` or `firstmate`. The launcher opens Codex from
+`~/firstmate`, so FirstMate's original AGENTS.md and project hooks load.
+Its native session-start instructions initialize the home.
+
+FirstMate and its default workers use GPT-5.5 at `xhigh`, its strongest documented
+reasoning level, with the real 1,050,000-token context window. Ordinary Codex
+defaults to GPT-6 Astra at `max`. Claude keeps its separate ultracode setting.
+Sign in to an account that supports these models.
+
+The captain preferences say to use the normal workflow by default and enter a
+dynamic workflow only when suggested. The fixed worker profile starts with no
+dynamic routing rules.
+
+Bootstrap and rebuild seed missing preferences and model settings. They preserve
+existing choices, credentials, and histories. An external profile-owner marker
+keeps workplace FirstMate settings and launchers with their existing owner.
+To apply the new defaults to an already bootstrapped standalone Mac:
+
+```sh
+git -C ~/.dotfiles pull --ff-only
+python3 ~/.dotfiles/scripts/setup-firstmate.py
+~/.dotfiles/scripts/firstmate
+```
+
+Sources: [GPT-5.5](https://developers.openai.com/api/docs/models/gpt-5.5),
+[GPT-6 Astra](https://developers.openai.com/api/docs/models/gpt-6-astra), and
+[Codex configuration](https://developers.openai.com/codex/config-reference).
+
 ## Pi
 
 The bootstrap installs the version of Pi pinned in `home/npm-globals.txt` with
 `npm install --global --ignore-scripts`. Run `pi` and use `/login` to choose a
-provider. The public settings do not choose one for you. To open FirstMate,
-run `cd ~/firstmate && pi` after bootstrap. Sign in with `gh auth login` before
+provider. Pi's public settings do not choose one for you. To open FirstMate,
+run `fm` or `firstmate` after bootstrap. Sign in with `gh auth login` before
 asking FirstMate to work with GitHub projects.
 
 Home Manager links the authored Pi resources in `~/.pi/agent/themes` and

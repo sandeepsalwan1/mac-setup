@@ -155,6 +155,9 @@ in
     initContent = lib.mkAfter ''
       bindkey '^f' autosuggest-accept
       [[ -f "$HOME/.zshrc.local" ]] && source "$HOME/.zshrc.local"
+      if [[ ! -s "''${XDG_STATE_HOME:-$HOME/.local/state}/agent-skills/profile-owner" ]]; then
+        alias fm="${dotfiles}/scripts/firstmate"
+      fi
     '';
     shellAliases = {
       ".." = "cd ..";
@@ -196,6 +199,9 @@ in
   };
 
   home.file = {
+    ".local/bin/firstmate" = {
+      source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/scripts/firstmate";
+    };
     ".local/libexec/chrome-devtools-axi-native.swift" = {
       source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/scripts/chrome-devtools-axi-native.swift";
       force = true;
