@@ -1,16 +1,16 @@
 # Public setup sources
 
-The setup uses released tools where available and snapshots only each repository's authored skill folder. Some skills are adapted for this setup. These commits record public source inspections through October 6, 2026; they do not select unreleased tool builds. FirstMate records the verified integrated upstream source.
+The setup uses released tools where available and snapshots only each repository's authored skill folder. Some skills are adapted for this setup. These commits record public source inspections through October 7, 2026; they do not select unreleased tool builds. FirstMate records the inspected upstream source; fresh bootstrap tracks its public default branch.
 
 | Repository | Commit | Use |
 | --- | --- | --- |
 | [kun](https://github.com/kunchenguid/kun) | `1b2a9c7dd4b2b33eb7161399d7893c39048213be` | Kun skill unchanged |
-| [firstmate](https://github.com/kunchenguid/firstmate) | `e5b9dddc982e546b81b4bfce754df1465270a59e` | Integrated upstream source; public stow skill unchanged |
+| [firstmate](https://github.com/kunchenguid/firstmate) | `ac0811c4c820d82009d7a3b8f09555cbf38340c8` | Current inspected source; public stow skill unchanged |
 | [no-mistakes](https://github.com/kunchenguid/no-mistakes) | `0b8d213543ae1dcef78145bae4c7ff7c4c88ed48` | Review skill unchanged |
-| [lavish-axi](https://github.com/kunchenguid/lavish-axi) | `6474c6ace59f81a10c94c59b57b436bcbff79e06` | Lavish 0.1.82; skill unchanged |
+| [lavish-axi](https://github.com/kunchenguid/lavish-axi) | `8039751b60f5e3aadaf5fc0ee90864d6e667d70a` | Lavish 0.1.84; skill matches the released package |
 | [backpass](https://github.com/kunchenguid/backpass) | `0268201c3896f45d3002de0d439b6cefccb39063` | Memory maintenance tool |
 | [dotfiles](https://github.com/kunchenguid/dotfiles) | `9a4a6387d0dd6f4bf9b8a5a732b406916bbbf95d` | Upstream configuration reference |
-| [quota-axi](https://github.com/kunchenguid/quota-axi) | `0c56e627204fa55abd3de30c8d0fb51bb2ee4918` | Quota 0.1.58; skill matches the released package |
+| [quota-axi](https://github.com/kunchenguid/quota-axi) | `d8072d522fd98392e5bb1f959b83fd94edcd09f1` | Quota 0.1.59; skill matches the released package |
 | [compact-adviser](https://github.com/kunchenguid/compact-adviser) | `ef216af7cb639947bb4642fdf063117f12a91fc6` | Compaction advice tool |
 | [treehouse](https://github.com/kunchenguid/treehouse) | `a5ab29f88f9dc57c06b5ffb43b9f25c79a7acf33` | Nix package v3.1.2 |
 | [chrome-devtools-axi](https://github.com/kunchenguid/chrome-devtools-axi) | `06688b18adf5c0855fca6ed4efe2dbd0ad0e2ec6` | Released 0.1.39; skill unchanged |
@@ -22,7 +22,7 @@ The setup uses released tools where available and snapshots only each repository
 
 ## Released tool pins
 
-These exact pins match the manifests reviewed on October 6, 2026. The global
+These exact pins match the manifests reviewed on October 7, 2026. The global
 manifest is `home/npm-globals.txt`; Pi extensions are in `home/.pi/agent/settings.json`.
 
 | Tool | Pinned release |
@@ -32,11 +32,11 @@ manifest is `home/npm-globals.txt`; Pi extensions are in `home/.pi/agent/setting
 | chrome-devtools-axi | 0.1.39 |
 | chrome-devtools-mcp | 1.10.1 |
 | gh-axi | 0.1.35 |
-| lavish-axi | 0.1.82 |
-| quota-axi | 0.1.58 |
+| lavish-axi | 0.1.84 |
+| quota-axi | 0.1.59 |
 | tasks-axi | 0.2.6 |
 | @earendil-works/pi-coding-agent | 1.0.4 |
-| pi-web-access | 0.36.0 |
+| pi-web-access | 0.37.0 |
 | @ryan_nookpi/pi-extension-codex-fast-mode | 0.2.8 |
 | compact-adviser | 0.1.12 |
 
@@ -46,7 +46,7 @@ manifest is `home/npm-globals.txt`; Pi extensions are in `home/.pi/agent/setting
   regenerated with `nix flake update treehouse`; all other Nix inputs and the
   Neovim lockfile are preserved.
 - Chrome DevTools AXI 0.1.39 uses the explicit MCP path in `home.nix`.
-- Quota AXI 0.1.58's packaged skill matches the tracked skill, including
+- Quota AXI 0.1.59's packaged skill matches the tracked skill, including
   Higgsfield support.
 - Pi 1.0.4 retains the current extension API and Node requirement.
   Upstream removed `npm-shrinkwrap.json` in

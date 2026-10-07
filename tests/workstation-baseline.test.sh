@@ -8,8 +8,8 @@ backpass@0.1.32
 chrome-devtools-axi@0.1.39
 chrome-devtools-mcp@1.10.1
 gh-axi@0.1.35
-lavish-axi@0.1.82
-quota-axi@0.1.58
+lavish-axi@0.1.84
+quota-axi@0.1.59
 tasks-axi@0.2.6
 @earendil-works/pi-coding-agent@1.0.4'
 actual_npm="$(grep -Ev '^[[:space:]]*(#|$)' "$ROOT/home/npm-globals.txt")"
@@ -38,7 +38,7 @@ jq -e '
   and .defaultModel == null
   and .defaultThinkingLevel == "max"
   and .packages == [
-    "npm:pi-web-access@0.36.0",
+    "npm:pi-web-access@0.37.0",
     "npm:@ryan_nookpi/pi-extension-codex-fast-mode@0.2.8",
     "npm:compact-adviser@0.1.12"
   ]
