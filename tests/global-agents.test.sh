@@ -14,8 +14,8 @@ if rg -q 'Maintaining this file|Keep this file for knowledge useful' "$ROOT/home
 	fail 'the global agent instructions contain project-only maintenance guidance'
 fi
 
-[ "$(rg -Fc 'source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";' "$ROOT/home.nix")" = 4 ] ||
-	fail 'the global AGENTS source is not linked to all four agent locations'
+[ "$(rg -Fc 'source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";' "$ROOT/home.nix")" = 5 ] ||
+	fail 'the global AGENTS source is not linked to all five agent locations'
 
 # The user owns this file's contents personally: it loads into every session on
 # every host for every agent, so an agent adding a line spends everyone's context

@@ -266,6 +266,9 @@ in
       source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
       force = true;
     };
+    ".kiro/steering/AGENTS.md" = {
+      source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
+    };
     ".config/opencode/AGENTS.md" = {
       source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
       force = true;
