@@ -11,7 +11,7 @@ printf '%s\n' external >"$portable_test_home/state/agent-skills/profile-owner"
 HOME="$portable_test_home" XDG_STATE_HOME="$portable_test_home/state" \
 	"$ROOT/scripts/link-portable-skills" >"$portable_test_home/owned.out"
 
-for skill_root in .skills .agents/skills .claude/skills .codex/skills; do
+for skill_root in .skills .agents/skills .claude/skills .codex/skills .kiro/skills; do
 	[ ! -e "$portable_test_home/$skill_root" ]
 done
 
@@ -27,7 +27,7 @@ HOME="$portable_test_home" XDG_STATE_HOME="$portable_test_home/state" \
 for skill_source in "$ROOT"/skills/*; do
 	[ -d "$skill_source" ] || continue
 	skill_name="$(basename "$skill_source")"
-	for skill_root in .skills .agents/skills .claude/skills .codex/skills; do
+	for skill_root in .skills .agents/skills .claude/skills .codex/skills .kiro/skills; do
 		[ "$(cd "$portable_test_home/$skill_root/$skill_name" && pwd -P)" = "$skill_source" ]
 	done
 done
