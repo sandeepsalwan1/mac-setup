@@ -208,7 +208,7 @@ and 365,000-day transcript retention. Select a model your account supports
 if this default is unavailable.
 The global instructions protect Kiro, Claude, and Codex session transcripts from cleanup.
 
-Bootstrap automatically links all 22 bundled skills, including Kun.
+Bootstrap automatically links all 23 bundled skills, including Kun.
 The repository keeps reviewed snapshots of:
 
 - autoreview: structured code reviews
@@ -224,6 +224,7 @@ The repository keeps reviewed snapshots of:
 - improve-codebase-architecture: improve module boundaries
 - kun: load Kun's public problem-solving instructions with `/kun`
 - lavish: create HTML artifacts for visual review
+- lavish-helper-for-personal: open local or server artifacts in Mac Chrome
 - no-mistakes: validate changes before publication
 - quota-axi: report agent usage and remaining quota
 - shadcn: build React interfaces with shadcn/ui
