@@ -21,6 +21,7 @@
 - Reduce code and cyclomatic complexity
 - Global installs: declare portable baseline tools in dotfiles. Keep work-specific packages local and never auto-record them.
 - Personal Chrome debugging: reuse one long-lived bridge. Never start parallel or repeated attachment attempts.
+- Use Lavish only when the user explicitly requests it, even if a skill or project suggests it. Then use `lavish-helper-for-personal`; the agent opens Mac Chrome and polls on the artifact's owning machine.
 - Never delete or prune session transcripts under `.kiro`, `.claude`, or `.codex`.
 - Backpass is periodic memory maintenance, not a per-task step. Suggest it after recurring cross-session friction or when a project AGENTS.md is stale or overgrown. Run its model-backed analysis only with user approval, and run `backpass apply` only with explicit approval after reviewing the evidence.
 - Make ALL of your responses clear & very concise
