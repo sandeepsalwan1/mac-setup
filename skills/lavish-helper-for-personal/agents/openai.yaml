@@ -1,4 +1,6 @@
 interface:
   display_name: "Personal Lavish Helper"
-  short_description: "Open local and server Lavish pages in Mac Chrome"
-  default_prompt: "Use $lavish-helper-for-personal to open this HTML artifact in my Chrome tab."
+  short_description: "Requested Lavish reviews in your Mac Chrome"
+  default_prompt: "Use $lavish-helper-for-personal to create a review on this machine, open it in my Mac Chrome, and collect my feedback here."
+policy:
+  allow_implicit_invocation: false

@@ -1,45 +1,31 @@
 ---
 name: lavish-helper-for-personal
-description: Read before opening a Lavish artifact from a Mac or SSH server. Opens it in Mac Google Chrome through the configured private route, with no Chrome debugging attachment.
+description: Use only when the user explicitly requests Lavish. Run lavish-axi on the owning Mac or SSH server, open the review in the user's Mac Chrome, and receive feedback on the same machine.
 ---
 
 # Personal Lavish
 
-Use the original `lavish` skill and its current CLI guidance to create the artifact.
-This helper handles opening it.
+Use only for an explicit request such as `/lavish` or "use Lavish".
+The agent runs the entire workflow; do not ask the user to run commands.
 
-Run on the machine that owns the HTML file:
+Read the original `lavish` skill for current `lavish-axi` guidance. Create the
+HTML on your current machine, then run there:
 
 ```bash
 lavish-personal /absolute/path/.lavish/review.html
+lavish-personal --cli poll /absolute/path/.lavish/review.html
 ```
 
-If that command is absent, run `python3 scripts/open.py <html-file>` from this
-skill's directory. On macOS it opens Google Chrome without changing window
-positions. On a configured SSH server it uses the existing private Mac route.
-The HTML and review state stay on their owning machine.
+The helper calls `lavish-axi`, opens the user's Mac Google Chrome through the
+configured private route, and keeps HTML and review state on the owning machine.
+It works from either configured cloud desktop or the Mac.
 
-Keep `lavish-personal --cli poll <html-file>` attached to the same agent there.
-`--cli` passes commands to Lavish with the correct server port; also use it for
-`reply`, `end`, and `export`. Read the current `lavish-axi --help` for their behavior.
-Use `--reopen` only when further review is requested. Use `--no-open` for a check
-without opening a tab.
+Keep polling attached to this agent on that same machine. Use
+`lavish-personal --cli reply`, `end`, or `export` with the owning HTML path;
+`--cli` delegates to `lavish-axi` with the correct server port. Use `--reopen`
+only for explicitly requested further review.
 
-If the route fails, report the error once. Repair the configured tunnel or
-transport without starting a Chrome debugging bridge. Never publish the
-artifact to an external sharing service to work around a failed route.
-
-For another Mac or server, configure `~/.config/lavish-helper.json`:
-
-```json
-{
-  "browser_base_url": "http://127.0.0.1:14387",
-  "browser_command": ["ssh", "my-mac", "open -g -a 'Google Chrome'"]
-}
-```
-
-The base URL is the Mac's existing loopback SSH forward to the server's Lavish
-port. `browser_command` is an argument list; the helper appends the session URL.
-Keep host aliases and transport credentials in local configuration.
-If another app owns Lavish's port, set `server_port` to an available port in
-this file and match the SSH forward.
+If the command is absent, run `python3 scripts/open.py` from this skill's
+directory with the same arguments. For an unconfigured host, read
+[setup.md](references/setup.md). Repair a failed private route without starting
+a Chrome debugging bridge or uploading the artifact elsewhere.
