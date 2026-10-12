@@ -1,0 +1,7 @@
+rules:
+  - capability: all
+    effect: allow
+  - capability: sandbox_network
+    match:
+      - "*"
+    effect: allow

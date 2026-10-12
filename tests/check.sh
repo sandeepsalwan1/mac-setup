@@ -41,6 +41,7 @@ shellcheck -x \
 	"$ROOT/tests/herdr-prefix.test.sh" \
 	"$ROOT/tests/install-agent-tools.test.sh" \
 	"$ROOT/tests/install-tools.test.sh" \
+	"$ROOT/tests/kiro-preferences.test.sh" \
 	"$ROOT/tests/macos-permissions.test.sh" \
 	"$ROOT/tests/official-codex-skills.test.sh" \
 	"$ROOT/tests/portable-skills.test.sh" \
@@ -91,6 +92,7 @@ shfmt -d \
 	"$ROOT/tests/herdr-prefix.test.sh" \
 	"$ROOT/tests/install-agent-tools.test.sh" \
 	"$ROOT/tests/install-tools.test.sh" \
+	"$ROOT/tests/kiro-preferences.test.sh" \
 	"$ROOT/tests/macos-permissions.test.sh" \
 	"$ROOT/tests/official-codex-skills.test.sh" \
 	"$ROOT/tests/portable-skills.test.sh" \
@@ -115,6 +117,7 @@ shfmt -d \
 "$ROOT/tests/herdr-prefix.test.sh"
 "$ROOT/tests/install-agent-tools.test.sh"
 "$ROOT/tests/install-tools.test.sh"
+"$ROOT/tests/kiro-preferences.test.sh"
 "$ROOT/tests/macos-permissions.test.sh"
 "$ROOT/tests/official-codex-skills.test.sh"
 "$ROOT/tests/portable-skills.test.sh"

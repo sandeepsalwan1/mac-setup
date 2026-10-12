@@ -208,6 +208,11 @@ and 365,000-day transcript retention. Select a model your account supports
 if this default is unavailable.
 The global instructions protect Kiro, Claude, and Codex session transcripts from cleanup.
 
+Home Manager merges the portable Kiro preferences in `home/kiro/` into existing
+IDE and CLI settings. They select Autopilot, user-wide trust, and automatic tool
+approval. Custom permission policies and other settings remain. Replaced files are backed up beside the
+originals as `.pre-mac-setup`, with mode `0600`.
+
 Bootstrap automatically links all 23 bundled skills, including Kun.
 The repository keeps reviewed snapshots of:
 

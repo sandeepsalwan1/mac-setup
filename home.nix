@@ -2,6 +2,32 @@
 
 let
   dotfiles = "${config.home.homeDirectory}/.dotfiles";
+  mergeKiroSettings = preferences: target: ''
+    target=${lib.escapeShellArg target}
+    mkdir -p "$(dirname "$target")"
+    temporary="$(mktemp "$target.mac-setup.XXXXXX")"
+    if [ -f "$target" ]; then
+      if ! ${pkgs.jq}/bin/jq --slurpfile defaults ${preferences} \
+        'if type == "object" then . * $defaults[0] else error("Kiro settings must be an object") end' \
+        "$target" > "$temporary"; then
+        rm -f "$temporary"
+        exit 1
+      fi
+    else
+      cp ${preferences} "$temporary"
+    fi
+    if [ -f "$target" ] && cmp -s "$target" "$temporary"; then
+      rm -f "$temporary"
+      chmod 600 "$target"
+    else
+      if [ -f "$target" ] && [ ! -e "$target.pre-mac-setup" ]; then
+        cp "$target" "$target.pre-mac-setup"
+        chmod 600 "$target.pre-mac-setup"
+      fi
+      chmod 600 "$temporary"
+      mv "$temporary" "$target"
+    fi
+  '';
 in
 
 {
@@ -104,6 +130,30 @@ in
   '';
   home.activation.agentHooks = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
     ${dotfiles}/scripts/link-agent-hooks >/dev/null
+  '';
+  home.activation.kiroIdeSettings = lib.hm.dag.entryAfter [ "linkGeneration" ]
+    (mergeKiroSettings ./home/kiro/ide-settings.json
+      "${config.home.homeDirectory}/Library/Application Support/Kiro/User/settings.json");
+  home.activation.kiroCliSettings = lib.hm.dag.entryAfter [ "linkGeneration" ]
+    (mergeKiroSettings ./home/kiro/cli-settings.json
+      "${config.home.homeDirectory}/.kiro/settings/cli.json");
+  home.activation.kiroPermissions = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
+    target="$HOME/.kiro/settings/permissions.yaml"
+    mkdir -p "$(dirname "$target")"
+    if [ -f "$target" ] \
+      && ! cmp -s ${./home/kiro/permissions.yaml} "$target" \
+      && [ "$(cat "$target")" != "$(printf '%s\n' 'rules:' '  - capability: all' '    effect: allow')" ]; then
+      printf '%s\n' "Preserving existing custom Kiro permissions"
+      chmod 600 "$target"
+    elif ! cmp -s ${./home/kiro/permissions.yaml} "$target"; then
+      if [ -f "$target" ] && [ ! -e "$target.pre-mac-setup" ]; then
+        cp "$target" "$target.pre-mac-setup"
+        chmod 600 "$target.pre-mac-setup"
+      fi
+      install -m 600 ${./home/kiro/permissions.yaml} "$target"
+    else
+      chmod 600 "$target"
+    fi
   '';
   home.activation.disableChromeAutoConnect = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
     /bin/launchctl unsetenv CHROME_DEVTOOLS_AXI_AUTO_CONNECT

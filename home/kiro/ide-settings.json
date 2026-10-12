@@ -1,0 +1,6 @@
+{
+  "security.workspace.trust.enabled": false,
+  "security.workspace.trust.untrustedFiles": "open",
+  "kiroAgent.agentAutonomy": "Autopilot",
+  "kiroAgent.trust.defaultScope": "user"
+}
