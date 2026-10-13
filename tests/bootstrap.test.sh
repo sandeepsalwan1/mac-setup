@@ -138,7 +138,7 @@ grep -Fqx "$(cd "$TEST_HOME/firstmate" && pwd -P)" "$TMP_ROOT/launch.log" ||
 	fail 'FirstMate launcher did not use the project directory'
 grep -Fq -- '-p mac-firstmate --version' "$TMP_ROOT/launch.log" ||
 	fail 'FirstMate launcher did not use its dedicated profile'
-[ "$(cat "$GIT_LOG")" = "clone -- https://github.com/kunchenguid/firstmate.git $TEST_HOME/firstmate" ] ||
+[ "$(cat "$GIT_LOG")" = "clone -- https://github.com/sandeepsalwan1/firstmate.git $TEST_HOME/firstmate" ] ||
 	fail 'bootstrap cloned the wrong FirstMate source'
 [ "$(wc -l <"$GIT_LOG" | tr -d ' ')" = 1 ] ||
 	fail 'bootstrap did not clone FirstMate exactly once'

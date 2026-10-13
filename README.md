@@ -289,6 +289,7 @@ cache, while the tracked CLI skill updates with this repository.
 After bootstrap, run `fm` or `firstmate`. The launcher opens Codex from
 `~/firstmate`, so FirstMate's original AGENTS.md and project hooks load.
 Its native session-start instructions initialize the home.
+Fresh installs clone the maintained `sandeepsalwan1/firstmate` fork with Pi 1.2 compatibility fixes.
 
 FirstMate and its default workers use GPT-5.5 at `xhigh`, its strongest documented
 reasoning level, with the real 1,050,000-token context window. Ordinary Codex

@@ -22,7 +22,7 @@ if not firstmate.exists() and not firstmate.is_symlink():
             os.environ.get("MAC_SETUP_GIT_BIN", "git"),
             "clone",
             "--",
-            "https://github.com/kunchenguid/firstmate.git",
+            "https://github.com/sandeepsalwan1/firstmate.git",
             str(firstmate),
         ],
         check=True,
