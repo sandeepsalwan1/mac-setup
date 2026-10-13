@@ -7,7 +7,8 @@ set -euo pipefail
 
 EXTENSION="$ROOT/home/.pi/agent/extensions/early-compaction.ts"
 MODELS="$ROOT/home/.pi/agent/models.json"
-PI_PACKAGE_DIR=${PI_COMPACTION_TEST_PACKAGE_DIR:-"$(npm root -g 2>/dev/null)/@earendil-works/pi-coding-agent"}
+PI_VERSION=$(sed -n 's/^@earendil-works\/pi-coding-agent@//p' "$ROOT/home/npm-globals.txt")
+PI_PACKAGE_DIR=${PI_COMPACTION_TEST_PACKAGE_DIR:-"$HOME/.local/share/pi/versions/$PI_VERSION/lib/node_modules/@earendil-works/pi-coding-agent"}
 
 [ -f "$EXTENSION" ] || fail "early-compaction extension is missing"
 

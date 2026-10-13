@@ -273,9 +273,10 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
 assert not errors, errors
 PY
 
-PI_PACKAGE_DIR=${PI_RUNTIME_TEST_PACKAGE_DIR:-${PI_CALM_TEST_PACKAGE_DIR:-"$(npm root -g 2>/dev/null)/@earendil-works/pi-coding-agent"}}
+PI_VERSION=$(sed -n 's/^@earendil-works\/pi-coding-agent@//p' "$ROOT/home/npm-globals.txt")
+PI_PACKAGE_DIR=${PI_RUNTIME_TEST_PACKAGE_DIR:-${PI_CALM_TEST_PACKAGE_DIR:-"$HOME/.local/share/pi/versions/$PI_VERSION/lib/node_modules/@earendil-works/pi-coding-agent"}}
 if [ -f "$PI_PACKAGE_DIR/dist/cli.js" ] && command -v node >/dev/null 2>&1; then
-	python3 - "$ROOT/scripts/pi-firstmate" "$PI_PACKAGE_DIR" "$TMP_ROOT" <<'PY'
+	python3 - "$ROOT/scripts/pi-firstmate" "$PI_PACKAGE_DIR" "$TMP_ROOT" "$PI_VERSION" <<'PY'
 import concurrent.futures
 import json
 import os
@@ -283,8 +284,9 @@ from pathlib import Path
 import subprocess
 import sys
 
-wrapper, package, root = map(Path, sys.argv[1:])
-assert json.loads((package / "package.json").read_text())["version"] == "1.1.0"
+wrapper, package, root = map(Path, sys.argv[1:4])
+version = sys.argv[4]
+assert json.loads((package / "package.json").read_text())["version"] == version
 
 def run_native(args, name):
     home = root / name
@@ -311,7 +313,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
             errors.append(error)
 assert not errors, errors
 assert "Install a package and add it to settings." in results[0]
-assert "1.1.0" == run_native(["--version"], "native-version").strip()
+assert version == run_native(["--version"], "native-version").strip()
 
 cached = root / "cached package"
 cached.mkdir()
@@ -330,7 +332,7 @@ assert json.loads(settings.read_text())["packages"] == []
 assert "No packages installed." in run_native(["list"], "native-maintenance")
 PY
 else
-	echo 'skip: native Pi 1.1.0 maintenance proof requires its installed package and Node'
+	echo "skip: native Pi $PI_VERSION maintenance proof requires its installed package and Node"
 fi
 pass 'Firstmate Pi preserves native maintenance dispatch and exact arguments while approving agent launches'
 

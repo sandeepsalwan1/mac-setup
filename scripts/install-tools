@@ -15,9 +15,9 @@ die() {
 }
 
 installed_npm_version() {
-	local package_name="$1" package_json version
+	local package_name="$1" package_prefix="$2" package_json version
 
-	package_json="$NPM_PREFIX/lib/node_modules/$package_name/package.json"
+	package_json="$package_prefix/lib/node_modules/$package_name/package.json"
 	if [ -r "$package_json" ]; then
 		version="$(jq -r 'if (.version | type) == "string" then .version else empty end' "$package_json" 2>/dev/null || true)"
 		if [ -n "$version" ]; then
@@ -25,13 +25,14 @@ installed_npm_version() {
 			return
 		fi
 	fi
-	if command -v "$package_name" >/dev/null 2>&1; then
+	if [ "$package_name" != '@earendil-works/pi-coding-agent' ] &&
+		command -v "$package_name" >/dev/null 2>&1; then
 		"$package_name" --version 2>/dev/null | head -n 1 || true
 	fi
 }
 
 install_npm_tools() {
-	local npm_bin spec package_name wanted_version installed_version npm_args
+	local npm_bin spec package_name wanted_version installed_version package_prefix npm_args pointer backup
 
 	if [ "${MAC_SETUP_SKIP_NPM:-0}" = "1" ]; then
 		note 'npm tool installation skipped by environment'
@@ -53,19 +54,38 @@ install_npm_tools() {
 
 		package_name="${spec%@*}"
 		wanted_version="${spec##*@}"
-		installed_version="$(installed_npm_version "$package_name")"
+		package_prefix="$NPM_PREFIX"
+		if [ "$package_name" = '@earendil-works/pi-coding-agent' ]; then
+			package_prefix="$HOME/.local/share/pi/versions/$wanted_version"
+		fi
+		installed_version="$(installed_npm_version "$package_name" "$package_prefix")"
 
 		if [ "$installed_version" = "$wanted_version" ]; then
 			note "$package_name $wanted_version is already installed"
-			continue
+		else
+			note "installing $spec"
+			npm_args=(install --global --prefix "$package_prefix")
+			if [ "$package_name" = '@earendil-works/pi-coding-agent' ]; then
+				npm_args+=(--ignore-scripts)
+			fi
+			NPM_CONFIG_PREFIX="$package_prefix" "$npm_bin" "${npm_args[@]}" "$spec" || return "$?"
 		fi
-
-		note "installing $spec"
-		npm_args=(install --global --prefix "$NPM_PREFIX")
 		if [ "$package_name" = '@earendil-works/pi-coding-agent' ]; then
-			npm_args+=(--ignore-scripts)
+			[ -x "$package_prefix/bin/pi" ] || die 'installed Pi executable is missing'
+			pointer="$HOME/.local/bin/pi.real"
+			if [ -L "$pointer" ] && [ "$(readlink "$pointer")" = "$package_prefix/bin/pi" ]; then
+				continue
+			fi
+			mkdir -p "$(dirname "$pointer")"
+			if [ -e "$pointer" ] && [ ! -L "$pointer" ]; then
+				backup="$HOME/.local/state/mac-setup/pi-runtime-backups/$(date -u +%Y%m%dT%H%M%SZ).$$"
+				mkdir -p "$backup"
+				chmod 700 "$backup"
+				cp -p "$pointer" "$backup/pi.real"
+			fi
+			ln -s "$package_prefix/bin/pi" "$pointer.tmp.$$"
+			mv -f "$pointer.tmp.$$" "$pointer"
 		fi
-		"$npm_bin" "${npm_args[@]}" "$spec" || return "$?"
 	done <"$NPM_GLOBALS_FILE"
 }
 

@@ -60,8 +60,10 @@ if [ "$package_name" = '@earendil-works/pi-coding-agent' ]; then
 	*" --ignore-scripts "*) ;;
 	*) exit 66 ;;
 	esac
-	mkdir -p "$NPM_PREFIX/lib/node_modules/$package_name"
-	printf '{"version":"%s"}\n' "$version" >"$NPM_PREFIX/lib/node_modules/$package_name/package.json"
+	mkdir -p "$NPM_CONFIG_PREFIX/lib/node_modules/$package_name" "$NPM_CONFIG_PREFIX/bin"
+	printf '{"version":"%s"}\n' "$version" >"$NPM_CONFIG_PREFIX/lib/node_modules/$package_name/package.json"
+	printf '#!/usr/bin/env bash\nprintf "%%s\\n" "%s"\n' "$version" >"$NPM_CONFIG_PREFIX/bin/pi"
+	chmod +x "$NPM_CONFIG_PREFIX/bin/pi"
 	exit 0
 fi
 mkdir -p "$NPM_PREFIX/bin"
@@ -280,6 +282,15 @@ install_count="$(wc -l <"$INSTALL_LOG" | tr -d ' ')"
 run_installer >/dev/null
 [ "$(wc -l <"$INSTALL_LOG" | tr -d ' ')" = "$install_count" ] ||
 	fail 'installer reinstalled an already satisfied Pi package'
+old_pi="$TEST_HOME/.local/share/pi/versions/0.87.1/bin/pi"
+old_pi_hash="$(sha256_file "$old_pi")"
+printf '%s\n' '@earendil-works/pi-coding-agent@1.2.0' >"$TEST_MANIFEST"
+run_installer >/dev/null
+[ "$("$TEST_HOME/.local/bin/pi.real" --version)" = 1.2.0 ] ||
+	fail 'future Pi launches did not use the new version'
+[ "$(sha256_file "$old_pi")" = "$old_pi_hash" ] &&
+	[ "$("$old_pi" --version)" = 0.87.1 ] ||
+	fail 'Pi upgrade changed files used by the previous runtime'
 
 mkdir -p "$TEST_HOME/.local/state/agent-skills"
 printf '%s\n' external >"$TEST_HOME/.local/state/agent-skills/profile-owner"

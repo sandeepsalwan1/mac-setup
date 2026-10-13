@@ -25,8 +25,8 @@ set -u
 
 TMP_ROOT=$(dotfiles_test_tmproot pi-calm)
 CALM_DIR="$ROOT/home/.pi/agent/extensions/calm"
-PI_PACKAGE_DIR=${PI_CALM_TEST_PACKAGE_DIR:-"$(npm root -g 2>/dev/null)/@earendil-works/pi-coding-agent"}
 PI_PROOF_VERSION=$(sed -n 's/^@earendil-works\/pi-coding-agent@//p' "$ROOT/home/npm-globals.txt")
+PI_PACKAGE_DIR=${PI_CALM_TEST_PACKAGE_DIR:-"$HOME/.local/share/pi/versions/$PI_PROOF_VERSION/lib/node_modules/@earendil-works/pi-coding-agent"}
 TMUX_SOCKET="pi-calm-test-$$"
 TMUX_SESSION="pi-calm-e2e"
 

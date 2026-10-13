@@ -255,7 +255,9 @@ this repository and `rebuild.sh`.
 Pi keeps declarative settings in this repository but runs from writable settings
 materialized by `scripts/setup-pi-runtime`, so version bookkeeping cannot modify
 tracked files. Firstmate-spawned Pi uses the regular `pi` command through a scoped
-wrapper. Launches marked `FM_PI_HARNESS=pi` receive a dedicated agent directory and `--approve`
+wrapper. Pi upgrades keep each version installed and switch future launches through
+`~/.local/bin/pi.real`, so running workers keep their original files.
+Launches marked `FM_PI_HARNESS=pi` receive a dedicated agent directory and `--approve`
 to trust project files for that run. An explicit `--no-approve` overrides it. That directory
 omits the global Calm command because FirstMate's project extension owns `/calm`,
 while retaining a command-free status helper that suppresses Pi 0.83+ toggle noise.
