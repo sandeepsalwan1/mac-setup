@@ -1,10 +1,10 @@
 # Exact global npm tools required by the shared agent skills and instructions.
 acpx@0.19.5
-backpass@0.1.32
-chrome-devtools-axi@0.1.40
-chrome-devtools-mcp@1.10.1
-gh-axi@0.1.38
-lavish-axi@0.1.87
-quota-axi@0.1.61
+backpass@0.1.34
+chrome-devtools-axi@0.1.42
+chrome-devtools-mcp@1.11.0
+gh-axi@0.1.41
+lavish-axi@0.1.89
+quota-axi@0.1.63
 tasks-axi@0.2.6
-@earendil-works/pi-coding-agent@1.2.0
+@earendil-works/pi-coding-agent@1.3.0

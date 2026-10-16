@@ -4,17 +4,17 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 
 expected_npm='acpx@0.19.5
-backpass@0.1.32
-chrome-devtools-axi@0.1.40
-chrome-devtools-mcp@1.10.1
-gh-axi@0.1.38
-lavish-axi@0.1.87
-quota-axi@0.1.61
+backpass@0.1.34
+chrome-devtools-axi@0.1.42
+chrome-devtools-mcp@1.11.0
+gh-axi@0.1.41
+lavish-axi@0.1.89
+quota-axi@0.1.63
 tasks-axi@0.2.6
-@earendil-works/pi-coding-agent@1.2.0'
+@earendil-works/pi-coding-agent@1.3.0'
 actual_npm="$(grep -Ev '^[[:space:]]*(#|$)' "$ROOT/home/npm-globals.txt")"
 [ "$actual_npm" = "$expected_npm" ]
-grep -F 'treehouse.url = "github:kunchenguid/treehouse/v3.1.2";' "$ROOT/flake.nix" >/dev/null
+grep -F 'treehouse.url = "github:kunchenguid/treehouse/v3.1.4";' "$ROOT/flake.nix" >/dev/null
 grep -F "treehouse.packages.\${pkgs.stdenv.hostPlatform.system}.default" "$ROOT/home.nix" >/dev/null
 
 chrome_approval_helper="$ROOT/scripts/chrome-devtools-axi-native.swift"
