@@ -32,3 +32,6 @@ agent_panel_sort = "priority"
 # WezTerm drops OSC notifications from the focused pane unless
 # notification_handling = "AlwaysShow", which home/.config/wezterm/wezterm.lua sets.
 delivery = "terminal"
+
+[remote]
+manage_ssh_config = false
