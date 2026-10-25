@@ -57,15 +57,15 @@ manifest is `home/npm-globals.txt`; Pi extensions are in `home/.pi/agent/setting
   with the selected provider.
 - FirstMate bootstrap still clones its public default branch only when the target
   path is free. Repeated bootstrap runs preserve an existing checkout.
-- David Ondrej's nine skills retain their upstream behavior and invocation policy.
-  Local copies normalize punctuation and omit the generic `triggers` field.
+- David Ondrej's nine skills use the pinned source with local integration notes.
+  Local copies normalize punctuation, omit the generic `triggers` field, enforce
+  manual invocation for 4x4, and avoid replaying private context in Remind.
   The distribution skill documents the managed Mac linker. Guardrails retains
   this setup's existing policy and paths in `MAC-SETUP.md`. Each folder
-  includes the upstream MIT license. The [Teach format files](https://github.com/davidondrej/skills/tree/main/skills/thinking-and-docs/teach)
+  includes the upstream MIT license. The [Teach format files](https://github.com/davidondrej/skills/tree/8605863f211961c96208fe625d4024609cd7dbd5/skills/thinking-and-docs/teach)
   are included.
 - Shadcn's chat rules match the reviewed source. Keep the local skill metadata
   and existing `cn` import convention.
-
 - Shared hooks track the reviewed David Ondrej source with the local policy
   retained: targeted `rm` and `sudo rm` stay allowed; malformed input and
   missing patterns fail closed. The suite covers all three upstream payload

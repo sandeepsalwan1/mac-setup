@@ -18,6 +18,8 @@ Local Hermes links do not install skills on a separately hosted Hermes server.
 
 ## Skill locations
 
+The layout below describes unmanaged setups. Managed Macs use the linker's per-skill links, including Pi and local Hermes.
+
 - **Codex / OpenAI Agents:** `~/.agents/skills/` is canonical. Author skills here first.
 - **Claude Code:** `~/.claude/skills/` → `~/.agents/skills/`; covered automatically.
 - **Pi Agent:** `~/.pi/agent/skills/` → `~/.agents/skills/`; covered automatically. The nested `/agent/` is required, not `~/.pi/skills/`.
@@ -62,7 +64,7 @@ rsync -a --delete ~/.agents/skills/$SKILL/ ~/.hermes/skills/$SKILL/
 ## Pitfalls
 
 - **`~/.pi/skills/` is the wrong global location.** Pi loads from `~/.pi/agent/skills/`; skills in the former are invisible orphans. Confirm with the user before deleting them.
-- **Do not copy into the Claude or Pi symlinks.** They already point to `~/.agents/skills/`; copying there errors with "are identical". Only Hermes is independent. Do not replace it with a symlink unless the user asks.
+- **Do not copy through symlinks to the same source.** On unmanaged setups, Claude and Pi may share the canonical directory while Hermes has a separate copy. On managed Macs, let `scripts/link-portable-skills` manage each agent's links, including local Hermes.
 - **Project-local skills can override global skills** on collision (later-discovered wins), including `./.pi/agent/skills/` or `.pi/skills/` inside a repo. This workflow handles only global distribution.
 - **Hermes and Cursor load skills at session start.** Restart running sessions to discover a newly distributed skill.
 - **Filename casing matters** on case-sensitive volumes: use uppercase `SKILL.md`.

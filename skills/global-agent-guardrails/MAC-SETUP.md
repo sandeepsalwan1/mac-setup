@@ -25,7 +25,7 @@ The final line must report zero failures across Claude/Codex, Grok-compatible, a
 3. Run the package verifier and installed verifier.
 4. Apply the kit to every machine. Do not hand-edit one host and leave the others divergent.
 
-Patterns are POSIX ERE for `grep -E`. Keep the shared shell script as the single execution path. The Pi adapter invokes that script instead of maintaining a second regex implementation.
+Patterns use `grep -E`, including matching-name backreferences. Keep the shared shell script as the single execution path. The Pi adapter invokes that script instead of maintaining a second regex implementation.
 
 ## Runtime locations
 
@@ -34,7 +34,7 @@ Patterns are POSIX ERE for `grep -E`. Keep the shared shell script as the single
 - Pi: `~/.pi/agent/extensions/command-guard.ts`
 - FirstMate Pi: `~/.local/state/pi-firstmate/agent/extensions/command-guard.ts`
 
-Hook and configuration failures fail closed with a clear error. The installer and verifier prove that `jq`, scripts, config entries, and both Pi adapters are present.
+Hook and configuration failures fail closed with a clear error. The tool installer verifies the shared scripts and Claude/Codex config entries. Pi runtime setup installs both adapters; verify those paths separately.
 
 The hook ignores literal text in a single standalone `cat` command's quoted
 heredoc when the installed `shfmt` parser succeeds. Shell-fed heredocs, pipes,

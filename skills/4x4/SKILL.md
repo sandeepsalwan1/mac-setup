@@ -1,5 +1,6 @@
 ---
 name: 4x4
+disable-model-invocation: true
 description: 'Pull 16 fast decisions out of the user with 4 sets of 4 open questions, then present an implementation plan. Only for risky changes, large product decisions, or large refactors. Run when the user types /4x4. Agents may suggest it in one line but never start it on their own.'
 ---
 

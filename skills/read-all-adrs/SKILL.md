@@ -4,11 +4,4 @@ description: Read every ADR markdown file in the project's docs/adr/ folder so y
 disable-model-invocation: true
 ---
 
-<!-- TODO: write the strong wording here -->
-
-Read EVERY single ADR `.md` file in this project's `docs/adr/` folder, start to
-finish.
-
-DO NOT BE A LAZY CUNT. ACTUALLY DO THIS.
-
-Read every single ADR file, for this project, in full.
+Read every ADR `.md` file in this project's `docs/adr/` folder in full before continuing.

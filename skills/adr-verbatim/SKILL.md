@@ -1,6 +1,6 @@
 ---
 name: adr-verbatim
-description: 'Record concise ADRs that preserve the user''s decisions without conversational noise. Use for "adr-verbatim", "new ADR", "document that as an ADR", "record this decision", or supplied ADR wording.'
+description: 'Record concise ADRs that preserve the user''s decisions as a condensed paraphrase; use exact wording when requested. Use for "adr-verbatim", "new ADR", "document that as an ADR", "record this decision", or supplied ADR wording.'
 ---
 
 # ADR Verbatim

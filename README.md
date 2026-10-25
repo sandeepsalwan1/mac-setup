@@ -235,8 +235,8 @@ The repository keeps reviewed snapshots of:
 - grill-me: test plans through focused questions
 - improve-codebase-architecture: improve module boundaries
 - kun: load Kun's public problem-solving instructions with `/kun`
-- lavish-helper-for-personal: open local or server artifacts in Mac Chrome
 - lavish: create HTML artifacts for visual review
+- lavish-helper-for-personal: open local or server artifacts in Mac Chrome
 - no-mistakes: validate changes before publication
 - quota-axi: report agent usage and remaining quota
 - read-all-adrs: read project decisions before continuing
