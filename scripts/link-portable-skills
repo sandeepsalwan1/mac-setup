@@ -12,6 +12,9 @@ ROOTS=(
 	"$HOME/.agents/skills"
 	"$HOME/.claude/skills"
 	"$HOME/.kiro/skills"
+	"$HOME/.pi/agent/skills"
+	"$HOME/.cursor/skills"
+	"$HOME/.hermes/skills"
 	"${CODEX_HOME:-$HOME/.codex}/skills"
 )
 

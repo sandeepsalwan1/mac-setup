@@ -213,26 +213,33 @@ IDE and CLI settings. They select Autopilot, user-wide trust, and automatic tool
 approval. Custom permission policies and other settings remain. Replaced files are backed up beside the
 originals as `.pre-mac-setup`, with mode `0600`.
 
-Bootstrap automatically links all 23 bundled skills, including Kun.
+Bootstrap automatically links all 30 bundled skills, including Kun.
 The repository keeps reviewed snapshots of:
 
+- 4x4: clarify a request in four rounds of four questions
+- adr-verbatim: record decisions in the user's words
 - autoreview: structured code reviews
+- better-prompt: sharpen a prompt without expanding its scope
 - chrome-devtools-axi: browser inspection and automation
 - computer-use-cli: native app control through the official local runtime
 - create-project-level-agents-md-file: project memory and shared instructions
 - create-readonly-db-role: Postgres access limited to reading
 - defuddle: extract clean Markdown from web pages
 - development-style: code design rules
+- distribute-skill-to-all-agents: share skills across local agent tools
 - gh-axi: GitHub operations
 - global-agent-guardrails: maintain the shared command guard
 - grill-me: test plans through focused questions
 - improve-codebase-architecture: improve module boundaries
 - kun: load Kun's public problem-solving instructions with `/kun`
-- lavish: create HTML artifacts for visual review
 - lavish-helper-for-personal: open local or server artifacts in Mac Chrome
+- lavish: create HTML artifacts for visual review
 - no-mistakes: validate changes before publication
 - quota-axi: report agent usage and remaining quota
+- read-all-adrs: read project decisions before continuing
+- remind: recap the task and recent progress
 - shadcn: build React interfaces with shadcn/ui
+- stop-overthinking: choose a practical next step
 - stow: save durable knowledge from a conversation
 - tasks-axi: manage a task backlog
 - teach: teach a skill or concept
@@ -244,7 +251,9 @@ Kun is an unmodified upstream snapshot. Reviewed source commits
 are recorded in [data/repos.md](data/repos.md).
 
 The activation linker exposes each one through `~/.skills`, `~/.agents/skills`,
-`~/.codex/skills`, and `~/.claude/skills`. It preserves unrelated skills and
+`~/.codex/skills`, `~/.claude/skills`, `~/.kiro/skills`, `~/.pi/agent/skills`,
+`~/.cursor/skills`, and `~/.hermes/skills`. These are local Mac paths; a hosted
+Hermes installation needs a separate deployment. The linker preserves unrelated skills and
 defers entirely when `~/.local/state/agent-skills/profile-owner` declares an
 external shared profile.
 Bootstrap also installs the no-mistakes CLI on a fresh Mac.

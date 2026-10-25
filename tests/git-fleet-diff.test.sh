@@ -105,7 +105,7 @@ mkdir -p "$FLEET"
 cp -R "$REPO" "$FLEET/one"
 dotfiles_git_init_commit "$FLEET/clean"
 
-ALL=$(HOME="$TMP" GIT_FLEET_STATE_DIR="$TMP/state" "$SCRIPT" --all -r "$FLEET" -d 3 2>/dev/null)
+ALL=$(HOME="$TMP" GIT_FLEET_STATE_DIR="$TMP/state" GIT_FLEET_STATUS="$ROOT/scripts/git-fleet-status" "$SCRIPT" --all -r "$FLEET" -d 3 2>/dev/null)
 assert_contains "$ALL" 'untracked.txt' 'the fleet stream lost a changed checkout'
 assert_contains "$ALL" '────' 'the fleet stream has no per-checkout banner'
 assert_not_contains "$ALL" 'fleet/clean' 'the fleet stream included a clean checkout'
@@ -153,7 +153,7 @@ HOME="$TMP" GIT_FLEET_STATE_DIR="$TMP/state" PATH="$STUB:$PLAIN_PATH" \
 	GIT_FLEET_STATUS="$ROOT/scripts/git-fleet-status" \
 	"$SCRIPT" -r "$FLEET" -d 3 >/dev/null 2>"$TMP/picker.err" ||
 	fail "the picker exited $?: $(cat "$TMP/picker.err")"
-[ -f "$TMP/rows" ] || fail 'the picker handed fzf nothing at all'
+[ -f "$TMP/rows" ] || fail "the picker handed fzf nothing at all: $(cat "$TMP/picker.err")"
 ROWS=$(cat "$TMP/rows")
 
 assert_contains "$ROWS" 'untracked.txt' 'the picker offers no row for a new file'
