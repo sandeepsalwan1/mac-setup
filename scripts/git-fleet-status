@@ -36,7 +36,7 @@ PRUNE_NAMES=(
 )
 # Space-separated on purpose: each word is one more directory name to prune.
 read -r -a extra_prune <<<"${GIT_FLEET_PRUNE:-}"
-PRUNE_NAMES+=("${extra_prune[@]}")
+PRUNE_NAMES+=("${extra_prune[@]+"${extra_prune[@]}"}")
 
 DEPTH=7
 SHOW_ALL=0

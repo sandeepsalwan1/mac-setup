@@ -7,6 +7,8 @@ shellcheck -x \
 	"$ROOT/bootstrap.sh" \
 	"$ROOT/rebuild.sh" \
 	"$ROOT/home/bin/learn" \
+	"$ROOT/home/.agents/hooks/deny-dangerous.sh" \
+	"$ROOT/home/.agents/hooks/test-guard.sh" \
 	"$ROOT/scripts/git-fleet-status" \
 	"$ROOT/scripts/git-fleet-diff" \
 	"$ROOT/scripts/fm-handoff" \
@@ -58,6 +60,8 @@ shfmt -d \
 	"$ROOT/bootstrap.sh" \
 	"$ROOT/rebuild.sh" \
 	"$ROOT/home/bin/learn" \
+	"$ROOT/home/.agents/hooks/deny-dangerous.sh" \
+	"$ROOT/home/.agents/hooks/test-guard.sh" \
 	"$ROOT/scripts/git-fleet-status" \
 	"$ROOT/scripts/git-fleet-diff" \
 	"$ROOT/scripts/fm-handoff" \

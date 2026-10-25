@@ -16,7 +16,7 @@
 (^|[;&|()`[:space:]])diskutil[[:space:]]+(erase[A-Za-z]*|partitionDisk|zeroDisk|secureErase|apfs[[:space:]]+(delete|erase)[A-Za-z]*)
 
 # Fork bombs and piping downloads into a shell.
-:\(\)[[:space:]]*\{[[:space:]]*:[[:space:]]*\|[[:space:]]*:[[:space:]]*&[[:space:]]*\}[[:space:]]*;[[:space:]]*:
+(^|[;&|[:space:]])(function[[:space:]]+)?([^;&|(){}[:space:]]+)[[:space:]]*(\([[:space:]]*\))?[[:space:]]*\{[;[:space:]]*\3[[:space:]]*\|[[:space:]]*\3[[:space:]]*&[;[:space:]]*\}[;[:space:]]*\3([;&[:space:]]|$)
 (^|[;&|()`[:space:]])(curl|wget)[[:space:]][^;&|]*\|[[:space:]]*(sudo[[:space:]]+)?(ba|z|da)?sh([[:space:]]|$)
 
 # Remote history and branch destruction. Force-with-lease stays allowed.

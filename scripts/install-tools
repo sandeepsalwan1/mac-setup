@@ -164,7 +164,7 @@ install_command_guard() {
 		return
 	fi
 	mkdir -p "$target_dir"
-	for name in dangerous-patterns.txt deny-dangerous.sh test-guard.sh; do
+	for name in dangerous-patterns.txt deny-dangerous.sh test-guard.sh LICENSE; do
 		source="$source_dir/$name"
 		target="$target_dir/$name"
 		case "$name" in
