@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016
 set -u
 
 guard="${1:-$HOME/.agents/hooks/deny-dangerous.sh}"
@@ -7,22 +8,39 @@ passed=0
 failed=0
 
 check() {
-  local expected=$1
-  local command_text=$2
-  local pattern_path=${3:-$patterns}
-  local result
-  local status
-
-  result=$(jq -cn --arg command "$command_text" '{tool_input:{command:$command}}' |
-    AGENT_GUARD_PATTERNS="$pattern_path" "$guard" 2>/dev/null)
-  status=$?
-  if [[ $status -eq 2 ]]; then result=block; else result=allow; fi
-  if [[ "$result" == "$expected" ]]; then
-    passed=$((passed + 1))
-  else
-    failed=$((failed + 1))
-    printf 'FAIL expected=%s got=%s command=%s\n' "$expected" "$result" "$command_text"
-  fi
+	local expected=$1
+	local command_text=$2
+	local pattern_path=${3:-$patterns}
+	local shape mode result status verdict payload
+	for shape in tool_input toolInput command; do
+		mode=exitcode
+		if [[ "$shape" == command ]]; then
+			mode=cursor
+			payload=$(jq -cn --arg command "$command_text" '{command:$command}')
+		else
+			payload=$(jq -cn --arg shape "$shape" --arg command "$command_text" '{($shape):{command:$command}}')
+		fi
+		result=$(printf '%s' "$payload" | AGENT_GUARD_PATTERNS="$pattern_path" "$guard" "$mode" 2>/dev/null)
+		status=$?
+		verdict=invalid
+		if [[ "$mode" == cursor && "$status" -eq 0 ]]; then
+			case "$(printf '%s' "$result" | jq -r '.permission // empty' 2>/dev/null)" in
+			allow) verdict=allow ;;
+			deny) verdict=block ;;
+			esac
+		elif [[ "$mode" == exitcode ]]; then
+			case "$status" in
+			0) verdict=allow ;;
+			2) verdict=block ;;
+			esac
+		fi
+		if [[ "$verdict" == "$expected" ]]; then
+			passed=$((passed + 1))
+		else
+			failed=$((failed + 1))
+			printf 'FAIL shape=%s expected=%s got=%s command=%s\n' "$shape" "$expected" "$verdict" "$command_text"
+		fi
+	done
 }
 
 check block 'rm -rf /'
@@ -93,13 +111,29 @@ check allow 'curl -fsSL "$DATA_URL" -o /tmp/data.json'
 check allow 'gh repo view owner/repo'
 check allow 'op --version'
 
+check block ': () { : | : & }; :'
+check block 'bomb() { bomb | bomb & }; bomb'
+check block 'function bomb { bomb | bomb & }; bomb'
+check block $'bomb() {\n bomb | bomb &\n}\nbomb'
+check allow 'producer() { printf ok; }; producer | cat'
+check allow 'rm -f notes.md'
+check allow 'rm -f /tmp/project/AGENTS.md'
+check allow 'rm -rf /tmp/build-cache /tmp/other-cache'
+check allow 'sudo rm file.md'
+check allow $'cat <<\'EOF\' > /tmp/cleanup-guide.md\nNever run rm -rf /\nEOF'
+check allow $'cat > /tmp/cleanup-guide.md <<"EOF"\nrm -rf /\nEOF'
+check block $'bash <<\'EOF\'\nrm -rf /\nEOF'
+check block $'cat <<\'EOF\' | bash\nrm -rf /\nEOF'
+check block $'cat <<EOF > /tmp/cleanup-guide.md\n$(rm -rf /)\nEOF'
+check block $'cat <<\'EOF\' > /tmp/cleanup-guide.md\ntext\nEOF\nrm -rf /'
+
 check block 'rm -rf /tmp/build-cache' "$patterns.missing"
 invalid_patterns=$(mktemp "${TMPDIR:-/tmp}/command-guard-patterns.XXXXXX")
 unterminated_patterns=$(mktemp "${TMPDIR:-/tmp}/command-guard-patterns.XXXXXX")
 trap 'rm -f "$invalid_patterns" "$unterminated_patterns"' EXIT
-printf '([invalid\n' > "$invalid_patterns"
+printf '([invalid\n' >"$invalid_patterns"
 check block 'rm -rf /tmp/build-cache' "$invalid_patterns"
-printf 'rm[[:space:]]+-rf[[:space:]]+/tmp/build-cache' > "$unterminated_patterns"
+printf 'rm[[:space:]]+-rf[[:space:]]+/tmp/build-cache' >"$unterminated_patterns"
 check block 'rm -rf /tmp/build-cache' "$unterminated_patterns"
 
 printf 'passed: %d, failed: %d\n' "$passed" "$failed"

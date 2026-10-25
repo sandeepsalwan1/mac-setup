@@ -200,7 +200,10 @@ It applies bypass mode to the standalone profile. The shell and macOS login
 environment export `CLAUDE_CODE_DISABLE_INLINE_SHELL_RM_PROMPT=1`, supported in
 Claude v2.1.288 and later. Claude ignores this variable in `settings.json`.
 Open a new terminal before starting Claude after an update to pick up the launch environment.
-The shared catastrophic-command guard stays active.
+The shared catastrophic-command guard stays active. It permits targeted file
+and folder cleanup, including Markdown files, and blocks whole-root/home deletion,
+disk wipes, and recursive fork bombs. Literal quoted `cat` heredocs are treated
+as data; shell heredocs and pipelines remain checked.
 Other existing values win, and an external shared profile keeps control of its settings.
 The defaults request Opus 5.5 with the 1M context window, `xhigh` effort, ultracode,
 bypass permissions without the startup prompt, automatic peer-message delivery,

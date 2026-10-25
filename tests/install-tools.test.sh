@@ -214,7 +214,7 @@ for settings in "$TEST_HOME/.claude/settings.json" "$TEST_HOME/.codex/hooks.json
 	' "$settings" >/dev/null ||
 		fail "command guard was not merged exactly once into $settings"
 done
-for name in dangerous-patterns.txt deny-dangerous.sh test-guard.sh; do
+for name in dangerous-patterns.txt deny-dangerous.sh test-guard.sh LICENSE; do
 	cmp -s "$ROOT/home/.agents/hooks/$name" "$TEST_HOME/.agents/hooks/$name" ||
 		fail "command guard file differs after install: $name"
 done

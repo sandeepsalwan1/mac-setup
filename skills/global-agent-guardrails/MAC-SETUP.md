@@ -16,7 +16,7 @@ Installation removes only the three legacy Claude deny entries that treated root
 ~/.agents/hooks/test-guard.sh
 ```
 
-The final line must report zero failures. Codex also requires the user to review and trust a changed hook entry through `/hooks`; changing only `dangerous-patterns.txt` does not change the hook entry.
+The final line must report zero failures across Claude/Codex, Grok-compatible, and Cursor payloads. Codex also requires the user to review and trust a changed hook entry through `/hooks`; changing only `dangerous-patterns.txt` does not change the hook entry.
 
 ## Tune the policy
 
@@ -35,3 +35,8 @@ Patterns are POSIX ERE for `grep -E`. Keep the shared shell script as the single
 - FirstMate Pi: `~/.local/state/pi-firstmate/agent/extensions/command-guard.ts`
 
 Hook and configuration failures fail closed with a clear error. The installer and verifier prove that `jq`, scripts, config entries, and both Pi adapters are present.
+
+The hook ignores literal text in a single standalone `cat` command's quoted
+heredoc when the installed `shfmt` parser succeeds. Shell-fed heredocs, pipes,
+substitutions, and other commands remain checked. Missing or failed parsing
+falls back to the original text. Named and spaced recursive fork bombs are blocked.
