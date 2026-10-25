@@ -227,7 +227,6 @@ The repository keeps reviewed snapshots of:
 - computer-use-cli: native app control through the official local runtime
 - create-project-level-agents-md-file: project memory and shared instructions
 - create-readonly-db-role: Postgres access limited to reading
-- defuddle: extract clean Markdown from web pages
 - development-style: code design rules
 - distribute-skill-to-all-agents: share skills across local agent tools
 - gh-axi: GitHub operations
