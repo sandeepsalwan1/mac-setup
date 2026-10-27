@@ -71,7 +71,7 @@ for skill in \
 	[ -f "$ROOT/skills/$skill/SKILL.md" ]
 done
 
-grep -F 'https://github.com/davidondrej/skills/tree/main/skills/thinking-and-docs/teach' "$ROOT/data/repos.md" >/dev/null
+grep -E 'https://github.com/davidondrej/skills/tree/[0-9a-f]{40}/skills/thinking-and-docs/teach' "$ROOT/data/repos.md" >/dev/null
 
 grep -F 'kc = "kiro-cli";' "$ROOT/home.nix" >/dev/null
 grep -F 'co = "codex";' "$ROOT/home.nix" >/dev/null

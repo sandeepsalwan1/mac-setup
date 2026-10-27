@@ -17,7 +17,7 @@ The setup uses released tools where available and snapshots only each repository
 | [gh-axi](https://github.com/kunchenguid/gh-axi) | `0aa4b25f26ee39489a1b20f855f479886223ddf4` | GitHub 0.1.38; released skill includes discussions |
 | [vision](https://github.com/kunchenguid/vision) | `7a20c38181151ec67efdf8fa2cb03a60123a7b83` | Visual review skill |
 | [tasks-axi](https://github.com/kunchenguid/tasks-axi) | `9401ff899c0d1d8ae6b4fd8727b9025abda2032c` | Tasks skill and npm tool |
-| [davidondrej/skills](https://github.com/davidondrej/skills) | `8605863f211961c96208fe625d4024609cd7dbd5` | distribute-skill-to-all-agents, 4x4, adr-verbatim, better-prompt, read-all-adrs, remind, stop-overthinking, teach, global-agent-guardrails, and shared command hooks |
+| [davidondrej/skills](https://github.com/davidondrej/skills) | `8605863f211961c96208fe625d4024609cd7dbd5` | distribute-skill-to-all-agents, 4x4, adr-verbatim, anti-sleep, better-prompt, read-all-adrs, remind, stop-overthinking, teach, global-agent-guardrails, and shared command hooks |
 | [shadcn](https://github.com/shadcn-ui/ui/tree/main/skills/shadcn) | `e8c3143b1cd191280befcd6c9538284bb43399a8` | Chat rules refreshed; local invocation and styling adaptations retained |
 
 ## Released tool pins
@@ -57,13 +57,14 @@ manifest is `home/npm-globals.txt`; Pi extensions are in `home/.pi/agent/setting
   with the selected provider.
 - FirstMate bootstrap still clones its public default branch only when the target
   path is free. Repeated bootstrap runs preserve an existing checkout.
-- David Ondrej's nine skills use the pinned source with local integration notes.
+- David Ondrej's ten skills use the pinned source with local integration notes.
   Local copies normalize punctuation, omit the generic `triggers` field, enforce
   manual invocation for 4x4, and avoid replaying private context in Remind.
   The distribution skill documents the managed Mac linker. Guardrails retains
   this setup's existing policy and paths in `MAC-SETUP.md`. Each folder
   includes the upstream MIT license. The [Teach format files](https://github.com/davidondrej/skills/tree/8605863f211961c96208fe625d4024609cd7dbd5/skills/thinking-and-docs/teach)
   are included.
+  Anti-sleep makes its launcher executable and names its unused retry counter `_attempt`.
 - Shadcn's chat rules match the reviewed source. Keep the local skill metadata
   and existing `cn` import convention.
 - Shared hooks track the reviewed David Ondrej source with the local policy

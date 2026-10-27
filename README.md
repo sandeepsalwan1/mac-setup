@@ -221,6 +221,7 @@ The repository keeps reviewed snapshots of:
 
 - 4x4: clarify a request in four rounds of four questions
 - adr-verbatim: record decisions in the user's words
+- anti-sleep: keep a Mac awake for a duration or while a process runs
 - autoreview: structured code reviews
 - better-prompt: sharpen a prompt without expanding its scope
 - chrome-devtools-axi: browser inspection and automation
