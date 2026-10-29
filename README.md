@@ -240,7 +240,7 @@ The repository keeps reviewed snapshots of:
 - lavish: create HTML artifacts for visual review
 - lavish-helper-for-personal: open local or server artifacts in Mac Chrome
 - no-mistakes: validate changes before publication
-- pstack: portable engineering principles and TypeScript guides, in one removable experiment
+- pstack-*: 50 native engineering and TypeScript skills with automatic Poteto guidance
 - quota-axi: report agent usage and remaining quota
 - read-all-adrs: read project decisions before continuing
 - remind: recap the task and recent progress
@@ -267,13 +267,17 @@ Some skills need an account, app, or local resource when invoked.
 `computer-use-cli` needs the official Codex runtime. Bundled snapshots follow
 this repository and `rebuild.sh`.
 
-Pstack adds one discoverable skill with 53 guides loaded only when needed.
-FirstMate keeps orchestration, and the current harness keeps its configured model.
-The experiment adds no hooks, plugins, swarm, or model-routing rules.
-Run `~/mac-setup/scripts/pstack-experiment off` to disable it across local skill
-roots, `on` to restore it, or `status` to inspect it. Later setup and shared-profile
-syncs respect the disabled marker. The switch preserves its source, other skills,
-and transcripts. See [source and adaptations](skills/pstack/SOURCE.md).
+Pstack adds 50 flat, namespaced skills with native `SKILL.md` discovery.
+Poteto mode loads at task start while the family is enabled. FirstMate keeps
+orchestration, and the harness keeps its configured model and effort. Engineering
+principles, context discipline, TypeScript, and clean-code guidance stay available.
+Visual artifacts use Lavish through the personal helper. Duplicate prompt and
+catch-up skills, swarm, setup/help, and the statechart renderer are excluded.
+Run `~/mac-setup/scripts/pstack-experiment off` to disable the whole family,
+`on` to restore it, or `status` to inspect it. Later setup and shared-profile syncs
+respect the same disabled marker. The switch preserves source content, other
+skills, and transcripts. Git retains the previous layout for rollback.
+See [source and adaptations](data/repos.md).
 
 Pi keeps declarative settings in this repository but runs from writable settings
 materialized by `scripts/setup-pi-runtime`, so version bookkeeping cannot modify
