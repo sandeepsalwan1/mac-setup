@@ -1,11 +1,11 @@
 ---
 name: lavish-helper-for-personal
-description: Use only when the user explicitly requests Lavish. Run lavish-axi on the owning Mac or SSH server, open the review in the user's Mac Chrome, and receive feedback on the same machine.
+description: Use Lavish for visual plans, reports, comparisons, diagrams, and review artifacts. Run lavish-axi on the owning Mac or SSH server, open the review in the user's Mac Chrome, and receive feedback on the same machine.
 ---
 
 # Personal Lavish
 
-Use only for an explicit request such as `/lavish` or "use Lavish".
+Use Lavish for visual artifacts and browser review.
 The agent runs the entire workflow; do not ask the user to run commands.
 
 Read the original `lavish` skill for current `lavish-axi` guidance. Create the

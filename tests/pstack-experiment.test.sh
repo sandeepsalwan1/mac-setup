@@ -9,37 +9,60 @@ export HOME="$pstack_test_home" XDG_STATE_HOME="$pstack_test_home/state"
 unset CODEX_HOME
 EXPERIMENT="$ROOT/scripts/pstack-experiment"
 LINKER="$ROOT/scripts/link-portable-skills"
+NAMES=()
+for source_dir in "$ROOT"/skills/pstack-*; do
+	[ -f "$source_dir/SKILL.md" ]
+	NAMES+=("${source_dir##*/}")
+done
+[ "${#NAMES[@]}" -eq 50 ]
+[ ! -e "$ROOT/skills/pstack" ]
+for name in pstack-sharpen pstack-ketchup pstack-ketchup-video pstack-statechart pstack-swarm pstack-setup-pstack pstack-poteto-help; do
+	[ ! -e "$ROOT/skills/$name" ]
+done
+if find "$ROOT"/skills/pstack-* -name guide.md -o -name catalog.md -o -name SOURCE.md | grep -q .; then
+	exit 1
+fi
 
 mkdir -p "$HOME/.codex/sessions" "$HOME/.claude/skills/personal"
 printf '%s\n' transcript >"$HOME/.codex/sessions/preserved.jsonl"
 printf '%s\n' keep >"$HOME/.claude/skills/personal/SKILL.md"
+ln -s "$ROOT/skills/pstack" "$HOME/.claude/skills/pstack"
 "$EXPERIMENT" on
 "$EXPERIMENT" on
-[ "$(cd "$HOME/.codex/skills/pstack" && pwd -P)" = "$ROOT/skills/pstack" ]
-[ -f "$HOME/.pi/agent/skills/pstack/references/typescript-best-practices/guide.md" ]
-[ -f "$HOME/state/pi-firstmate/agent/skills/pstack/references/principle-guard-the-context-window/guide.md" ]
+[ ! -L "$HOME/.claude/skills/pstack" ]
+for skill_root in .skills .agents/skills .claude/skills .codex/skills .kiro/skills .pi/agent/skills .cursor/skills .hermes/skills state/pi-firstmate/agent/skills; do
+	for name in "${NAMES[@]}"; do
+		[ "$(cd "$HOME/$skill_root/$name" && pwd -P)" = "$ROOT/skills/$name" ]
+	done
+done
+[ -f "$HOME/.pi/agent/skills/pstack-typescript-best-practices/references/patterns.md" ]
+[ -f "$HOME/state/pi-firstmate/agent/skills/pstack-principle-guard-the-context-window/SKILL.md" ]
 "$EXPERIMENT" off
 "$EXPERIMENT" off
 "$LINKER"
 for skill_root in .skills .agents/skills .claude/skills .codex/skills .kiro/skills .pi/agent/skills .cursor/skills .hermes/skills state/pi-firstmate/agent/skills; do
-	[ ! -e "$HOME/$skill_root/pstack" ]
-	[ ! -L "$HOME/$skill_root/pstack" ]
+	for name in pstack "${NAMES[@]}"; do
+		[ ! -e "$HOME/$skill_root/$name" ]
+		[ ! -L "$HOME/$skill_root/$name" ]
+	done
 done
 "$EXPERIMENT" status | grep -q '^pstack: off;'
 
 mkdir -p "$HOME/.local/share/agent-skills"
-cp -R "$ROOT/skills/pstack" "$HOME/.local/share/agent-skills/pstack"
+cp -R "$ROOT"/skills/pstack-* "$HOME/.local/share/agent-skills/"
 printf '%s\n' external >"$HOME/state/agent-skills/profile-owner"
 rm -rf "$HOME/state/pi-firstmate/agent/skills"
 ln -s "$HOME/.pi/agent/skills" "$HOME/state/pi-firstmate/agent/skills"
 "$EXPERIMENT" on
 "$EXPERIMENT" on
 for skill_root in .skills .agents/skills .claude/skills .codex/skills .kiro/skills .pi/agent/skills .cursor/skills .hermes/skills state/pi-firstmate/agent/skills; do
-	[ "$(cd "$HOME/$skill_root/pstack" && pwd -P)" = "$(cd "$HOME/.local/share/agent-skills/pstack" && pwd -P)" ]
+	for name in "${NAMES[@]}"; do
+		[ "$(cd "$HOME/$skill_root/$name" && pwd -P)" = "$(cd "$HOME/.local/share/agent-skills/$name" && pwd -P)" ]
+	done
 done
 "$EXPERIMENT" off
 "$LINKER"
-[ ! -L "$HOME/.pi/agent/skills/pstack" ]
+[ ! -L "$HOME/.pi/agent/skills/pstack-poteto-mode" ]
 "$EXPERIMENT" on
 
 if command -v pi >/dev/null 2>&1; then
@@ -83,16 +106,19 @@ for enabled in (True, False, True):
         assert response and response.get("success"), "native Pi discovery failed"
         commands = [
             command for command in response["data"]["commands"]
-            if "/pstack/" in command.get("sourceInfo", {}).get("path", "")
+            if command.get("name", "").startswith("skill:pstack-")
         ]
-        assert len(commands) == int(enabled), commands
+        assert len(commands) == (50 if enabled else 0), commands
         if enabled:
-            assert commands[0]["name"] == "skill:pstack", commands
-            entry = Path(commands[0]["sourceInfo"]["path"])
-            assert entry.name == "SKILL.md"
-            assert (entry.parent / "references/catalog.md").is_file()
-            assert (entry.parent / "references/typescript-best-practices/guide.md").is_file()
-        print("native Pi pstack discovery:", "on" if enabled else "off")
+            names = {command["name"] for command in commands}
+            assert "skill:pstack-poteto-mode" in names
+            assert "skill:pstack-typescript-best-practices" in names
+            for command in commands:
+                entry = Path(command["sourceInfo"]["path"])
+                assert entry.name == "SKILL.md"
+                assert f"name: {command['name'].removeprefix('skill:')}\n" in entry.read_text()
+                assert (entry.parent / "LICENSE").is_file()
+        print("native Pi pstack discovery:", len(commands), "skills")
     finally:
         process.terminate()
         try:
@@ -112,7 +138,7 @@ for action in on off status; do
 	fi
 	grep -q 'preserving an unowned marker' "$HOME/marker.out"
 	cmp -s "$HOME/unrelated-state.txt" "$HOME/expected-state.txt"
-	[ -L "$HOME/.codex/skills/pstack" ]
+	[ -L "$HOME/.codex/skills/pstack-poteto-mode" ]
 done
 rm "$HOME/state/agent-skills/pstack.disabled"
 "$EXPERIMENT" off
@@ -126,15 +152,15 @@ cmp -s "$HOME/unrelated-state.txt" "$HOME/expected-state.txt"
 "$EXPERIMENT" on
 cmp -s "$HOME/unrelated-state.txt" "$HOME/expected-state.txt"
 
-rm "$HOME/.claude/skills/pstack"
-mkdir "$HOME/.claude/skills/pstack"
-printf '%s\n' unowned >"$HOME/.claude/skills/pstack/SKILL.md"
+rm "$HOME/.claude/skills/pstack-poteto-mode"
+mkdir "$HOME/.claude/skills/pstack-poteto-mode"
+printf '%s\n' unowned >"$HOME/.claude/skills/pstack-poteto-mode/SKILL.md"
 if "$EXPERIMENT" off >"$HOME/unknown.out" 2>&1; then
 	exit 1
 fi
 grep -q 'preserving an unowned path' "$HOME/unknown.out"
 [ ! -e "$HOME/state/agent-skills/pstack.disabled" ]
-[ -L "$HOME/.codex/skills/pstack" ]
-grep -qx unowned "$HOME/.claude/skills/pstack/SKILL.md"
+[ -L "$HOME/.codex/skills/pstack-poteto-mode" ]
+grep -qx unowned "$HOME/.claude/skills/pstack-poteto-mode/SKILL.md"
 grep -qx keep "$HOME/.claude/skills/personal/SKILL.md"
 grep -qx transcript "$HOME/.codex/sessions/preserved.jsonl"

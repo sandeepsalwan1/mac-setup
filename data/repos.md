@@ -19,7 +19,7 @@ The setup uses released tools and snapshots each repository's authored skill fol
 | [tasks-axi](https://github.com/kunchenguid/tasks-axi) | `9401ff899c0d1d8ae6b4fd8727b9025abda2032c` | Tasks skill and npm tool |
 | [davidondrej/skills](https://github.com/davidondrej/skills) | `8605863f211961c96208fe625d4024609cd7dbd5` | distribute-skill-to-all-agents, adr-verbatim, anti-sleep, better-prompt, read-all-adrs, remind, stop-overthinking, teach, global-agent-guardrails, and shared command hooks |
 | [shadcn](https://github.com/shadcn-ui/ui/tree/main/skills/shadcn) | `e8c3143b1cd191280befcd6c9538284bb43399a8` | Chat rules refreshed; local invocation and styling adaptations retained |
-| [backnotprop/pstack](https://github.com/backnotprop/pstack) | `25abb38559ddbabec563646224d09eff9a250eca` | 53 adapted guides in one Pstack experiment; authored supporting resources and MIT license |
+| [backnotprop/pstack](https://github.com/backnotprop/pstack) | `25abb38559ddbabec563646224d09eff9a250eca` | 50 flat namespaced skills; adapted Poteto mode, engineering guidance, supporting resources, and MIT licenses |
 | [cursor/plugins](https://github.com/cursor/plugins/tree/main/pstack) | `1ba91fc25c0977741dd0e267849e6234b037ed0a` | Inspected Pstack mirror; primary source comes from backnotprop/pstack |
 
 ## Released tool pins
@@ -73,10 +73,22 @@ manifest is `home/npm-globals.txt`; Pi extensions are in `home/.pi/agent/setting
   Anti-sleep makes its launcher executable and names its unused retry counter `_attempt`.
 - Shadcn's chat rules match the reviewed source. Keep the local skill metadata
   and existing `cn` import convention.
-- Pstack is a separate experiment with progressively loaded references and a
-  persistent disable switch. Model-specific routing, a second orchestrator,
-  setup hooks, and five runtime-oriented families are excluded. See its
-  [source record](../skills/pstack/SOURCE.md) for exact exclusions and adaptations.
+- Pstack exposes 50 individually discoverable, namespaced `SKILL.md` folders.
+  The same pinned primary source supplies all content and supporting resources.
+  Each folder retains Lauren Tan's 2026 MIT license. Automatic Poteto guidance
+  follows FirstMate and the configured model and effort. No runtime, model panel,
+  questionnaire, extra hooks, or second orchestrator is installed.
+  Excluded families: `swarm`, `setup-pstack`, `poteto-help`, `make-bot-ui`,
+  `sharpen`, `ketchup`, `ketchup-video`, and `statechart`.
+  Sibling links target local skills. Visual artifacts use Lavish through the
+  personal helper. Scoped transcript reads remain read-only; reflection proposes
+  changes without rewriting memory or applying Backpass.
+  Direct occasional operations stay simple. Independent work stays parallel,
+  and delivery follows repository policy. TypeScript examples retain corrections
+  about negative numbers, runtime property access, and `satisfies` inference.
+  `scripts/pstack-experiment on|off|status` changes only managed family discovery
+  links. Its persistent disabled marker survives later setup and profile syncs.
+  Skill content, unrelated work, credentials, and transcripts stay preserved.
 - Shared hooks track the reviewed David Ondrej source with the local policy
   retained: targeted `rm` and `sudo rm` stay allowed; malformed input and
   missing patterns fail closed. The suite covers all three upstream payload
