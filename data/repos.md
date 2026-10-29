@@ -1,20 +1,20 @@
 # Public setup sources
 
-The setup uses released tools where available and snapshots only each repository's authored skill folder. Some skills are adapted for this setup. These commits record public source inspections through October 24, 2026; they do not select unreleased tool builds. FirstMate records the inspected upstream source; fresh bootstrap tracks its public default branch.
+The setup uses released tools and snapshots each repository's authored skill folder. Some skills are adapted for this setup. The commits below record imported skills and inspected source references. Released tool pins were checked on October 28, 2026. FirstMate records the inspected upstream source; fresh bootstrap tracks its public default branch.
 
 | Repository | Commit | Use |
 | --- | --- | --- |
 | [kun](https://github.com/kunchenguid/kun) | `c7dec1cdfe575953a095bc4785db21d3735ecd73` | Kun skill unchanged |
-| [firstmate](https://github.com/kunchenguid/firstmate) | `20dcbf91520b1816663b81873ad67d0b93b3e4d6` | Current inspected source; public stow skill unchanged |
+| [firstmate](https://github.com/kunchenguid/firstmate) | `990546248e40ad0c6323908346904ed70515e3b1` | Current inspected source; public stow skill unchanged |
 | [no-mistakes](https://github.com/kunchenguid/no-mistakes) | `4822244e763fd4c3d7f48be6433f92df10bb5b33` | Skill from published v1.84.0, matching the installed binary |
-| [lavish-axi](https://github.com/kunchenguid/lavish-axi) | `42c5691bd6807e0eced7316c85b155dccfeb0c50` | Lavish 0.1.87; skill matches the released package |
-| [backpass](https://github.com/kunchenguid/backpass) | `0268201c3896f45d3002de0d439b6cefccb39063` | Memory maintenance tool |
+| [lavish-axi](https://github.com/kunchenguid/lavish-axi) | `3c9e0ec25d3fc1fe842dcb7da923f32e28e9009d` | Lavish 0.1.89; skill matches the released package |
+| [backpass](https://github.com/kunchenguid/backpass) | `e6a030a550be438e5b81a1ba91e01abc90faad07` | Released 0.1.34 memory maintenance tool |
 | [dotfiles](https://github.com/kunchenguid/dotfiles) | `9a4a6387d0dd6f4bf9b8a5a732b406916bbbf95d` | Upstream configuration reference |
-| [quota-axi](https://github.com/kunchenguid/quota-axi) | `5cb1c94c6c26166a35f4628eb59858b5e080729a` | Quota 0.1.61; skill matches the released package |
+| [quota-axi](https://github.com/kunchenguid/quota-axi) | `d618e97defa5e1bb10f447ae3a9352f8436d1a55` | Quota 0.1.63; skill matches the released package |
 | [compact-adviser](https://github.com/kunchenguid/compact-adviser) | `7dc0693ea7f209067453f2874d02afc2fe83b128` | Compaction advice tool |
-| [treehouse](https://github.com/kunchenguid/treehouse) | `a5ab29f88f9dc57c06b5ffb43b9f25c79a7acf33` | Nix package v3.1.2 |
-| [chrome-devtools-axi](https://github.com/kunchenguid/chrome-devtools-axi) | `759c319b8b4bb38c419d5215a79b0cc81c061d9d` | Released 0.1.40; skill unchanged |
-| [gh-axi](https://github.com/kunchenguid/gh-axi) | `0aa4b25f26ee39489a1b20f855f479886223ddf4` | GitHub 0.1.38; released skill includes discussions |
+| [treehouse](https://github.com/kunchenguid/treehouse) | `acf59c8e7c2dcb1ab560d0eef70b371ba626f0e5` | Nix package v3.1.4 |
+| [chrome-devtools-axi](https://github.com/kunchenguid/chrome-devtools-axi) | `b27878f07290a0d70bb5e8fdf5b9fe8f819de78a` | Released 0.1.42; skill unchanged |
+| [gh-axi](https://github.com/kunchenguid/gh-axi) | `33c092dc8d4f79d685f8b892adf364051a98d923` | GitHub 0.1.41; skill matches the released package |
 | [vision](https://github.com/kunchenguid/vision) | `7a20c38181151ec67efdf8fa2cb03a60123a7b83` | Visual review skill |
 | [tasks-axi](https://github.com/kunchenguid/tasks-axi) | `9401ff899c0d1d8ae6b4fd8727b9025abda2032c` | Tasks skill and npm tool |
 | [davidondrej/skills](https://github.com/davidondrej/skills) | `8605863f211961c96208fe625d4024609cd7dbd5` | distribute-skill-to-all-agents, 4x4, adr-verbatim, anti-sleep, better-prompt, read-all-adrs, remind, stop-overthinking, teach, global-agent-guardrails, and shared command hooks |
@@ -22,37 +22,41 @@ The setup uses released tools where available and snapshots only each repository
 
 ## Released tool pins
 
-These exact pins match the manifests reviewed on October 12, 2026. The global
+These exact pins match the manifests reviewed on October 28, 2026. The global
 manifest is `home/npm-globals.txt`; Pi extensions are in `home/.pi/agent/settings.json`.
 
 | Tool | Pinned release |
 | --- | --- |
-| acpx | 0.19.4 |
-| backpass | 0.1.32 |
-| chrome-devtools-axi | 0.1.40 |
-| chrome-devtools-mcp | 1.10.1 |
-| gh-axi | 0.1.38 |
-| lavish-axi | 0.1.87 |
-| quota-axi | 0.1.61 |
+| npm | 12.2.1 |
+| acpx | 0.19.5 |
+| backpass | 0.1.34 |
+| chrome-devtools-axi | 0.1.42 |
+| chrome-devtools-mcp | 1.11.0 |
+| gh-axi | 0.1.41 |
+| lavish-axi | 0.1.89 |
+| quota-axi | 0.1.63 |
 | tasks-axi | 0.2.6 |
-| @earendil-works/pi-coding-agent | 1.1.0 |
-| pi-web-access | 0.39.0 |
-| @ryan_nookpi/pi-extension-codex-fast-mode | 0.2.8 |
+| @earendil-works/pi-coding-agent | 1.4.0 |
+| pi-web-access | 0.45.0 |
+| @ryan_nookpi/pi-extension-codex-fast-mode | 0.2.9 |
 | compact-adviser | 0.1.13 |
 
 ## Compatibility choices
 
-- Treehouse v3.1.2 changes its Go module path to `/v3`. Its lock entry was
+- Treehouse v3.1.4 uses the Go module path `/v3`. Its lock entry was
   regenerated with `nix flake update treehouse`; all other Nix inputs and the
   Neovim lockfile are preserved.
-- Chrome DevTools AXI 0.1.40 uses the explicit MCP path in `home.nix`.
-- Quota AXI 0.1.61's packaged skill matches the tracked skill, including
+- Chrome DevTools AXI 0.1.42 uses the explicit MCP path in `home.nix`.
+- Quota AXI 0.1.63's packaged skill matches the tracked skill, including
   Higgsfield support.
-- Pi 1.1.0 requires Node 22.19.0 or newer. Native maintenance commands and the
+- Pi 1.4.0 requires Node 22.19.0 or newer. Native maintenance commands and the
   scoped Pi wrapper are checked against this release.
   Upstream removed `npm-shrinkwrap.json` in
   1.0.1, so the exact npm pin freezes Pi's version but not every transitive dependency.
-- Codex fast mode 0.2.8 adds GPT-6 and GPT-6.1 Sol support and drops fast mode for
+- The installer repairs Pi's pinned undici 8.10.2 to 8.12.3 with native npm
+  commands and preserves the vendor manifest. Pi extension roots use the same
+  npm override. npm 12.2.1 avoids an installation failure in npm 10.
+- Codex fast mode 0.2.9 includes GPT-6 and GPT-6.1 Sol support and drops fast mode for
   GPT-5.4. This only changes the extension's model list; normal Pi model access stays
   with the selected provider.
 - FirstMate bootstrap still clones its public default branch only when the target

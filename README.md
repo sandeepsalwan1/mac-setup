@@ -149,7 +149,10 @@ to explicitly named SSH hosts.
 The reviewed public source registry is in `data/repos.md`.
 The reusable review prompts are in `prompts/`. `ten-gate-review.md` is the compact Ten Gate review,
 `ten-gate-review-portable.md` is the full version, and `ten-gate-review-runtime.md` takes explicit tool
-and evidence inputs. `slim-builder.md` and `slim-reviewer.md` define the single writer and parallel
+and evidence inputs. `ten-gate-review-runtime-latest.md` also preserves the deployment rehearsal and
+copied-pattern provenance gates. Set `TEN_GATE_CONTRACT` to its installed absolute path when using
+the Slim prompts. Its past deployment cases come from `HISTORICAL_MISTAKES`.
+`slim-builder.md` and `slim-reviewer.md` define the single writer and parallel
 reviewer roles. Each one takes runtime review and project inputs and contains no
 workplace-specific links.
 `prompts/clean-code-review-checklist.md` and `prompts/review-report-template.md` are short, original public companions. Keep the full private codebook and project-specific review reports outside this repository. Pass approved local copies as inputs when a review needs them.

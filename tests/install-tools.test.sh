@@ -51,10 +51,20 @@ chmod +x "$TEST_BIN/chrome-devtools-mcp"
 cat >"$TEST_BIN/npm" <<'SH'
 #!/usr/bin/env bash
 set -euo pipefail
+if [ "${1:-}" = pkg ]; then
+	jq '.overrides.undici = "8.12.3"' "$4/package.json" >"$4/package.json.tmp"
+	mv "$4/package.json.tmp" "$4/package.json"
+	exit 0
+fi
 spec="${*: -1}"
 package_name="${spec%@*}"
 version="${spec##*@}"
 printf '%s\n' "$spec" >>"$INSTALL_LOG"
+if [ "$package_name" = undici ]; then
+	mkdir -p "$3/node_modules/undici"
+	printf '{"version":"%s"}\n' "$version" >"$3/node_modules/undici/package.json"
+	exit 0
+fi
 if [ "$package_name" = '@earendil-works/pi-coding-agent' ]; then
 	case " $* " in
 	*" --ignore-scripts "*) ;;
@@ -291,6 +301,23 @@ run_installer >/dev/null
 [ "$(sha256_file "$old_pi")" = "$old_pi_hash" ] &&
 	[ "$("$old_pi" --version)" = 0.87.1 ] ||
 	fail 'Pi upgrade changed files used by the previous runtime'
+
+pi_package="$TEST_HOME/.local/share/pi/versions/1.2.0/lib/node_modules/@earendil-works/pi-coding-agent"
+pi_manifest_hash="$(sha256_file "$pi_package/package.json")"
+mkdir -p "$pi_package/node_modules/undici"
+printf '{"version":"8.10.2"}\n' >"$pi_package/node_modules/undici/package.json"
+run_installer >/dev/null
+[ "$(jq -r '.version' "$pi_package/node_modules/undici/package.json")" = 8.12.3 ] &&
+	[ "$(sha256_file "$pi_package/package.json")" = "$pi_manifest_hash" ] ||
+	fail 'Pi dependency repair changed its vendor manifest or left vulnerable undici'
+for agent_root in "$TEST_HOME/.pi/agent" "$TEST_HOME/.local/state/pi-firstmate/agent"; do
+	[ "$(jq -r '.overrides.undici' "$agent_root/npm/package.json")" = 8.12.3 ] ||
+		fail 'Pi extension root did not retain its supported npm override'
+done
+install_count="$(wc -l <"$INSTALL_LOG" | tr -d ' ')"
+run_installer >/dev/null
+[ "$(wc -l <"$INSTALL_LOG" | tr -d ' ')" = "$install_count" ] ||
+	fail 'patched Pi HTTP dependency was reinstalled'
 
 mkdir -p "$TEST_HOME/.local/state/agent-skills"
 printf '%s\n' external >"$TEST_HOME/.local/state/agent-skills/profile-owner"

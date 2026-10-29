@@ -9,6 +9,13 @@
 (^|[;&|()`[:space:]])(sudo[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*)?rm[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*(--[[:space:]]+)?["']?(/root|/Users(/[^/[:space:]"']+)?|/(local/)?home(/[^/[:space:]"']+)?)/\*
 (^|[;&|()`[:space:]])(sudo[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*)?rm[[:space:]][^;&|]*--no-preserve-root([=[:space:]]|$)
 
+# Agent history is permanent. Keep deletion outside these trees.
+(^|[;&|()`[:space:]])(rm|unlink|rmdir)[[:space:]]+([^;&|]*[/[:space:]"'])?(\.kiro|\.claude|\.codex)(/|[[:space:]"'*?;]|$)
+(^|[;&|()`[:space:]])(rm|unlink|rmdir)[[:space:]][^;&|]*\$(CODEX_HOME|\{CODEX_HOME\}|CLAUDE_CONFIG_DIR|\{CLAUDE_CONFIG_DIR\})(/|[[:space:]"']|$)
+(^|[;&|()`[:space:]])(cd|pushd)[[:space:]]+([^;&|]*[/[:space:]"'])?(\.kiro|\.claude|\.codex)(/[^;&|]*)?["']?[[:space:]]*[;&|].*(^|[;&|()`[:space:]])(rm|unlink|rmdir)[[:space:]]
+(^|[;&|()`[:space:]])find[[:space:]]+([^;&|]*[/[:space:]"'])?(\.kiro|\.claude|\.codex)(/|[[:space:]"'*?;]|$)[^;&|]*(-delete|-exec[[:space:]]+(rm|unlink|rmdir))([[:space:]]|$)
+(^|[;&|()`[:space:]])((codex|cx|co|pcc|pcx)[[:space:]]+(-[^;&|[:space:]"']+([[:space:]]+("[^"]*"|'[^']*'|[^;&|[:space:]"']+))?[[:space:]]+)*delete|(claude|cc)[[:space:]]+(-[^;&|[:space:]"']+([[:space:]]+("[^"]*"|'[^']*'|[^;&|[:space:]"']+))?[[:space:]]+)*(purge|rm))([[:space:]]|$)
+
 # Raw disks and filesystems.
 (^|[;&|()`[:space:]])dd[[:space:]][^;&|]*of=["']?/dev/
 >[[:space:]]*/dev/(r?disk|sd[a-z]|nvme)
