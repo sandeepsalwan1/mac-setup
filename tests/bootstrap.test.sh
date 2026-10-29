@@ -30,6 +30,8 @@ cp -R "$ROOT/home/firstmate/." "$TEST_REPO/home/firstmate/"
 cp "$ROOT/home/.claude/settings.json" "$TEST_REPO/home/.claude/settings.json"
 git -C "$TEST_REPO" rm -qr -- skills
 cp -R "$ROOT/skills" "$TEST_REPO/skills"
+mkdir -p "$TEST_REPO/skill-bundles"
+cp -R "$ROOT/skill-bundles/." "$TEST_REPO/skill-bundles/"
 
 cat >"$TEST_BIN/uname" <<'SH'
 #!/usr/bin/env bash
