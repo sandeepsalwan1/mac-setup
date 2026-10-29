@@ -1,6 +1,6 @@
 # Personal pstack bundle
 
-42 skills adapted for Sandeep. The files in `skills/` are the editable source. The mac-setup `skills/<name>` entries and agent discovery folders point here with symlinks. Edits take effect for every linked local agent on its next skill read. Start a fresh session to refresh a cached skill list.
+Portable skills adapted for Sandeep. The files in `skills/` are the editable source. The mac-setup `skills/<name>` entries and agent discovery folders point here with symlinks. Edits take effect for every linked local agent on its next skill read. Start a fresh session to refresh a cached skill list.
 
 Technical tasks automatically load `poteto-mode` through mac-setup's shared `home/AGENTS.md`. It chooses only relevant skills. You can also say `use potato mode`, `/skill:poteto-mode` in Pi, `/poteto-mode` in Claude, or `$poteto-mode` in Codex.
 
@@ -15,7 +15,7 @@ Technical tasks automatically load `poteto-mode` through mac-setup's shared `hom
 
 ## Source and updates
 
-Adapted from [backnotprop/pstack](https://github.com/backnotprop/pstack) at `25abb38559ddbabec563646224d09eff9a250eca`, the portable mirror of [Cursor's pstack](https://github.com/cursor/plugins/tree/main/pstack/skills). MIT attribution is preserved in `LICENSE`. `manifest.json` records the exact selection.
+Adapted from [backnotprop/pstack](https://github.com/backnotprop/pstack), the portable mirror of [Cursor's pstack](https://github.com/cursor/plugins/tree/main/pstack/skills). [manifest.json](manifest.json) pins the source revision. MIT attribution is preserved in `LICENSE`.
 
 This is a local customization, with no automatic upstream updates. Compare a new upstream revision against the recorded revision, review the diff, then port useful changes. Do not overwrite this folder with an upstream install. Never restore orchestration or model defaults during an update.
 
@@ -37,70 +37,10 @@ scripts/link-portable-skills
 
 To restore the original upstream contents instead, disable this customization and install the selected original skills separately. Review their model and orchestration behavior before enabling them.
 
-## Included skills
+## Skill selection
 
-- `architect`
-- `automate-me`
-- `benchmark-checklist`
-- `blast-radius`
-- `correct`
-- `create-verification-skill`
-- `how`
-- `maintain-verification-skill`
-- `poteto-help`
-- `poteto-mode`
-- `principle-attack-the-premise`
-- `principle-boundary-discipline`
-- `principle-build-the-lever`
-- `principle-encode-lessons-in-structure`
-- `principle-exhaust-the-design-space`
-- `principle-experience-first`
-- `principle-explain-the-number`
-- `principle-fix-root-causes`
-- `principle-foundational-thinking`
-- `principle-guard-the-context-window`
-- `principle-laziness-protocol`
-- `principle-make-operations-idempotent`
-- `principle-migrate-callers-then-delete-legacy-apis`
-- `principle-minimize-reader-load`
-- `principle-model-the-domain`
-- `principle-never-block-on-the-human`
-- `principle-outcome-oriented-execution`
-- `principle-prove-it-works`
-- `principle-redesign-from-first-principles`
-- `principle-separate-before-serializing-shared-state`
-- `principle-sequence-verifiable-units`
-- `principle-subtract-before-you-add`
-- `principle-test-behavior-not-implementation`
-- `principle-type-system-discipline`
-- `recall`
-- `reflect`
-- `sharpen`
-- `show-me-your-work`
-- `tdd`
-- `typescript-best-practices`
-- `unslop`
-- `why`
-
-## Excluded skills
-
-- `arena`
-- `bro`
-- `create-formal-verification-skill`
-- `figure-it-out`
-- `in-your-own-words`
-- `interrogate`
-- `ketchup`
-- `ketchup-video`
-- `maintain-formal-verification-skill`
-- `make-bot-ui`
-- `no-comments`
-- `setup-pstack`
-- `statechart`
-- `swarm`
-- `teach`
-- `technical-writing`
+[manifest.json](manifest.json) owns the included and excluded skill lists.
 
 `teach` and `technical-writing` were excluded because existing versions already serve those roles. The other exclusions remove orchestration, interview or presentation workflows, bot UI, aggressive comment cleanup, and specialized formal-verification tooling not needed for this setup.
 
-The distribution covers local Pi, Claude Code, Codex, Kiro, Hermes, and Cursor discovery folders. It does not install anything on a separately hosted Hermes server.
+See [Agent setup](../../README.md#agent-setup) for discovery folders and the external profile ownership rule. That rule also applies when enabling this bundle again.
