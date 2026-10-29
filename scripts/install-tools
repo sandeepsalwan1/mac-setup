@@ -32,7 +32,7 @@ installed_npm_version() {
 }
 
 install_npm_tools() {
-	local npm_bin spec package_name wanted_version installed_version package_prefix npm_args pointer backup
+	local npm_bin spec package_name wanted_version installed_version package_prefix npm_args pointer backup undici_json agent_root
 
 	if [ "${MAC_SETUP_SKIP_NPM:-0}" = "1" ]; then
 		note 'npm tool installation skipped by environment'
@@ -70,7 +70,16 @@ install_npm_tools() {
 			fi
 			NPM_CONFIG_PREFIX="$package_prefix" "$npm_bin" "${npm_args[@]}" "$spec" || return "$?"
 		fi
+		if [ "$package_name" = npm ] && [ -x "$NPM_PREFIX/bin/npm" ]; then
+			npm_bin="$NPM_PREFIX/bin/npm"
+		fi
 		if [ "$package_name" = '@earendil-works/pi-coding-agent' ]; then
+			undici_json="$package_prefix/lib/node_modules/$package_name/node_modules/undici/package.json"
+			if [ -f "$undici_json" ] && [ "$(jq -r '.version' "$undici_json")" = 8.10.2 ]; then
+				note 'updating Pi HTTP dependency to patched undici 8.12.3'
+				"$npm_bin" install --prefix "$package_prefix/lib/node_modules/$package_name" \
+					--ignore-scripts --no-save --package-lock=false undici@8.12.3 || return "$?"
+			fi
 			[ -x "$package_prefix/bin/pi" ] || die 'installed Pi executable is missing'
 			pointer="$HOME/.local/bin/pi.real"
 			if [ -L "$pointer" ] && [ "$(readlink "$pointer")" = "$package_prefix/bin/pi" ]; then
@@ -87,6 +96,19 @@ install_npm_tools() {
 			mv -f "$pointer.tmp.$$" "$pointer"
 		fi
 	done <"$NPM_GLOBALS_FILE"
+
+	for agent_root in "$HOME/.pi/agent" "$HOME/.local/state/pi-firstmate/agent"; do
+		mkdir -p "$agent_root/npm"
+		if [ ! -e "$agent_root/npm/package.json" ]; then
+			printf '{"name":"pi-extensions","private":true}\n' >"$agent_root/npm/package.json"
+		fi
+		if [ "$(jq -r '.overrides.undici // empty' "$agent_root/npm/package.json")" != 8.12.3 ]; then
+			"$npm_bin" pkg set --prefix "$agent_root/npm" overrides.undici=8.12.3 || return "$?"
+			if jq -e '.dependencies | length > 0' "$agent_root/npm/package.json" >/dev/null; then
+				"$npm_bin" install --prefix "$agent_root/npm" --ignore-scripts || return "$?"
+			fi
+		fi
+	done
 }
 
 repair_legacy_npm_links() {
@@ -195,6 +217,7 @@ install_command_guard() {
 			if $settings == $claude_settings then
 				$defaults[0] * .
 				| .permissions.defaultMode = "bypassPermissions"
+				| .env.CLAUDE_CODE_DISABLE_INLINE_SHELL_RM_PROMPT = "1"
 			else . end
 			| if $settings == $claude_settings
 			   and (.permissions? | type) == "object"
