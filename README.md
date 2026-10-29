@@ -219,9 +219,10 @@ IDE and CLI settings. They select Autopilot, user-wide trust, and automatic tool
 approval. Custom permission policies and other settings remain. Replaced files are backed up beside the
 originals as `.pre-mac-setup`, with mode `0600`.
 
-Bootstrap automatically links the bundled skills, including Kun.
+Bootstrap automatically links all 30 bundled skills, including Kun.
 The repository keeps reviewed snapshots of:
 
+- 4x4: clarify a request in four rounds of four questions
 - adr-verbatim: record decisions in the user's words
 - anti-sleep: keep a Mac awake for a duration or while a process runs
 - autoreview: structured code reviews
@@ -240,7 +241,6 @@ The repository keeps reviewed snapshots of:
 - lavish: create HTML artifacts for visual review
 - lavish-helper-for-personal: open local or server artifacts in Mac Chrome
 - no-mistakes: validate changes before publication
-- pstack: portable engineering principles and TypeScript guides, in one removable experiment
 - quota-axi: report agent usage and remaining quota
 - read-all-adrs: read project decisions before continuing
 - remind: recap the task and recent progress
@@ -266,14 +266,6 @@ Bootstrap also installs the no-mistakes CLI on a fresh Mac.
 Some skills need an account, app, or local resource when invoked.
 `computer-use-cli` needs the official Codex runtime. Bundled snapshots follow
 this repository and `rebuild.sh`.
-
-Pstack adds one discoverable skill with 53 guides loaded only when needed.
-FirstMate keeps orchestration, and the current harness keeps its configured model.
-The experiment adds no hooks, plugins, swarm, or model-routing rules.
-Run `~/mac-setup/scripts/pstack-experiment off` to disable it across local skill
-roots, `on` to restore it, or `status` to inspect it. Later setup and shared-profile
-syncs respect the disabled marker. The switch preserves its source, other skills,
-and transcripts. See [source and adaptations](skills/pstack/SOURCE.md).
 
 Pi keeps declarative settings in this repository but runs from writable settings
 materialized by `scripts/setup-pi-runtime`, so version bookkeeping cannot modify

@@ -6,7 +6,6 @@ SKILLS_DIR="$ROOT/skills"
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/mac-setup"
 BACKUP_DIR="$STATE_DIR/skill-backups/$(date +%Y%m%d-%H%M%S)"
 PROFILE_OWNER="${XDG_STATE_HOME:-$HOME/.local/state}/agent-skills/profile-owner"
-PSTACK_DISABLED="${XDG_STATE_HOME:-$HOME/.local/state}/agent-skills/pstack.disabled"
 
 ROOTS=(
 	"$HOME/.skills"
@@ -57,7 +56,7 @@ skipped=0
 for source in "$SKILLS_DIR"/*; do
 	[ -d "$source" ] || continue
 	name="$(basename "$source")"
-	[ "$name" != pstack ] || [ ! -e "$PSTACK_DISABLED" ] || continue
+	source="$(cd "$source" && pwd -P)"
 
 	for root in "${ROOTS[@]}"; do
 		mkdir -p "$root"

@@ -36,6 +36,7 @@ grep -qx preserve "${retired_backup[0]}"
 for skill_source in "$ROOT"/skills/*; do
 	[ -d "$skill_source" ] || continue
 	skill_name="$(basename "$skill_source")"
+	skill_source="$(cd "$skill_source" && pwd -P)"
 	for skill_root in .skills .agents/skills .claude/skills .codex/skills .kiro/skills .pi/agent/skills .cursor/skills .hermes/skills; do
 		[ "$(cd "$portable_test_home/$skill_root/$skill_name" && pwd -P)" = "$skill_source" ]
 	done
