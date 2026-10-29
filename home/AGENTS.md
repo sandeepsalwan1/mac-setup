@@ -1,6 +1,7 @@
 # global agent instructions
 
 - Load `~/AGENTS.local.md` when it exists. Its private machine rules override this public baseline.
+- For technical work, load `~/.skills/poteto-mode/SKILL.md` when present; it selects relevant skills automatically. FirstMate owns agent orchestration. Do not start agents or choose models from the pstack bundle.
 - Never use em dash "—".
 - Never manually modify CHANGELOG.md files or any files that are marked as auto-generated
 - When making technical decisions, do not give much weight to development cost.

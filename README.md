@@ -219,10 +219,11 @@ IDE and CLI settings. They select Autopilot, user-wide trust, and automatic tool
 approval. Custom permission policies and other settings remain. Replaced files are backed up beside the
 originals as `.pre-mac-setup`, with mode `0600`.
 
-Bootstrap automatically links all 30 bundled skills, including Kun.
-The repository keeps reviewed snapshots of:
+Bootstrap links the skills registered in `skills/`, including Kun and the
+[personal pstack bundle](skill-bundles/pstack/README.md). The bundle guide covers
+automatic skill selection, customization, and removal.
+The repository also keeps reviewed snapshots of:
 
-- 4x4: clarify a request in four rounds of four questions
 - adr-verbatim: record decisions in the user's words
 - anti-sleep: keep a Mac awake for a duration or while a process runs
 - autoreview: structured code reviews

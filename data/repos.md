@@ -17,8 +17,11 @@ The setup uses released tools and snapshots each repository's authored skill fol
 | [gh-axi](https://github.com/kunchenguid/gh-axi) | `33c092dc8d4f79d685f8b892adf364051a98d923` | GitHub 0.1.41; skill matches the released package |
 | [vision](https://github.com/kunchenguid/vision) | `7a20c38181151ec67efdf8fa2cb03a60123a7b83` | Visual review skill |
 | [tasks-axi](https://github.com/kunchenguid/tasks-axi) | `9401ff899c0d1d8ae6b4fd8727b9025abda2032c` | Tasks skill and npm tool |
-| [davidondrej/skills](https://github.com/davidondrej/skills) | `8605863f211961c96208fe625d4024609cd7dbd5` | distribute-skill-to-all-agents, 4x4, adr-verbatim, anti-sleep, better-prompt, read-all-adrs, remind, stop-overthinking, teach, global-agent-guardrails, and shared command hooks |
+| [davidondrej/skills](https://github.com/davidondrej/skills) | `8605863f211961c96208fe625d4024609cd7dbd5` | distribute-skill-to-all-agents, adr-verbatim, anti-sleep, better-prompt, read-all-adrs, remind, stop-overthinking, teach, global-agent-guardrails, and shared command hooks |
 | [shadcn](https://github.com/shadcn-ui/ui/tree/main/skills/shadcn) | `e8c3143b1cd191280befcd6c9538284bb43399a8` | Chat rules refreshed; local invocation and styling adaptations retained |
+
+The personal pstack bundle records its source revision and skill selection in
+[its manifest](../skill-bundles/pstack/manifest.json).
 
 ## Released tool pins
 
@@ -61,9 +64,9 @@ manifest is `home/npm-globals.txt`; Pi extensions are in `home/.pi/agent/setting
   with the selected provider.
 - FirstMate bootstrap still clones its public default branch only when the target
   path is free. Repeated bootstrap runs preserve an existing checkout.
-- David Ondrej's ten skills use the pinned source with local integration notes.
-  Local copies normalize punctuation, omit the generic `triggers` field, enforce
-  manual invocation for 4x4, and avoid replaying private context in Remind.
+- David Ondrej's retained skills use the pinned source with local integration notes.
+  Local copies normalize punctuation, omit the generic `triggers` field, and
+  avoid replaying private context in Remind.
   The distribution skill documents the managed Mac linker. Guardrails retains
   this setup's existing policy and paths in `MAC-SETUP.md`. Each folder
   includes the upstream MIT license. The [Teach format files](https://github.com/davidondrej/skills/tree/8605863f211961c96208fe625d4024609cd7dbd5/skills/thinking-and-docs/teach)

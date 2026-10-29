@@ -36,7 +36,7 @@ fi
 
 for root in "${ROOTS[@]}"; do
 	for name in \
-		defuddle find-skills chrome-devtools-helper-for-personal cross-host-workflow \
+		4x4 defuddle find-skills chrome-devtools-helper-for-personal cross-host-workflow \
 		safe-shell-deletion obsidian-bases obsidian-cli obsidian-markdown \
 		json-canvas personal-context; do
 		target="$root/$name"
@@ -56,6 +56,7 @@ skipped=0
 for source in "$SKILLS_DIR"/*; do
 	[ -d "$source" ] || continue
 	name="$(basename "$source")"
+	source="$(cd "$source" && pwd -P)"
 
 	for root in "${ROOTS[@]}"; do
 		mkdir -p "$root"
