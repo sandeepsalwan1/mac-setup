@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/agent-skills"
+DISABLED="$STATE_DIR/pstack.disabled"
+PROFILE_OWNER="$STATE_DIR/profile-owner"
+PUBLIC_SOURCE="$ROOT/skills/pstack"
+PRIVATE_SOURCE="$HOME/.local/share/agent-skills/pstack"
+ROOTS=(
+	"$HOME/.skills"
+	"$HOME/.agents/skills"
+	"$HOME/.claude/skills"
+	"$HOME/.kiro/skills"
+	"$HOME/.pi/agent/skills"
+	"$HOME/.cursor/skills"
+	"$HOME/.hermes/skills"
+	"${CODEX_HOME:-$HOME/.codex}/skills"
+	"${XDG_STATE_HOME:-$HOME/.local/state}/pi-firstmate/agent/skills"
+)
+
+die() {
+	printf 'pstack: %s\n' "$1" >&2
+	exit 1
+}
+
+managed_target() {
+	local target="$1" resolved candidate
+	[ -L "$target" ] || return 1
+	resolved="$(cd "$target" 2>/dev/null && pwd -P)" || return 1
+	for candidate in "$PUBLIC_SOURCE" "$PRIVATE_SOURCE"; do
+		[ "$(cd "$candidate" 2>/dev/null && pwd -P)" = "$resolved" ] && return 0
+	done
+	return 1
+}
+
+case "${1:-status}" in
+on | off | status) action="${1:-status}" ;;
+*) die "usage: scripts/pstack-experiment on|off|status" ;;
+esac
+[ "$#" -le 1 ] || die "usage: scripts/pstack-experiment on|off|status"
+if [ -L "$DISABLED" ] || { [ -e "$DISABLED" ] && [ ! -f "$DISABLED" ]; }; then
+	die "preserving an unowned marker: $DISABLED"
+fi
+
+managed=0
+for skill_root in "${ROOTS[@]}"; do
+	target="$skill_root/pstack"
+	if managed_target "$target"; then
+		managed=$((managed + 1))
+	elif [ -e "$target" ] || [ -L "$target" ]; then
+		die "preserving an unowned path: $target"
+	fi
+done
+
+if [ "$action" = status ]; then
+	if [ -e "$DISABLED" ]; then
+		printf 'pstack: off; %s managed discovery paths\n' "$managed"
+	else
+		printf 'pstack: on; %s managed discovery paths\n' "$managed"
+	fi
+	exit 0
+fi
+
+if [ "$action" = off ]; then
+	mkdir -p "$STATE_DIR"
+	if [ ! -e "$DISABLED" ]; then
+		(
+			set -o noclobber
+			: >"$DISABLED"
+		)
+	fi
+	for skill_root in "${ROOTS[@]}"; do
+		target="$skill_root/pstack"
+		managed_target "$target" && rm -f "$target"
+	done
+	printf 'pstack: off; content and unrelated skills preserved\n'
+	exit 0
+fi
+
+if [ -f "$PRIVATE_SOURCE/SKILL.md" ]; then
+	source_dir="$PRIVATE_SOURCE"
+elif [ -s "$PROFILE_OWNER" ]; then
+	die "shared profile owns skills; its canonical pstack source is missing"
+elif [ -f "$PUBLIC_SOURCE/SKILL.md" ]; then
+	source_dir="$PUBLIC_SOURCE"
+else
+	die "pstack source is missing"
+fi
+
+rm -f "$DISABLED"
+for skill_root in "${ROOTS[@]}"; do
+	mkdir -p "$skill_root"
+	target="$skill_root/pstack"
+	if [ "$(cd "$target" 2>/dev/null && pwd -P)" = "$(cd "$source_dir" && pwd -P)" ]; then
+		continue
+	fi
+	[ ! -L "$target" ] || rm -f "$target"
+	ln -s "$source_dir" "$target"
+done
+printf 'pstack: on; linked only the experiment\n'

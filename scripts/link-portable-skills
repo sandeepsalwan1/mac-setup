@@ -6,6 +6,7 @@ SKILLS_DIR="$ROOT/skills"
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/mac-setup"
 BACKUP_DIR="$STATE_DIR/skill-backups/$(date +%Y%m%d-%H%M%S)"
 PROFILE_OWNER="${XDG_STATE_HOME:-$HOME/.local/state}/agent-skills/profile-owner"
+PSTACK_DISABLED="${XDG_STATE_HOME:-$HOME/.local/state}/agent-skills/pstack.disabled"
 
 ROOTS=(
 	"$HOME/.skills"
@@ -36,7 +37,7 @@ fi
 
 for root in "${ROOTS[@]}"; do
 	for name in \
-		defuddle find-skills chrome-devtools-helper-for-personal cross-host-workflow \
+		4x4 defuddle find-skills chrome-devtools-helper-for-personal cross-host-workflow \
 		safe-shell-deletion obsidian-bases obsidian-cli obsidian-markdown \
 		json-canvas personal-context; do
 		target="$root/$name"
@@ -56,6 +57,7 @@ skipped=0
 for source in "$SKILLS_DIR"/*; do
 	[ -d "$source" ] || continue
 	name="$(basename "$source")"
+	[ "$name" != pstack ] || [ ! -e "$PSTACK_DISABLED" ] || continue
 
 	for root in "${ROOTS[@]}"; do
 		mkdir -p "$root"
