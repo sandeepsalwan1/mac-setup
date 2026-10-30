@@ -37,10 +37,14 @@ with tempfile.TemporaryDirectory(prefix="kiro-preferences-") as directory:
         target.parent.mkdir(parents=True, exist_ok=True)
         original = {"theme": "keep", "custom": {"nested": True}}
         original.update({key: not value if isinstance(value, bool) else "old" for key, value in desired.items()})
+        if name == "ide":
+            original["kiroAgent.configureMCP"] = "Enabled"
         target.write_text(json.dumps(original))
         before = target.read_bytes()
         assert activate(target, preferences).returncode == 0
         installed = json.loads(target.read_text())
+        if name == "ide":
+            assert installed["kiroAgent.configureMCP"] == "Disabled"
         assert installed["theme"] == "keep" and installed["custom"] == {"nested": True}
         assert all(installed[key] == value for key, value in desired.items())
         backup = Path(str(target) + ".pre-mac-setup")
