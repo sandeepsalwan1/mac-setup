@@ -22,7 +22,7 @@
 - Global installs: declare portable baseline tools in dotfiles. Keep work-specific packages local and never auto-record them.
 - Personal Chrome debugging: reuse one long-lived bridge. Never start parallel or repeated attachment attempts.
 - Use Lavish for visual plans, reports, comparisons, diagrams, and review artifacts. Use `lavish-helper-for-personal`; the agent opens Mac Chrome and polls on the artifact's owning machine.
-- When `~/.agents/skills/pstack-poteto-mode/SKILL.md` exists and `~/.local/state/agent-skills/pstack.disabled` is absent, read Poteto mode before starting a task. Keep FirstMate in charge.
+- Before planning, writing, debugging, refactoring, or reviewing code, every agent, including FirstMate captains, crews, and secondmates, must read `~/.agents/skills/pstack-poteto-mode/SKILL.md` when it exists and `~/.local/state/agent-skills/pstack.disabled` is absent. Follow FirstMate's current assignment and keep its harness, model, and effort.
 - Keep Codex Computer Use installed and enabled. Use native CLI skills and keep other MCP servers disabled.
 - Never delete or prune session transcripts under `.kiro`, `.claude`, or `.codex`.
 - Backpass is periodic memory maintenance, not a per-task step. Suggest it after recurring cross-session friction or when a project AGENTS.md is stale or overgrown. Run its model-backed analysis only with user approval, and run `backpass apply` only with explicit approval after reviewing the evidence.

@@ -1,17 +1,19 @@
 ---
 name: pstack-poteto-mode
-description: Apply Pstack engineering habits at task start. Use the native harness and FirstMate to reproduce real problems, keep context focused, design clear types, implement the smallest robust change, and verify the actual outcome.
+description: Read automatically before planning, writing, debugging, refactoring, or reviewing code. Apply Pstack engineering habits within FirstMate's existing captain, crew, and secondmate assignments and configured harness.
 ---
 
 # Poteto mode
 
-Read this at task start when the Pstack family is enabled. Follow the user's scope and repository rules. Keep FirstMate in charge and use the configured model and effort. This is engineering guidance, with no separate runtime or orchestrator.
+Read this once before coding work when the Pstack family is enabled. Captains, crews, secondmates, and standalone coding agents follow the same rule. No manual slash command is needed.
+
+Follow the user's scope, repository rules, current task brief, and assigned worktree. Within FirstMate, keep its captain, crew assignments, handoffs, and delivery authority. Use the harness, model, effort, and pipeline phase already assigned to your role. Report through the existing FirstMate handoff.
 
 Start with the real outcome. Read the relevant source and local context before changing it. Reproduce a bug through the user's actual workflow. State what a successful result must do, then verify that behavior on the real artifact.
 
 Use a direct path for occasional operations. Add tools or abstractions only for a concrete blocker or repeated need. Remove obsolete code before adding replacements. Prefer clear domain types, boundary validation, small interfaces, idempotent operations, and short call chains. Preserve unknown work, credentials, and session transcripts.
 
-Run independent work in parallel when the active harness supports it. Use existing FirstMate or harness delegates. Independent review can use the same configured model. Do not require a model panel, a questionnaire, a second orchestrator, or an unavailable service. Continue authorized reversible work. Ask only for missing information or a real authorization boundary.
+Run independent work in parallel when the active harness supports it. Use existing FirstMate or harness delegates. Independent review can use the same configured model. Do not require a model panel, a questionnaire, a second orchestrator, or an unavailable service. Continue authorized reversible work.
 
 Open the native Pstack skill that matches the task:
 
