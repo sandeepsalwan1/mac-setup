@@ -1,4 +1,3 @@
 # Keep managed and existing developer launchers unchanged on this work Mac.
-# These two compatible hardeners are already healthy and safe to reconcile.
-gh
+# GitHub uses the ordinary CLI and its macOS Keychain login.
 sudo

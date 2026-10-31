@@ -27,6 +27,12 @@ jq -e '
 
 pass 'nix-darwin leaves Claude Code and Codex to their dedicated installer'
 
+nix eval --json "$ROOT#darwinConfigurations.mac.config.homebrew.brews" |
+	jq -e 'map(.name) | index("gh") != null and index("automic-vault/isotopes/gh-cli") == null' >/dev/null ||
+	fail 'nix-darwin must install standard GitHub CLI without the Vault isotope'
+
+pass 'GitHub uses the standard Homebrew formula'
+
 rectangle_user="$("$ROOT/scripts/read-flake-user" "$ROOT/flake.nix")"
 nix eval --json \
 	"$ROOT#darwinConfigurations.mac.config.home-manager.users.\"$rectangle_user\".targets.darwin.defaults.\"com.knollsoft.Rectangle\"" |

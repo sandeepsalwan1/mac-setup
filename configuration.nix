@@ -42,7 +42,7 @@
     onActivation.autoUpdate = false;
     taps = [ "automic-vault/isotopes" ];
     brews = [
-      "automic-vault/isotopes/gh-cli"
+      "gh"
       "herdr"
     ];
     casks = [

@@ -82,7 +82,7 @@ Report what works and any remaining blockers.
 
 The Homebrew baseline is deliberately small:
 
-- [Automic Vault](https://www.automicvault.com/) and its hardened GitHub CLI
+- [Automic Vault](https://www.automicvault.com/) and the standard GitHub CLI
 - [Herdr](https://herdr.dev/)
 - Rectangle with your saved window shortcuts
 - WezTerm
@@ -400,6 +400,10 @@ theme schema, not from a private or live theme file.
 The bootstrap installs Automic Vault from its official Homebrew tap. Git stores
 only desired hardeners under `vault/`. Secret Names stay in the ignored private
 manifest at `vault/secret-names.local.txt`.
+
+GitHub uses the standard `gh` formula and its native macOS Keychain login.
+The hardener list excludes `gh`, so setup does not restore Vault prompts for
+agent GitHub commands. Existing Vault credentials remain available for recovery.
 
 Automic Vault 3.16 does not expose a raw export or supported migration flag.
 Secret Values stay out of this repository and must be entered on the new Mac
