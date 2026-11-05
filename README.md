@@ -155,7 +155,11 @@ the Slim prompts. Its past deployment cases come from `HISTORICAL_MISTAKES`.
 `slim-builder.md` and `slim-reviewer.md` define the single writer and parallel
 reviewer roles. Each one takes runtime review and project inputs and contains no
 workplace-specific links.
-`prompts/clean-code-review-checklist.md` and `prompts/review-report-template.md` are short, original public companions. Keep the full private codebook and project-specific review reports outside this repository. Pass approved local copies as inputs when a review needs them.
+`prompts/clean-codebook.md` contains the full distilled Clean Code rulebook,
+preserved as written. Set `CLEAN_CODE` to its absolute path when running a Ten Gate
+review. `prompts/clean-code-review-checklist.md` and
+`prompts/review-report-template.md` are short companions. Keep project-specific
+review reports outside this repository.
 
 Backpass is pinned there and configured by `.backpassrc.json`. It treats
 `AGENTS.md` as this repository's canonical memory file and places accepted skill
