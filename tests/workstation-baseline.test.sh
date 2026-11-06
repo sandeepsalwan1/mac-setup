@@ -46,7 +46,7 @@ jq -e '
 ' "$ROOT/home/.pi/agent/settings.json" >/dev/null
 
 jq -e '
-  .model == "claude-opus-5-5[1m]"
+  .model == "claude-opus-5-5"
   and .fallbackModel == null
   and .modelSettings == null
   and .modelOverrides == null

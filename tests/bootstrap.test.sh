@@ -148,7 +148,7 @@ grep -Fq -- '-p mac-firstmate --version' "$TMP_ROOT/launch.log" ||
 [ "$(cat "$CURL_LOG")" = '-fsSL https://raw.githubusercontent.com/kunchenguid/no-mistakes/main/docs/install.sh' ] ||
 	fail 'bootstrap did not fetch the official no-mistakes installer'
 jq -e '
-	.model == "claude-opus-5-5[1m]"
+	.model == "claude-opus-5-5"
 	and .permissions.defaultMode == "bypassPermissions"
 	and .crossSessionInbound == "accept"
 	and .cleanupPeriodDays == 365000
