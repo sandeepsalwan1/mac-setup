@@ -202,7 +202,7 @@ assert_bridge_preserved
 jq -e '
 	.theme == "dark"
 	and .env.KEEP_ENV == "keep"
-	and .model == "claude-opus-5-5[1m]"
+	and .model == "claude-opus-5-5"
 	and .permissions.defaultMode == "bypassPermissions"
 	and .crossSessionInbound == "accept"
 	and .permissions.deny == ["Read(keep-this-rule)"]
