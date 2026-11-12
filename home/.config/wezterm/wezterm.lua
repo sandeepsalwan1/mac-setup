@@ -14,7 +14,7 @@ config.hide_tab_bar_if_only_one_tab = true
 -- Herdr sends with [ui.toast] delivery = "terminal", which is the one delivery
 -- mode that still reaches this Mac from a `herdr --remote` session.
 config.notification_handling = "AlwaysShow"
-config.window_decorations = "RESIZE"
+config.window_decorations = "TITLE | RESIZE"
 
 -- Dim unfocused windows so the focused one is obvious at a glance.
 local UNFOCUSED_FOREGROUND_TEXT_HSB = { hue = 1.0, saturation = 0.25, brightness = 0.45 }
