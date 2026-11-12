@@ -1,20 +1,20 @@
 # Public setup sources
 
-The setup uses released tools and snapshots each repository's authored skill folder. Some skills are adapted for this setup. The commits below record imported skills and inspected source references. Released tool pins were checked on October 28, 2026. FirstMate records the inspected upstream source; fresh bootstrap tracks its public default branch.
+The setup uses released tools and snapshots each repository's authored skill folder. Some skills are adapted for this setup. The commits below record imported skills and inspected source references. Released tool pins were checked on November 12, 2026. FirstMate records the inspected upstream source; fresh bootstrap tracks its public default branch.
 
 | Repository | Commit | Use |
 | --- | --- | --- |
 | [kun](https://github.com/kunchenguid/kun) | `c7dec1cdfe575953a095bc4785db21d3735ecd73` | Kun skill unchanged |
 | [firstmate](https://github.com/kunchenguid/firstmate) | `990546248e40ad0c6323908346904ed70515e3b1` | Current inspected source; public stow skill unchanged |
 | [no-mistakes](https://github.com/kunchenguid/no-mistakes) | `5732d1ed88a1572fa6115d6ede5d69bfec097946` | Skill from published v1.106.1, matching the installed binary |
-| [lavish-axi](https://github.com/kunchenguid/lavish-axi) | `3c9e0ec25d3fc1fe842dcb7da923f32e28e9009d` | Lavish 0.1.89; skill matches the released package |
-| [backpass](https://github.com/kunchenguid/backpass) | `e6a030a550be438e5b81a1ba91e01abc90faad07` | Released 0.1.34 memory maintenance tool |
+| [lavish-axi](https://github.com/kunchenguid/lavish-axi) | `69bf3090b24a04773ffd05d2e0b23d91ca41923b` | Lavish 0.1.96; skill matches the released package |
+| [backpass](https://github.com/kunchenguid/backpass) | `c8d60c24d4dc7e341d363bd4cddb5c8d6fedbb54` | Released 0.1.44 memory maintenance tool |
 | [dotfiles](https://github.com/kunchenguid/dotfiles) | `9a4a6387d0dd6f4bf9b8a5a732b406916bbbf95d` | Upstream configuration reference |
-| [quota-axi](https://github.com/kunchenguid/quota-axi) | `d618e97defa5e1bb10f447ae3a9352f8436d1a55` | Quota 0.1.63; skill matches the released package |
-| [compact-adviser](https://github.com/kunchenguid/compact-adviser) | `7dc0693ea7f209067453f2874d02afc2fe83b128` | Compaction advice tool |
+| [quota-axi](https://github.com/kunchenguid/quota-axi) | `5734c41eee52eb9a80ba67f47269ebc06c0c41fc` | Quota 0.1.69; skill matches the released package |
+| [compact-adviser](https://github.com/kunchenguid/compact-adviser) | `37fa1a665b8933de68c90014312060e862cf121a` | Compaction advice tool |
 | [treehouse](https://github.com/kunchenguid/treehouse) | `acf59c8e7c2dcb1ab560d0eef70b371ba626f0e5` | Nix package v3.1.4 |
 | [chrome-devtools-axi](https://github.com/kunchenguid/chrome-devtools-axi) | `b27878f07290a0d70bb5e8fdf5b9fe8f819de78a` | Released 0.1.42; skill unchanged |
-| [gh-axi](https://github.com/kunchenguid/gh-axi) | `33c092dc8d4f79d685f8b892adf364051a98d923` | GitHub 0.1.41; skill matches the released package |
+| [gh-axi](https://github.com/kunchenguid/gh-axi) | `911a0868600b125aafe5e7f77197a0eb5a5b493c` | GitHub 0.1.51; skill matches the released package |
 | [vision](https://github.com/kunchenguid/vision) | `7a20c38181151ec67efdf8fa2cb03a60123a7b83` | Visual review skill |
 | [tasks-axi](https://github.com/kunchenguid/tasks-axi) | `9401ff899c0d1d8ae6b4fd8727b9025abda2032c` | Tasks skill and npm tool |
 | [davidondrej/skills](https://github.com/davidondrej/skills) | `8605863f211961c96208fe625d4024609cd7dbd5` | distribute-skill-to-all-agents, adr-verbatim, anti-sleep, better-prompt, read-all-adrs, remind, stop-overthinking, teach, global-agent-guardrails, and shared command hooks |
@@ -24,40 +24,42 @@ The setup uses released tools and snapshots each repository's authored skill fol
 
 ## Released tool pins
 
-These exact pins match the manifests reviewed on October 28, 2026. The global
+These exact pins match the manifests reviewed on November 12, 2026. The global
 manifest is `home/npm-globals.txt`; Pi extensions are in `home/.pi/agent/settings.json`.
 
 | Tool | Pinned release |
 | --- | --- |
-| npm | 12.2.1 |
-| acpx | 0.19.5 |
-| backpass | 0.1.34 |
+| npm | 12.2.2 |
+| acpx | 0.22.0 |
+| backpass | 0.1.44 |
 | chrome-devtools-axi | 0.1.42 |
 | chrome-devtools-mcp | 1.11.0 |
-| gh-axi | 0.1.41 |
-| lavish-axi | 0.1.89 |
-| quota-axi | 0.1.63 |
+| gh-axi | 0.1.51 |
+| lavish-axi | 0.1.96 |
+| quota-axi | 0.1.69 |
 | tasks-axi | 0.2.6 |
-| @earendil-works/pi-coding-agent | 1.5.0 |
-| pi-web-access | 0.45.0 |
+| @earendil-works/pi-coding-agent | 1.5.2 |
+| pi-web-access | 0.47.0 |
 | @ryan_nookpi/pi-extension-codex-fast-mode | 0.2.9 |
-| compact-adviser | 0.1.13 |
+| compact-adviser | 0.1.14 |
 
 ## Compatibility choices
 
 - Treehouse v3.1.4 uses the Go module path `/v3`. Its lock entry was
   regenerated with `nix flake update treehouse`; all other Nix inputs and the
   Neovim lockfile are preserved.
-- Chrome DevTools AXI 0.1.42 uses the explicit MCP path in `home.nix`.
+- Chrome DevTools AXI 0.1.42 and its bridge 1.11.0 remain pinned after newer
+  releases failed the existing personal Chrome connection. The explicit bridge
+  path in `home.nix` preserves the working session.
 - Quota AXI 0.1.63's packaged skill matches the tracked skill, including
   Higgsfield support.
-- Pi 1.5.0 requires Node 22.19.0 or newer. Native maintenance commands and the
+- Pi 1.5.2 requires Node 22.19.0 or newer. Native maintenance commands and the
   scoped Pi wrapper are checked against this release.
   Upstream removed `npm-shrinkwrap.json` in
   1.0.1, so the exact npm pin freezes Pi's version but not every transitive dependency.
 - The installer repairs Pi's pinned undici 8.10.2 to 8.12.3 with native npm
   commands and preserves the vendor manifest. Pi extension roots use the same
-  npm override. npm 12.2.1 avoids an installation failure in npm 10.
+  npm override. npm 12.2.2 avoids an installation failure in npm 10.
 - Codex fast mode 0.2.9 includes GPT-6 and GPT-6.1 Sol support and drops fast mode for
   GPT-5.4. This only changes the extension's model list; normal Pi model access stays
   with the selected provider.
