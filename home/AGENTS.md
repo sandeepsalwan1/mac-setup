@@ -25,7 +25,7 @@
 - Before planning, writing, debugging, refactoring, or reviewing code, every agent, including FirstMate captains, crews, and secondmates, must read `~/.agents/skills/pstack-poteto-mode/SKILL.md` when it exists and `~/.local/state/agent-skills/pstack.disabled` is absent. Follow FirstMate's current assignment and keep its harness, model, and effort.
 - Keep Codex Computer Use installed and enabled. Use native CLI skills and keep other MCP servers disabled.
 - Never delete or prune session transcripts under `.kiro`, `.claude`, or `.codex`.
-- Do not use wildcards with deletion commands. Check exact paths and move cleanup targets to a dated backup.
+- Never delete with globs or unresolved paths. Check exact targets first and move generated files to a dated backup.
 - Backpass is periodic memory maintenance, not a per-task step. Suggest it after recurring cross-session friction or when a project AGENTS.md is stale or overgrown. Run its model-backed analysis only with user approval, and run `backpass apply` only with explicit approval after reviewing the evidence.
 - Make ALL of your responses clear & very concise
 - Use simple & easy-to-understand language, write in short sentences, in plain English

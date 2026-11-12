@@ -6,7 +6,7 @@ The guard is a seatbelt against accidents, not a sandbox. It blocks only catastr
 
 Claude's native inline-shell removal check can prompt in bypass mode; set `CLAUDE_CODE_DISABLE_INLINE_SHELL_RM_PROMPT=1` at launch while keeping the catastrophic-command guard.
 
-Targeted cleanup stays allowed. This includes `rm`, `rm -rf` on a named project or temporary path, and targeted `sudo rm`. Do not broaden the denylist merely because a command is destructive. The normal agent and user authorization rules still govern targeted deletion.
+Targeted cleanup stays allowed for exact, resolved paths, including a named project or temporary path. The guard blocks `rm`, `unlink`, and `rmdir` when their arguments contain a glob or shell variable. The normal agent and user authorization rules still govern targeted deletion.
 
 Installation removes only the three legacy Claude deny entries that treated root, every root child, and every home path as the same operation. The shared guard still blocks whole-root and whole-home deletion while allowing a named path such as `~/old-project`.
 
