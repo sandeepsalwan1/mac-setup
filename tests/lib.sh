@@ -11,6 +11,7 @@ if [ -n "${DOTFILES_TEST_LIB_SOURCED:-}" ]; then
   return 0
 fi
 DOTFILES_TEST_LIB_SOURCED=1
+unset CODEX_HOME XDG_STATE_HOME
 
 # shellcheck disable=SC2034
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"

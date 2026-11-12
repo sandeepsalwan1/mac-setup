@@ -12,7 +12,7 @@ gh-axi@0.1.41
 lavish-axi@0.1.89
 quota-axi@0.1.63
 tasks-axi@0.2.6
-@earendil-works/pi-coding-agent@1.4.0'
+@earendil-works/pi-coding-agent@1.5.0'
 actual_npm="$(grep -Ev '^[[:space:]]*(#|$)' "$ROOT/home/npm-globals.txt")"
 [ "$actual_npm" = "$expected_npm" ]
 grep -F 'treehouse.url = "github:kunchenguid/treehouse/v3.1.4";' "$ROOT/flake.nix" >/dev/null

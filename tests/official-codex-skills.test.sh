@@ -18,7 +18,8 @@ printf '%s\n' old >"$TEST_HOME/.claude/skills/computer-use/old.txt"
 printf '%s\n' keep >"$TEST_HOME/.claude/skills/unrelated/keep.txt"
 ln -s "$BROWSER_SOURCE" "$TEST_HOME/.codex/skills/control-in-app-browser"
 
-HOME="$TEST_HOME" "$ROOT/scripts/link-official-codex-skills" >/dev/null
+HOME="$TEST_HOME" CODEX_HOME="$TEST_HOME/.codex" XDG_STATE_HOME="$TEST_HOME/.local/state" \
+	"$ROOT/scripts/link-official-codex-skills" >/dev/null
 
 for skill_root in .skills .agents/skills .claude/skills .codex/skills; do
 	[ ! -e "$TEST_HOME/$skill_root/control-in-app-browser" ] &&
@@ -36,7 +37,8 @@ find "$TEST_HOME/.local/state/mac-setup/skill-backups" \
 	-name control-in-app-browser -type l | grep -q . ||
 	fail 'the retired Browser link was not backed up'
 
-HOME="$TEST_HOME" "$ROOT/scripts/link-official-codex-skills" >/dev/null
+HOME="$TEST_HOME" CODEX_HOME="$TEST_HOME/.codex" XDG_STATE_HOME="$TEST_HOME/.local/state" \
+	"$ROOT/scripts/link-official-codex-skills" >/dev/null
 [ -f "$TEST_HOME/.claude/skills/unrelated/keep.txt" ] ||
 	fail 'a repeated link removed an unrelated skill'
 
