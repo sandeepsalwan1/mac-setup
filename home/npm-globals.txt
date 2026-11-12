@@ -8,4 +8,4 @@ gh-axi@0.1.41
 lavish-axi@0.1.89
 quota-axi@0.1.63
 tasks-axi@0.2.6
-@earendil-works/pi-coding-agent@1.4.0
+@earendil-works/pi-coding-agent@1.5.0

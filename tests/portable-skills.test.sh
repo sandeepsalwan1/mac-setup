@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 portable_test_home="$(mktemp -d)"
+export CODEX_HOME="$portable_test_home/.codex"
 trap 'rm -rf "$portable_test_home"' EXIT
 
 mkdir -p "$portable_test_home/state/agent-skills"

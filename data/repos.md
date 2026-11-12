@@ -6,7 +6,7 @@ The setup uses released tools and snapshots each repository's authored skill fol
 | --- | --- | --- |
 | [kun](https://github.com/kunchenguid/kun) | `c7dec1cdfe575953a095bc4785db21d3735ecd73` | Kun skill unchanged |
 | [firstmate](https://github.com/kunchenguid/firstmate) | `990546248e40ad0c6323908346904ed70515e3b1` | Current inspected source; public stow skill unchanged |
-| [no-mistakes](https://github.com/kunchenguid/no-mistakes) | `4822244e763fd4c3d7f48be6433f92df10bb5b33` | Skill from published v1.84.0, matching the installed binary |
+| [no-mistakes](https://github.com/kunchenguid/no-mistakes) | `5732d1ed88a1572fa6115d6ede5d69bfec097946` | Skill from published v1.106.1, matching the installed binary |
 | [lavish-axi](https://github.com/kunchenguid/lavish-axi) | `3c9e0ec25d3fc1fe842dcb7da923f32e28e9009d` | Lavish 0.1.89; skill matches the released package |
 | [backpass](https://github.com/kunchenguid/backpass) | `e6a030a550be438e5b81a1ba91e01abc90faad07` | Released 0.1.34 memory maintenance tool |
 | [dotfiles](https://github.com/kunchenguid/dotfiles) | `9a4a6387d0dd6f4bf9b8a5a732b406916bbbf95d` | Upstream configuration reference |
@@ -18,7 +18,7 @@ The setup uses released tools and snapshots each repository's authored skill fol
 | [vision](https://github.com/kunchenguid/vision) | `7a20c38181151ec67efdf8fa2cb03a60123a7b83` | Visual review skill |
 | [tasks-axi](https://github.com/kunchenguid/tasks-axi) | `9401ff899c0d1d8ae6b4fd8727b9025abda2032c` | Tasks skill and npm tool |
 | [davidondrej/skills](https://github.com/davidondrej/skills) | `8605863f211961c96208fe625d4024609cd7dbd5` | distribute-skill-to-all-agents, adr-verbatim, anti-sleep, better-prompt, read-all-adrs, remind, stop-overthinking, teach, global-agent-guardrails, and shared command hooks |
-| [shadcn](https://github.com/shadcn-ui/ui/tree/main/skills/shadcn) | `e8c3143b1cd191280befcd6c9538284bb43399a8` | Chat rules refreshed; local invocation and styling adaptations retained |
+| [shadcn](https://github.com/shadcn-ui/ui/tree/main/skills/shadcn) | `dd41d19e2f80ff6891951f7ced74c2c9a650b065` | Chat and design-system guidance refreshed; local invocation and styling adaptations retained |
 | [backnotprop/pstack](https://github.com/backnotprop/pstack) | `25abb38559ddbabec563646224d09eff9a250eca` | 50 flat namespaced skills; adapted Poteto mode, engineering guidance, supporting resources, and MIT licenses |
 | [cursor/plugins](https://github.com/cursor/plugins/tree/main/pstack) | `1ba91fc25c0977741dd0e267849e6234b037ed0a` | Inspected Pstack mirror; primary source comes from backnotprop/pstack |
 
@@ -38,7 +38,7 @@ manifest is `home/npm-globals.txt`; Pi extensions are in `home/.pi/agent/setting
 | lavish-axi | 0.1.89 |
 | quota-axi | 0.1.63 |
 | tasks-axi | 0.2.6 |
-| @earendil-works/pi-coding-agent | 1.4.0 |
+| @earendil-works/pi-coding-agent | 1.5.0 |
 | pi-web-access | 0.45.0 |
 | @ryan_nookpi/pi-extension-codex-fast-mode | 0.2.9 |
 | compact-adviser | 0.1.13 |
@@ -51,7 +51,7 @@ manifest is `home/npm-globals.txt`; Pi extensions are in `home/.pi/agent/setting
 - Chrome DevTools AXI 0.1.42 uses the explicit MCP path in `home.nix`.
 - Quota AXI 0.1.63's packaged skill matches the tracked skill, including
   Higgsfield support.
-- Pi 1.4.0 requires Node 22.19.0 or newer. Native maintenance commands and the
+- Pi 1.5.0 requires Node 22.19.0 or newer. Native maintenance commands and the
   scoped Pi wrapper are checked against this release.
   Upstream removed `npm-shrinkwrap.json` in
   1.0.1, so the exact npm pin freezes Pi's version but not every transitive dependency.
@@ -71,8 +71,13 @@ manifest is `home/npm-globals.txt`; Pi extensions are in `home/.pi/agent/setting
   includes the upstream MIT license. The [Teach format files](https://github.com/davidondrej/skills/tree/8605863f211961c96208fe625d4024609cd7dbd5/skills/thinking-and-docs/teach)
   are included.
   Anti-sleep makes its launcher executable and names its unused retry counter `_attempt`.
-- Shadcn's chat rules match the reviewed source. Keep the local skill metadata
-  and existing `cn` import convention.
+  On November 11, ADR naming guidance was refreshed from
+  `davidondrej/skills@0a83467417fec443c47268f703660494727bee5a`.
+  Teach and distribution retain their authored copies after upstream removal;
+  guardrails retain this setup's policy. Other retained content is unchanged.
+- Shadcn's chat rules, design-system guides, showcase assets, and coverage script
+  match the source reviewed on November 11. Keep the local skill metadata and
+  existing `cn` import convention.
 - Pstack exposes 50 individually discoverable, namespaced `SKILL.md` folders.
   The same pinned primary source supplies all content and supporting resources.
   Each folder retains Lauren Tan's 2026 MIT license. Automatic Poteto guidance
@@ -89,6 +94,9 @@ manifest is `home/npm-globals.txt`; Pi extensions are in `home/.pi/agent/setting
   `scripts/pstack-experiment on|off|status` changes only managed family discovery
   links. Its persistent disabled marker survives later setup and profile syncs.
   Skill content, unrelated work, credentials, and transcripts stay preserved.
+  Reviewed against `backnotprop/pstack@97de40dcca2fa396124c3e70a1d8cc28005f60a3`
+  on November 11. Its Arena model-family change is superseded by the local rule
+  to keep FirstMate's assigned model. Changes to excluded Statechart files do not apply.
 - Shared hooks track the reviewed David Ondrej source with the local policy
   retained: targeted `rm` and `sudo rm` stay allowed; malformed input and
   missing patterns fail closed. The suite covers all three upstream payload
