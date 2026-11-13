@@ -6,8 +6,8 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 expected_npm='npm@12.2.2
 acpx@0.22.0
 backpass@0.1.44
-chrome-devtools-axi@0.1.42
-chrome-devtools-mcp@1.11.0
+chrome-devtools-axi@0.1.46
+chrome-devtools-mcp@1.13.0
 gh-axi@0.1.51
 lavish-axi@0.1.96
 quota-axi@0.1.69
@@ -56,6 +56,8 @@ jq -e '
   and .permissions.defaultMode == "bypassPermissions"
   and .skipDangerousModePermissionPrompt == true
   and .crossSessionInbound == "accept"
+  and .env.CLAUDE_CODE_MAX_OUTPUT_TOKENS == "32000"
+  and .env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE == "100"
 ' "$ROOT/home/.claude/settings.json" >/dev/null
 
 for skill in \
@@ -65,7 +67,6 @@ for skill in \
 	lavish \
 	no-mistakes \
 	quota-axi \
-	stow \
 	tasks-axi \
 	teach \
 	vision; do

@@ -79,7 +79,7 @@ in
     EDITOR = "nvim";
     CLAUDE_CODE_DISABLE_INLINE_SHELL_RM_PROMPT = "1";
     CHROME_DEVTOOLS_AXI_CHANNEL = "stable";
-    CHROME_DEVTOOLS_AXI_MCP_PATH = "${config.home.homeDirectory}/.local/share/npm/lib/node_modules/chrome-devtools-mcp/build/src/bin/chrome-devtools-mcp.js";
+    CHROME_DEVTOOLS_AXI_MCP_PATH = "${config.home.homeDirectory}/.local/share/npm/bin/chrome-devtools-mcp";
     NPM_CONFIG_PREFIX = "${config.home.homeDirectory}/.local/share/npm";
     TERMINFO_DIRS = "${pkgs.ncurses}/share/terminfo:/usr/share/terminfo";
     # Agent jobs build throwaway Git fixtures under their scratch directory.
@@ -167,7 +167,7 @@ in
   launchd.agents.chrome-devtools-axi-mcp-path = {
     enable = true;
     config = {
-      ProgramArguments = [ "/bin/launchctl" "setenv" "CHROME_DEVTOOLS_AXI_MCP_PATH" "${config.home.homeDirectory}/.local/share/npm/lib/node_modules/chrome-devtools-mcp/build/src/bin/chrome-devtools-mcp.js" ];
+      ProgramArguments = [ "/bin/launchctl" "setenv" "CHROME_DEVTOOLS_AXI_MCP_PATH" "${config.home.homeDirectory}/.local/share/npm/bin/chrome-devtools-mcp" ];
       RunAtLoad = true;
     };
   };

@@ -18,7 +18,9 @@ done
 
 rm "$portable_test_home/state/agent-skills/profile-owner"
 mkdir -p "$portable_test_home/.claude/skills" "$portable_test_home/.pi/agent/skills/personal"
-mkdir -p "$portable_test_home/.codex/skills/4x4"
+mkdir -p "$portable_test_home/.codex/skills/4x4" "$portable_test_home/.agents/skills/stow" "$portable_test_home/firstmate/.agents/skills/stow"
+printf '%s\n' personal >"$portable_test_home/.agents/skills/stow/SKILL.md"
+printf '%s\n' firstmate >"$portable_test_home/firstmate/.agents/skills/stow/SKILL.md"
 printf '%s\n' preserve >"$portable_test_home/.codex/skills/4x4/SKILL.md"
 printf '%s\n' keep >"$portable_test_home/.pi/agent/skills/personal/SKILL.md"
 ln -s /missing/retired-skill "$portable_test_home/.claude/skills/safe-shell-deletion"
@@ -30,6 +32,11 @@ HOME="$portable_test_home" XDG_STATE_HOME="$portable_test_home/state" \
 [ ! -L "$portable_test_home/.claude/skills/find-skills" ]
 [ ! -L "$portable_test_home/.claude/skills/4x4" ]
 [ ! -e "$portable_test_home/.codex/skills/4x4" ]
+[ ! -e "$portable_test_home/.agents/skills/stow" ]
+grep -qx firstmate "$portable_test_home/firstmate/.agents/skills/stow/SKILL.md"
+stow_backup=("$portable_test_home"/state/mac-setup/skill-backups/*/*/stow/SKILL.md)
+[ "${#stow_backup[@]}" -eq 1 ]
+grep -qx personal "${stow_backup[0]}"
 retired_backup=("$portable_test_home"/state/mac-setup/skill-backups/*/*/4x4/SKILL.md)
 [ "${#retired_backup[@]}" -eq 1 ]
 grep -qx preserve "${retired_backup[0]}"
