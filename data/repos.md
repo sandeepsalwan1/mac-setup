@@ -5,7 +5,7 @@ The setup uses released tools and snapshots each repository's authored skill fol
 | Repository | Commit | Use |
 | --- | --- | --- |
 | [kun](https://github.com/kunchenguid/kun) | `c7dec1cdfe575953a095bc4785db21d3735ecd73` | Kun skill unchanged |
-| [firstmate](https://github.com/kunchenguid/firstmate) | `990546248e40ad0c6323908346904ed70515e3b1` | Current inspected source; public stow skill unchanged |
+| [firstmate](https://github.com/kunchenguid/firstmate) | `990546248e40ad0c6323908346904ed70515e3b1` | FirstMate source; its internal stow stays separate from personal skills |
 | [no-mistakes](https://github.com/kunchenguid/no-mistakes) | `5732d1ed88a1572fa6115d6ede5d69bfec097946` | Skill from published v1.106.1, matching the installed binary |
 | [lavish-axi](https://github.com/kunchenguid/lavish-axi) | `69bf3090b24a04773ffd05d2e0b23d91ca41923b` | Lavish 0.1.96; skill matches the released package |
 | [backpass](https://github.com/kunchenguid/backpass) | `c8d60c24d4dc7e341d363bd4cddb5c8d6fedbb54` | Released 0.1.44 memory maintenance tool |
@@ -13,7 +13,7 @@ The setup uses released tools and snapshots each repository's authored skill fol
 | [quota-axi](https://github.com/kunchenguid/quota-axi) | `5734c41eee52eb9a80ba67f47269ebc06c0c41fc` | Quota 0.1.69; skill matches the released package |
 | [compact-adviser](https://github.com/kunchenguid/compact-adviser) | `37fa1a665b8933de68c90014312060e862cf121a` | Compaction advice tool |
 | [treehouse](https://github.com/kunchenguid/treehouse) | `acf59c8e7c2dcb1ab560d0eef70b371ba626f0e5` | Nix package v3.1.4 |
-| [chrome-devtools-axi](https://github.com/kunchenguid/chrome-devtools-axi) | `b27878f07290a0d70bb5e8fdf5b9fe8f819de78a` | Released 0.1.42; skill unchanged |
+| [chrome-devtools-axi](https://github.com/kunchenguid/chrome-devtools-axi) | `f953554c3a031978dc30c46866aa5ec1b52b6e6e` | Released 0.1.46; skill unchanged |
 | [gh-axi](https://github.com/kunchenguid/gh-axi) | `911a0868600b125aafe5e7f77197a0eb5a5b493c` | GitHub 0.1.51; skill matches the released package |
 | [vision](https://github.com/kunchenguid/vision) | `7a20c38181151ec67efdf8fa2cb03a60123a7b83` | Visual review skill |
 | [tasks-axi](https://github.com/kunchenguid/tasks-axi) | `9401ff899c0d1d8ae6b4fd8727b9025abda2032c` | Tasks skill and npm tool |
@@ -32,8 +32,8 @@ manifest is `home/npm-globals.txt`; Pi extensions are in `home/.pi/agent/setting
 | npm | 12.2.2 |
 | acpx | 0.22.0 |
 | backpass | 0.1.44 |
-| chrome-devtools-axi | 0.1.42 |
-| chrome-devtools-mcp | 1.11.0 |
+| chrome-devtools-axi | 0.1.46 |
+| chrome-devtools-mcp | 1.13.0 |
 | gh-axi | 0.1.51 |
 | lavish-axi | 0.1.96 |
 | quota-axi | 0.1.69 |
@@ -48,9 +48,9 @@ manifest is `home/npm-globals.txt`; Pi extensions are in `home/.pi/agent/setting
 - Treehouse v3.1.4 uses the Go module path `/v3`. Its lock entry was
   regenerated with `nix flake update treehouse`; all other Nix inputs and the
   Neovim lockfile are preserved.
-- Chrome DevTools AXI 0.1.42 and its bridge 1.11.0 remain pinned after newer
-  releases failed the existing personal Chrome connection. The explicit bridge
-  path in `home.nix` preserves the working session.
+- Chrome DevTools AXI 0.1.46 reuses the existing personal Chrome bridge.
+  The 1.13.0 backend passes the isolated native Chrome test. `home.nix` selects
+  the versioned command link, so an obsolete module path cannot override it.
 - Quota AXI 0.1.63's packaged skill matches the tracked skill, including
   Higgsfield support.
 - Pi 1.5.2 requires Node 22.19.0 or newer. Native maintenance commands and the

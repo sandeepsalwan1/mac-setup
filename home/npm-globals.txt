@@ -2,8 +2,8 @@
 npm@12.2.2
 acpx@0.22.0
 backpass@0.1.44
-chrome-devtools-axi@0.1.42
-chrome-devtools-mcp@1.11.0
+chrome-devtools-axi@0.1.46
+chrome-devtools-mcp@1.13.0
 gh-axi@0.1.51
 lavish-axi@0.1.96
 quota-axi@0.1.69
