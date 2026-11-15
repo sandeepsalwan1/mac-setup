@@ -109,6 +109,8 @@ grep -Fq "flake.nix already matches $CONFIGURED_USER" "$TMP_ROOT/first.out" ||
 [ -d "$TEST_HOME/firstmate" ] || fail 'bootstrap did not clone FirstMate'
 cmp -s "$TEST_REPO/home/firstmate/data/captain.md" "$TEST_HOME/firstmate/data/captain.md" ||
 	fail 'bootstrap did not initialize the FirstMate workflow preferences'
+[ "$(cat "$TEST_HOME/firstmate/config/supervision-host")" = claude ] ||
+	fail 'bootstrap did not enable the supported FirstMate supervision host'
 cmp -s "$TEST_REPO/home/.codex/mac-firstmate.config.toml" "$TEST_HOME/.codex/mac-firstmate.config.toml" ||
 	fail 'bootstrap did not initialize the FirstMate model profile'
 [ "$(cat "$TEST_HOME/firstmate/AGENTS.md")" = '# Upstream FirstMate instructions' ] ||
@@ -173,11 +175,17 @@ grep -Fq 'Nix is already installed' "$TMP_ROOT/second.out" ||
 [ "$(wc -l <"$CURL_LOG" | tr -d ' ')" = 1 ] ||
 	fail 'bootstrap fetched no-mistakes again on a second run'
 printf '%s\n' 'custom preferences' >>"$TEST_HOME/firstmate/data/captain.md"
+printf '%s\n' 'claude opus' >"$TEST_HOME/firstmate/config/supervision-host"
+touch "$TEST_HOME/firstmate/config/supervision-host-off"
 printf '%s\n' '{"customField":"preserved"}' >"$TEST_HOME/.codex/hooks.json"
 printf '%s\n' '[features]' 'multi_agent = true' >"$TEST_HOME/.codex/config.toml"
 run_bootstrap >"$TMP_ROOT/custom.out"
 grep -Fqx 'custom preferences' "$TEST_HOME/firstmate/data/captain.md" ||
 	fail 'bootstrap replaced existing FirstMate preferences'
+[ "$(cat "$TEST_HOME/firstmate/config/supervision-host")" = 'claude opus' ] ||
+	fail 'bootstrap replaced the selected supervision host'
+[ -f "$TEST_HOME/firstmate/config/supervision-host-off" ] ||
+	fail 'bootstrap removed the supervision opt-out'
 jq -e '.customField == "preserved"' "$TEST_HOME/.codex/hooks.json" >/dev/null ||
 	fail 'bootstrap changed unrelated Codex state'
 "$TEST_PYTHON" - "$TEST_HOME" <<'PY'
