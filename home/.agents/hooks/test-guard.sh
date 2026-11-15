@@ -165,9 +165,16 @@ check block 'bomb() { bomb & bomb & }; bomb'
 check block 'bomb() { bomb | bomb & }'
 check block 'while :; do true & done'
 check block 'while true; do sleep 1 & done'
+check block 'while [ 1 ]; do true & done'
+check block $'while true; do\n true &\ndone'
 check block 'for ((;;)); do true & done'
+check block $'for ((;;)); do\n true &\ndone'
+check block 'for ((i=0;;)); do true & done'
+check block 'for ((i=0;;i++)); do true & done'
 check block 'bash -c "bomb() { bomb & bomb; }; bomb"'
 check allow 'for i in 1 2 3; do worker "$i" & done; wait'
+check allow 'for ((i=0;i<3;i++)); do worker "$i" & done; wait'
+check allow 'while read -r item; do worker "$item" & done'
 check allow 'while :; do sleep 1; worker & done'
 check allow 'walk() { if test "$1" -gt 0; then walk "$(( $1 - 1 ))"; fi; }; walk 3'
 check allow 'f=$(find ~/review-work/ORR -maxdepth 4 -name '"'"'ten-gate-review-copy.md'"'"' 2>/dev/null | head -3); print -r -- "$f"; for x in ${(f)f}; do sed -n '"'"'356,359p;382,386p'"'"' $x | cut -c1-300; done'
@@ -184,6 +191,23 @@ check block $'bash <<\'EOF\'\nrm -rf /\nEOF'
 check block $'cat <<\'EOF\' | bash\nrm -rf /\nEOF'
 check block $'cat <<EOF > /tmp/cleanup-guide.md\n$(rm -rf /)\nEOF'
 check block $'cat <<\'EOF\' > /tmp/cleanup-guide.md\ntext\nEOF\nrm -rf /'
+
+while read -r expected payload; do
+	printf '%s' "$payload" | AGENT_GUARD_PATTERNS="$patterns" "$guard" exitcode >/dev/null 2>&1
+	status=$?
+	if [[ "$status" -eq "$expected" ]]; then
+		passed=$((passed + 1))
+	else
+		failed=$((failed + 1))
+		printf 'FAIL expected_status=%s got=%s payload=%s\n' "$expected" "$status" "$payload"
+	fi
+done <<'PAYLOADS'
+0 {"tool_name":"Monitor","tool_input":{"ws":{"url":"ws://localhost/events"}}}
+0 {"tool_name":"Monitor","tool_input":{"command":"printf ready"}}
+2 {"tool_name":"Monitor","tool_input":{"command":"rm -rf /"}}
+2 {"tool_name":"Bash","tool_input":{"ws":{"url":"ws://localhost/events"}}}
+2 {"tool_name":"Monitor","tool_input":{"ws":{}}}
+PAYLOADS
 
 check block 'rm -rf /tmp/build-cache' "$patterns.missing"
 invalid_patterns=$(mktemp "${TMPDIR:-/tmp}/command-guard-patterns.XXXXXX")

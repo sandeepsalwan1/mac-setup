@@ -24,8 +24,8 @@
 
 # Fork bombs and piping downloads into a shell.
 (^|[;&|[:space:]])(function[[:space:]]+)?([^;&|(){}[:space:]]+)[[:space:]]*(\([[:space:]]*\))?[[:space:]]*\{[;[:space:]]*\3[[:space:]]*[|&][[:space:]]*\3[[:space:]]*[;&][;[:space:]]*\}
-(^|[;&|[:space:]])while[[:space:]]+(:|true)[;[:space:]]+do[[:space:]]+[^;&|]+&[[:space:]]*done([;&[:space:]]|$)
-(^|[;&|[:space:]])for[[:space:]]*\(\([[:space:]]*;[[:space:]]*;[[:space:]]*\)\)[;[:space:]]*do[[:space:]]+[^;&|]+&[[:space:]]*done([;&[:space:]]|$)
+(^|[;&|[:space:]])while[[:space:]]+(:|true|\[[[:space:]]+1[[:space:]]+\])[;[:space:]]+do[;[:space:]]+[^;&|]+&[;[:space:]]*done([;&[:space:]]|$)
+(^|[;&|[:space:]])for[[:space:]]*\(\([^;]*;[[:space:]]*;[^)]*\)\)[;[:space:]]*do[;[:space:]]+[^;&|]+&[;[:space:]]*done([;&[:space:]]|$)
 (^|[;&|()`[:space:]])(curl|wget)[[:space:]][^;&|]*\|[[:space:]]*(sudo[[:space:]]+)?(ba|z|da)?sh([[:space:]]|$)
 
 # Remote history and branch destruction. Force-with-lease stays allowed.

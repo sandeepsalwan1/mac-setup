@@ -218,11 +218,11 @@ for settings in "$TEST_HOME/.claude/settings.json" "$TEST_HOME/.codex/hooks.json
 	matcher=Bash
 	[ "$settings" != "$TEST_HOME/.claude/settings.json" ] || matcher='Bash|Monitor'
 	jq -e --arg command "$TEST_HOME/.agents/hooks/deny-dangerous.sh" --arg matcher "$matcher" '
-		[
+		([
 			.hooks.PreToolUse[] | select(.matcher == $matcher) | .hooks[]
 			| select(.type == "command" and .command == $command and .timeout == 3)
-		]
-		| length == 1
+		] | length == 1)
+		and ([.hooks.PreToolUse[].hooks[] | select(.command == $command)] | length == 1)
 	' "$settings" >/dev/null ||
 		fail "command guard was not merged exactly once into $settings"
 done

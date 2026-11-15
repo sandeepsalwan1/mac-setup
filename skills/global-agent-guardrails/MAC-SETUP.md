@@ -39,4 +39,4 @@ Hook and configuration failures fail closed with a clear error. The tool install
 The hook ignores literal text in a single standalone `cat` command's quoted
 heredoc when the installed `shfmt` parser succeeds. Shell-fed heredocs, pipes,
 substitutions, and other commands remain checked. Missing or failed parsing
-falls back to the original text. Named and spaced recursive fork bombs, repeated background recursion, and unthrottled background-spawning loops are blocked. These are pattern checks, not a complete shell sandbox.
+falls back to the original text. Named and spaced recursive fork bombs and repeated background recursion are blocked. Loop checks cover a single background command in `while :`, `while true`, `while [ 1 ]`, and arithmetic `for` loops with an empty condition, including multiline forms. Throttled loops and loops with data-dependent conditions remain allowed. These are pattern checks, not a complete shell sandbox.

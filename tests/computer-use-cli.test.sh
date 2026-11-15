@@ -59,9 +59,14 @@ RUNTIME_HOME="$TMP_ROOT/runtime-home"
 CLIENT_PATH='computer-use/Codex Computer Use.app/Contents/SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient'
 MAIN_CLIENT="$RUNTIME_HOME/.codex/$CLIENT_PATH"
 PROFILE_CLIENT="$RUNTIME_HOME/.codex-profile/$CLIENT_PATH"
-mkdir -p "$(dirname "$MAIN_CLIENT")" "$(dirname "$PROFILE_CLIENT")"
+NONEXECUTABLE_CLIENT="$RUNTIME_HOME/.codex-nonexecutable/$CLIENT_PATH"
+DIRECTORY_CLIENT="$RUNTIME_HOME/.codex-directory/$CLIENT_PATH"
+mkdir -p "$(dirname "$MAIN_CLIENT")" "$(dirname "$PROFILE_CLIENT")" \
+	"$(dirname "$NONEXECUTABLE_CLIENT")" "$DIRECTORY_CLIENT"
 cp "$FAKE_CLIENT" "$MAIN_CLIENT"
 cp "$FAKE_CLIENT" "$PROFILE_CLIENT"
+cp "$FAKE_CLIENT" "$NONEXECUTABLE_CLIENT"
+chmod 0644 "$NONEXECUTABLE_CLIENT"
 
 env -u CUA_CLIENT -u CODEX_HOME HOME="$RUNTIME_HOME" CUA_CLIENT_LOG="$TMP_ROOT/default.log" \
 	"$NODE_BIN" "$CLI" tools >"$TMP_ROOT/default.out" &
@@ -75,10 +80,23 @@ fallback_pid=$!
 HOME="$RUNTIME_HOME" CODEX_HOME="$RUNTIME_HOME/.codex-missing" CUA_CLIENT="$FAKE_CLIENT" \
 	CUA_CLIENT_LOG="$TMP_ROOT/override.log" "$NODE_BIN" "$CLI" tools >"$TMP_ROOT/override.out" &
 override_pid=$!
+env -u CUA_CLIENT HOME="$RUNTIME_HOME" CODEX_HOME="$RUNTIME_HOME/.codex-nonexecutable" \
+	CUA_CLIENT_LOG="$TMP_ROOT/nonexecutable.log" "$NODE_BIN" "$CLI" tools \
+	>"$TMP_ROOT/nonexecutable.out" 2>"$TMP_ROOT/nonexecutable.err" &
+nonexecutable_pid=$!
+env -u CUA_CLIENT HOME="$RUNTIME_HOME" CODEX_HOME="$RUNTIME_HOME/.codex-directory" \
+	CUA_CLIENT_LOG="$TMP_ROOT/directory.log" "$NODE_BIN" "$CLI" tools \
+	>"$TMP_ROOT/directory.out" 2>"$TMP_ROOT/directory.err" &
+directory_pid=$!
 wait "$default_pid"
 wait "$profile_pid"
 wait "$fallback_pid"
 wait "$override_pid"
+invalid_client_failures=0
+wait "$nonexecutable_pid" || invalid_client_failures=$((invalid_client_failures + 1))
+wait "$directory_pid" || invalid_client_failures=$((invalid_client_failures + 1))
+[ "$invalid_client_failures" -eq 0 ] ||
+	fail 'CUA CLI failed to use the main runtime for a non-executable profile client or a directory'
 
 printf '%s\n' "$MAIN_CLIENT" "$RUNTIME_HOME/.codex" >"$TMP_ROOT/main.expected"
 printf '%s\n' "$PROFILE_CLIENT" "$RUNTIME_HOME/.codex-profile" >"$TMP_ROOT/profile.expected"
@@ -91,6 +109,18 @@ cmp -s "$TMP_ROOT/main.expected" "$TMP_ROOT/fallback.log" ||
 	fail 'CUA CLI did not keep the fallback runtime and Codex home together'
 cmp -s "$TMP_ROOT/override.expected" "$TMP_ROOT/override.log" ||
 	fail 'CUA CLI changed the environment of an explicit client override'
+cmp -s "$TMP_ROOT/main.expected" "$TMP_ROOT/nonexecutable.log" ||
+	fail 'CUA CLI selected a profile client without execute permission'
+cmp -s "$TMP_ROOT/main.expected" "$TMP_ROOT/directory.log" ||
+	fail 'CUA CLI selected a directory as the profile client'
+
+if HOME="$RUNTIME_HOME" CODEX_HOME="$RUNTIME_HOME/.codex-profile" CUA_CLIENT="$NONEXECUTABLE_CLIENT" \
+	CUA_CLIENT_LOG="$TMP_ROOT/invalid-override.log" "$NODE_BIN" "$CLI" tools \
+	>"$TMP_ROOT/invalid-override.out" 2>"$TMP_ROOT/invalid-override.err"; then
+	fail 'CUA CLI replaced an invalid explicit client override with another runtime'
+fi
+[ ! -e "$TMP_ROOT/invalid-override.log" ] ||
+	fail 'CUA CLI launched another client for an invalid explicit override'
 
 grep -Fq 'description: Control local macOS GUI applications through the context-efficient cua-cli shell command.' "$SKILL" ||
 	fail 'CUA CLI skill description is not direct'
