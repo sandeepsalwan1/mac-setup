@@ -215,9 +215,11 @@ jq -e '
 ' "$TEST_HOME/.codex/hooks.json" >/dev/null ||
 	fail 'Codex cleanup did not preserve unrelated settings and hooks'
 for settings in "$TEST_HOME/.claude/settings.json" "$TEST_HOME/.codex/hooks.json"; do
-	jq -e --arg command "$TEST_HOME/.agents/hooks/deny-dangerous.sh" '
+	matcher=Bash
+	[ "$settings" != "$TEST_HOME/.claude/settings.json" ] || matcher='Bash|Monitor'
+	jq -e --arg command "$TEST_HOME/.agents/hooks/deny-dangerous.sh" --arg matcher "$matcher" '
 		[
-			.hooks.PreToolUse[].hooks[]
+			.hooks.PreToolUse[] | select(.matcher == $matcher) | .hooks[]
 			| select(.type == "command" and .command == $command and .timeout == 3)
 		]
 		| length == 1

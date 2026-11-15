@@ -30,7 +30,12 @@ deny() {
 command -v jq >/dev/null 2>&1 || deny "Command guard unavailable: jq is required."
 [[ -r "$patterns_file" ]] || deny "Command guard unavailable: patterns file is missing or unreadable."
 input=$(cat)
-command_text=$(printf '%s' "$input" | jq -er '.tool_input.command // .toolInput.command // .command' 2>/dev/null) ||
+command_text=$(printf '%s' "$input" | jq -er '
+  .tool_input.command // .toolInput.command // .command //
+  (if .tool_name == "Monitor" and (.tool_input | type) == "object"
+      and (.tool_input | has("command") | not)
+      and (.tool_input.ws.url | type) == "string"
+   then "" else empty end)' 2>/dev/null) ||
 	deny "Command guard could not read a shell command."
 # A quoted heredoc sent directly to cat is data, not a shell program.
 if [[ "$command_text" == *'<<'* ]] && command -v shfmt >/dev/null 2>&1; then
