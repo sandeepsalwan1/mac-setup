@@ -9,10 +9,11 @@ backpass@0.1.44
 chrome-devtools-axi@0.1.46
 chrome-devtools-mcp@1.13.0
 gh-axi@0.1.51
-lavish-axi@0.1.96
+lavish-axi@0.1.97
 quota-axi@0.1.69
 tasks-axi@0.2.6
-@earendil-works/pi-coding-agent@1.5.2'
+@earendil-works/pi-coding-agent@1.5.2
+gnhf@0.1.52'
 actual_npm="$(grep -Ev '^[[:space:]]*(#|$)' "$ROOT/home/npm-globals.txt")"
 [ "$actual_npm" = "$expected_npm" ]
 grep -F 'treehouse.url = "github:kunchenguid/treehouse/v3.1.4";' "$ROOT/flake.nix" >/dev/null

@@ -8,5 +8,5 @@ if [ -s "$PROFILE_OWNER" ]; then
 fi
 
 cd "$HOME/firstmate"
-exec codex --dangerously-bypass-approvals-and-sandbox \
-	--dangerously-bypass-hook-trust -p mac-firstmate "$@"
+export FM_PI_HARNESS=pi
+exec pi --tui-mode regular "$@"

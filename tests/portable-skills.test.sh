@@ -17,6 +17,11 @@ for skill_root in .skills .agents/skills .claude/skills .codex/skills .kiro/skil
 done
 
 rm "$portable_test_home/state/agent-skills/profile-owner"
+HOME="$portable_test_home" XDG_STATE_HOME="$portable_test_home/state" \
+	"$ROOT/scripts/link-portable-skills" --additive kun pstack-swarm >"$portable_test_home/selected.out"
+[ -f "$portable_test_home/.skills/kun/SKILL.md" ]
+[ -f "$portable_test_home/.skills/pstack-swarm/SKILL.md" ]
+[ ! -e "$portable_test_home/.skills/computer-use-cli" ]
 mkdir -p "$portable_test_home/.claude/skills" "$portable_test_home/.pi/agent/skills/personal"
 mkdir -p "$portable_test_home/.codex/skills/4x4" "$portable_test_home/.agents/skills/stow" "$portable_test_home/firstmate/.agents/skills/stow"
 printf '%s\n' personal >"$portable_test_home/.agents/skills/stow/SKILL.md"
@@ -26,6 +31,11 @@ printf '%s\n' keep >"$portable_test_home/.pi/agent/skills/personal/SKILL.md"
 ln -s /missing/retired-skill "$portable_test_home/.claude/skills/safe-shell-deletion"
 ln -s /missing/retired-skill "$portable_test_home/.claude/skills/find-skills"
 ln -s /missing/retired-skill "$portable_test_home/.claude/skills/4x4"
+HOME="$portable_test_home" XDG_STATE_HOME="$portable_test_home/state" \
+	"$ROOT/scripts/link-portable-skills" --additive >"$portable_test_home/additive.out"
+grep -qx preserve "$portable_test_home/.codex/skills/4x4/SKILL.md"
+grep -qx personal "$portable_test_home/.agents/skills/stow/SKILL.md"
+[ -L "$portable_test_home/.claude/skills/find-skills" ]
 HOME="$portable_test_home" XDG_STATE_HOME="$portable_test_home/state" \
 	"$ROOT/scripts/link-portable-skills" >"$portable_test_home/fallback.out"
 [ ! -L "$portable_test_home/.claude/skills/safe-shell-deletion" ]

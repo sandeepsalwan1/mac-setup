@@ -3,6 +3,8 @@ name: pstack-interrogate
 description: "Challenge a change or design through independent review; retain only findings proved by executable evidence."
 ---
 
+Integration rule: FirstMate owns all worker dispatch and model choices mentioned below. Workers report delegation needs to their supervisor; standalone agents work directly. Do not launch nested agents, model panels, or a second orchestrator.
+
 # Interrogate
 
 Adversaries try to break a change or a design. A finding survives only when a run proves it. Report the findings. Do not apply fixes.

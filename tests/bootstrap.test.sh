@@ -113,7 +113,7 @@ cmp -s "$TEST_REPO/home/.codex/mac-firstmate.config.toml" "$TEST_HOME/.codex/mac
 	fail 'bootstrap did not initialize the FirstMate model profile'
 [ "$(cat "$TEST_HOME/firstmate/AGENTS.md")" = '# Upstream FirstMate instructions' ] ||
 	fail 'bootstrap changed upstream FirstMate instructions'
-jq -e '.default == {"harness":"codex","model":"gpt-5.5","effort":"xhigh"} and .rules == []' \
+jq -e '.default == {"harness":"pi"} and .rules == []' \
 	"$TEST_HOME/firstmate/config/crew-dispatch.json" >/dev/null ||
 	fail 'bootstrap did not initialize the fixed worker default'
 "$TEST_PYTHON" - "$TEST_HOME/.codex/config.toml" <<'PY'
@@ -127,19 +127,21 @@ assert settings["model_reasoning_effort"] == "max"
 assert settings["model_context_window"] == 1050000
 PY
 mkdir -p "$TMP_ROOT/launch-bin"
-cat >"$TMP_ROOT/launch-bin/codex" <<'SH'
+cat >"$TMP_ROOT/launch-bin/pi" <<'SH'
 #!/usr/bin/env bash
-printf '%s\n' "$(pwd -P)" "$*" >"$FIRSTMATE_LAUNCH_LOG"
+printf '%s\n' "$(pwd -P)" "$*" "harness=$FM_PI_HARNESS" >"$FIRSTMATE_LAUNCH_LOG"
 SH
-chmod +x "$TMP_ROOT/launch-bin/codex"
+chmod +x "$TMP_ROOT/launch-bin/pi"
 HOME="$TEST_HOME" XDG_STATE_HOME="$TEST_HOME/.local/state" \
 	PATH="$TMP_ROOT/launch-bin:/usr/bin:/bin" FIRSTMATE_LAUNCH_LOG="$TMP_ROOT/launch.log" \
 	"$ROOT/scripts/firstmate" --version
 grep -Fqx "$(cd "$TEST_HOME/firstmate" && pwd -P)" "$TMP_ROOT/launch.log" ||
 	fail 'FirstMate launcher did not use the project directory'
-grep -Fq -- '-p mac-firstmate --version' "$TMP_ROOT/launch.log" ||
-	fail 'FirstMate launcher did not use its dedicated profile'
-[ "$(cat "$GIT_LOG")" = "clone -- https://github.com/sandeepsalwan1/firstmate.git $TEST_HOME/firstmate" ] ||
+grep -Fqx -- '--tui-mode regular --version' "$TMP_ROOT/launch.log" ||
+	fail 'FirstMate launcher did not use Pi'
+grep -Fqx -- 'harness=pi' "$TMP_ROOT/launch.log" ||
+	fail 'FirstMate launcher did not select its Pi harness'
+[ "$(cat "$GIT_LOG")" = "clone -- https://github.com/kunchenguid/firstmate.git $TEST_HOME/firstmate" ] ||
 	fail 'bootstrap cloned the wrong FirstMate source'
 [ "$(wc -l <"$GIT_LOG" | tr -d ' ')" = 1 ] ||
 	fail 'bootstrap did not clone FirstMate exactly once'

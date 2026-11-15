@@ -167,11 +167,13 @@ HOME="$TEST_HOME" PI_TEST_LOG="$LOG" PATH="$TEST_HOME/.local/bin:/usr/bin:/bin" 
 	"$TEST_HOME/.local/bin/pi" --version
 HOME="$TEST_HOME" PI_TEST_LOG="$LOG" PI_FIRSTMATE_REAL_PI="$REAL_PI" \
 	FM_PI_HARNESS=pi AWS_PROFILE=test-inherited-profile AWS_REGION=test-inherited-region \
+	PI_CODING_AGENT_DIR="$FIRSTMATE_AGENT_DIR" \
 	env -u PI_FIRSTMATE_AWS_PROFILE -u PI_FIRSTMATE_AWS_REGION \
 	"$TEST_HOME/.local/bin/pi" --model inherited
 HOME="$TEST_HOME" PI_TEST_LOG="$LOG" PI_FIRSTMATE_REAL_PI="$REAL_PI" \
 	FM_PI_HARNESS=pi AWS_PROFILE=test-parent-profile AWS_REGION=test-parent-region \
 	PI_FIRSTMATE_AWS_PROFILE=test-local-profile PI_FIRSTMATE_AWS_REGION=test-local-region \
+	PI_FIRSTMATE_AGENT_DIR="$FIRSTMATE_AGENT_DIR" \
 	"$TEST_HOME/.local/bin/pi" --model local
 mkdir -p "$TMP_ROOT/wrapper-copy" "$TMP_ROOT/path-bin" "$TMP_ROOT/homebrew/bin"
 cp "$TEST_HOME/.local/bin/pi" "$TMP_ROOT/wrapper-copy/pi"

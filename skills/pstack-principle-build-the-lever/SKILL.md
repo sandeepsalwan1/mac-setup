@@ -3,6 +3,8 @@ name: pstack-principle-build-the-lever
 description: "Use a direct path for occasional operations; add reusable tools only for a concrete blocker or repeated need."
 ---
 
+Integration rule: FirstMate owns all worker dispatch and model choices mentioned below. Workers report delegation needs to their supervisor; standalone agents work directly. Do not launch nested agents, model panels, or a second orchestrator.
+
 # Build the Lever
 
 Use an existing tool when it makes repetitive work or verification reliable.

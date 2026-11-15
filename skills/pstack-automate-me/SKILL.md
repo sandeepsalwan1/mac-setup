@@ -3,6 +3,8 @@ name: pstack-automate-me
 description: "Draft or revise a personal workflow skill from scoped evidence and existing preferences; review before applying memory changes."
 ---
 
+Integration rule: FirstMate owns all worker dispatch and model choices mentioned below. Workers report delegation needs to their supervisor; standalone agents work directly. Do not launch nested agents, model panels, or a second orchestrator.
+
 # Automate me
 
 A guided flow for turning the user's working conventions into a skill agents will follow. The output is one `-mode` skill tailored to them (e.g. `jay-mode`, `priya-mode`).

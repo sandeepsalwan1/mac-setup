@@ -36,7 +36,7 @@ It performs these steps:
 5. Maps the right Command key to F12 and validates it as Herdr's one-key prefix.
 6. Refreshes Homebrew, installs Claude Code's latest channel and Codex, and updates their managed installations.
 7. Installs Pi and the pinned supporting agent tools when missing or outdated.
-8. Sets up FirstMate in `~/firstmate` with its Codex profile and normal-workflow preferences.
+8. Sets up FirstMate in `~/firstmate` with its Pi launcher and normal-workflow preferences.
 9. Installs readable diff tools.
 10. Links the portable skills and the official Codex Computer Use skill when available.
 11. Reports what remains for Automic Vault onboarding.
@@ -244,7 +244,7 @@ The repository keeps reviewed snapshots of:
 - lavish: create HTML artifacts for visual review
 - lavish-helper-for-personal: open local or server artifacts in Mac Chrome
 - no-mistakes: validate changes before publication
-- pstack-*: 50 native engineering and TypeScript skills with automatic Poteto guidance
+- pstack-*: 58 native engineering and TypeScript skills with automatic Poteto guidance
 - quota-axi: report agent usage and remaining quota
 - read-all-adrs: read project decisions before continuing
 - remind: recap the task and recent progress
@@ -271,16 +271,26 @@ Some skills need an account, app, or local resource when invoked.
 `computer-use-cli` needs the official Codex runtime. Bundled snapshots follow
 this repository and `rebuild.sh`.
 
-Pstack adds 50 flat, namespaced skills with native `SKILL.md` discovery.
-Poteto mode loads at task start while the family is enabled. FirstMate keeps
-orchestration, and the harness keeps its configured model and effort. Engineering
-principles, context discipline, TypeScript, and clean-code guidance stay available.
-Visual artifacts use Lavish through the personal helper. Duplicate prompt and
-catch-up skills, swarm, setup/help, and the statechart renderer are excluded.
-Run `~/mac-setup/scripts/pstack-experiment off` to disable the whole family,
-`on` to restore it, or `status` to inspect it. Later setup and shared-profile syncs
-respect the same disabled marker. The switch preserves source content, other
-skills, and transcripts. Git retains the previous layout for rollback.
+Pstack includes all 58 upstream skills as native `pstack-*` entries, including
+Swarm, Arena, Statechart, setup/help, and the catch-up skills. FirstMate owns
+worker dispatch, models, effort, worktrees, and handoffs. Workers request parallel
+help through FirstMate. Installing Swarm does not start workers or authorize a
+large swarm. Lavish runs only when explicitly requested.
+
+Kun's portable skills include Kun, no-mistakes, Lavish, quota-axi,
+chrome-devtools-axi, gh-axi, vision, tasks-axi, headless, GNHF, whathappened,
+use-kunchenguid-design-system, AXI, and shorts-from-longform. Compact Adviser stays plugin-managed.
+Repository-internal contributor skills stay in their own repositories.
+GNHF is explicit-only and remains supervised by FirstMate. Whathappened needs
+Grok's native X tools. Bot UI, video, and Statechart workflows retain their
+optional platform or tool requirements; installation does not provision accounts.
+
+Install additions with `scripts/link-portable-skills --additive` to preserve retired
+and unrelated skills already present. Run the installing checkout's
+`scripts/pstack-experiment off`, `on`, or `status`.
+The standard checkout is `~/.dotfiles`; if skills come from a separate worktree,
+use that worktree's script. The switch preserves source content, unrelated skills,
+and transcripts. Later setup runs respect its persistent disabled marker.
 See [source and adaptations](data/repos.md).
 
 Pi keeps declarative settings in this repository but runs from writable settings
@@ -317,19 +327,19 @@ cache, while the tracked CLI skill updates with this repository.
 
 ## FirstMate defaults
 
-After bootstrap, run `fm` or `firstmate`. The launcher opens Codex from
-`~/firstmate`, so FirstMate's original AGENTS.md and project hooks load.
-Its native session-start instructions initialize the home.
-Fresh installs clone the maintained `sandeepsalwan1/firstmate` fork with Pi 1.2 compatibility fixes.
+After bootstrap, run `fm` or `firstmate`. The launcher opens Pi from
+`~/firstmate`, so FirstMate's original AGENTS.md and project extensions load.
+Fresh installs clone `kunchenguid/firstmate`. Use its own `/updatefirstmate`
+workflow to update an existing checkout while preserving its operational data.
 
-FirstMate and its default workers use GPT-5.5 at `xhigh`, its strongest documented
-reasoning level, with the real 1,050,000-token context window. Ordinary Codex
-defaults to GPT-6 Astra at `max`. Claude keeps its separate ultracode setting.
-Sign in to an account that supports these models.
+Pi uses the user's configured provider and model. The portable worker default
+selects Pi without pinning a model. The wrapper preserves an explicit
+`PI_CODING_AGENT_DIR`, or uses `PI_FIRSTMATE_AGENT_DIR` when configured; otherwise
+Pi uses its normal account and settings directory. Updates preserve running
+sessions. A fresh conversation loads the new instructions and extensions.
 
-The captain preferences say to use the normal workflow by default and enter a
-dynamic workflow only when suggested. The fixed worker profile starts with no
-dynamic routing rules.
+Use the normal workflow by default. Dynamic workflows and large swarms require
+an explicit request. FirstMate retains its existing dispatch rules and authority.
 
 Bootstrap and rebuild seed missing preferences and model settings. They preserve
 existing choices, credentials, and histories. An external profile-owner marker

@@ -3,6 +3,8 @@ name: pstack-arena
 description: "Spawn N parallel candidates at the same task, pick a base, graft the strongest parts of the losers into it."
 ---
 
+Integration rule: FirstMate owns all worker dispatch and model choices mentioned below. Workers report delegation needs to their supervisor; standalone agents work directly. Do not launch nested agents, model panels, or a second orchestrator.
+
 # Arena
 
 Open a todolist with one entry per phase (Frame, Fan out, Cross-judge, Pick, Graft, Verify) before launching anything.

@@ -1,7 +1,7 @@
 # Mac FirstMate preferences
 
-Use Codex with GPT-5.5 and xhigh reasoning as the default for this FirstMate and its workers. Keep the model's real 1.05M context window.
+Use Pi as the primary FirstMate launcher. Preserve the user's configured models, accounts, and reasoning levels. Keep each model's real context window.
 
-Use the normal workflow by default. Enter a dynamic workflow only when it is suggested for the task. Most tasks do not need it. Keep routine work direct and fast.
+Use the normal workflow by default. Dynamic workflows and large swarms need the user's explicit request. FirstMate owns worker dispatch; Pstack skills supply engineering guidance within its assignments.
 
 Load the existing global and project AGENTS.md instructions. Preserve active work, custom preferences, credentials, and all agent transcripts.

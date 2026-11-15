@@ -3,6 +3,8 @@ name: pstack-reflect
 description: "Review scoped history through useful lenses and propose evidence-backed learnings without editing memory. Use when the user says reflect."
 ---
 
+Integration rule: FirstMate owns all worker dispatch and model choices mentioned below. Workers report delegation needs to their supervisor; standalone agents work directly. Do not launch nested agents, model panels, or a second orchestrator.
+
 # Reflect
 
 Mine the current conversation for durable learnings, then route them into skill edits.

@@ -1,8 +1,4 @@
 {
-  "default": {
-    "harness": "codex",
-    "model": "gpt-5.5",
-    "effort": "xhigh"
-  },
+  "default": { "harness": "pi" },
   "rules": []
 }

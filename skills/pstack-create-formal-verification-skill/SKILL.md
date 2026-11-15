@@ -31,7 +31,7 @@ Pick the tool that answers the question at the lowest cost: a model checker, a p
 
 Write a project-local skill with frontmatter that names the area and says when to use it. Without frontmatter, the skill never registers. From the skill alone, the next agent must be able to tell whether a change touches the verified code, run the check, tell a real bug from a modeling error, and update the verification when a change is intended. Put the coverage record and the sync commit in the skill, and tell the next agent to move the sync commit forward only after it confirms that the verification describes the code at the new commit. Use this repo's real commands, paths, and nouns, and leave no placeholders.
 
-If the check is a TLA+ model, explain each invariant violation through its shortest counterexample path in plain words. Use the existing verification tool's output. Present useful diagrams through Lavish and the installed personal helper. Do not install a separate renderer or orchestrator.
+If the check is a TLA+ model, explain each invariant violation through its shortest counterexample path in plain words. Use the existing verification tool's output. Use Mermaid for diagrams. Use Lavish only on explicit request, through `lavish-helper-for-personal`. Do not install a separate renderer or orchestrator.
 
 ## Prove it before you hand off
 

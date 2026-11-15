@@ -3,6 +3,8 @@ name: pstack-architect
 description: "Sketch types, signatures, and module structure before code, then stay in the loop while implementation fills in."
 ---
 
+Integration rule: FirstMate owns all worker dispatch and model choices mentioned below. Workers report delegation needs to their supervisor; standalone agents work directly. Do not launch nested agents, model panels, or a second orchestrator.
+
 # Architect
 
 Sketch types, function signatures, class shapes, and module boundaries with `not implemented` bodies and pseudocode. Compare independent design alternatives, then fill in code against the chosen sketch.

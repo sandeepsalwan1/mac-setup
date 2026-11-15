@@ -3,6 +3,8 @@ name: pstack-why
 description: "Find evidence for design choices and historical constraints through relevant authorized read-only sources; distinguish facts, inferences, and gaps."
 ---
 
+Integration rule: FirstMate owns all worker dispatch and model choices mentioned below. Workers report delegation needs to their supervisor; standalone agents work directly. Do not launch nested agents, model panels, or a second orchestrator.
+
 # Why
 
 Investigate the motivation and intent behind code. The companion `how` skill answers what the code does and how it works. `why` answers what forces led to its shape.
