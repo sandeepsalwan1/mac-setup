@@ -339,6 +339,14 @@ The captain preferences say to use the normal workflow by default and enter a
 dynamic workflow only when suggested. The fixed worker profile starts with no
 dynamic routing rules.
 
+Defaults enable FirstMate's Claude supervision host, using its default host
+model. Sign in to Claude to use it. On Codex, it handles work during `/afk`;
+attended wakes still reach the main session. A Codex owner picks up this setting
+at its next watcher arm. Existing host choices and `config/supervision-host-off`
+opt-outs are preserved. Pi's supervision branch runs automatically when Pi owns
+the session. Codex's separate native Stop park requires a FirstMate-verified CLI
+version; this setup does not enable it or bypass that check.
+
 Bootstrap and rebuild seed missing preferences and model settings. They preserve
 existing choices, credentials, and histories. An external profile-owner marker
 keeps workplace FirstMate settings and launchers with their existing owner.
