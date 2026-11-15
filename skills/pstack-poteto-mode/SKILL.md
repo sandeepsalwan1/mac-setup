@@ -1,21 +1,13 @@
 ---
 name: pstack-poteto-mode
-description: Read automatically before planning, writing, debugging, refactoring, or reviewing code. Apply Pstack engineering habits within FirstMate's existing captain, crew, and secondmate assignments and configured harness.
+description: "Load for technical work. Select relevant Pstack skills and verify the user's outcome."
 ---
-
-Integration rule: FirstMate owns all worker dispatch and model choices mentioned below. Workers report delegation needs to their supervisor; standalone agents work directly. Do not launch nested agents, model panels, or a second orchestrator.
 
 # Poteto mode
 
-Read this once before coding work when the Pstack family is enabled. Captains, crews, secondmates, and standalone coding agents follow the same rule. No manual slash command is needed.
+Use the current agent and model. Never start agents or select models from this bundle. FirstMate owns delegation.
 
-Follow the user's scope, repository rules, current task brief, and assigned worktree. Within FirstMate, keep its captain, crew assignments, handoffs, and delivery authority. Use the harness, model, effort, and pipeline phase already assigned to your role. Report through the existing FirstMate handoff.
-
-Start with the real outcome. Read the relevant source and local context before changing it. Reproduce a bug through the user's actual workflow. State what a successful result must do, then verify that behavior on the real artifact.
-
-Use a direct path for occasional operations. Add tools or abstractions only for a concrete blocker or repeated need. Remove obsolete code before adding replacements. Prefer clear domain types, boundary validation, small interfaces, idempotent operations, and short call chains. Preserve unknown work, credentials, and session transcripts.
-
-Run independent work in parallel when the active harness supports it. The supervising FirstMate uses its existing crew; workers request help through their supervisor. Independent review can use the same configured model. Do not require a model panel, a questionnaire, a second orchestrator, or an unavailable service. Continue authorized reversible work.
+Read relevant source, reproduce bugs through the user's workflow, and verify the requested outcome. Follow the assigned scope and worktree. Run independent tool calls in parallel. Prefer direct operations, clear types, small interfaces, and fewer layers. Preserve unknown work and session transcripts.
 
 Open the native Pstack skill that matches the task:
 
@@ -25,6 +17,5 @@ Open the native Pstack skill that matches the task:
 - Context and evidence: [guard the context window](../pstack-principle-guard-the-context-window/SKILL.md), [prove it works](../pstack-principle-prove-it-works/SKILL.md), and [benchmark checklist](../pstack-benchmark-checklist/SKILL.md).
 - Clear writing: [technical writing](../pstack-technical-writing/SKILL.md) and [unslop](../pstack-unslop/SKILL.md).
 
-Only when the user explicitly requests Lavish, use it through `lavish-helper-for-personal` for visual plans, comparisons, diagrams, and review artifacts. Keep simple answers short. No mandatory visual checkpoint or unrelated renderer is required.
-
-Use the installing checkout's `scripts/pstack-experiment off` to disable the family persistently, or `on` to restore it. Resolve this skill's source when `~/.dotfiles` points to another checkout. Content and unrelated work remain intact.
+Use Lavish only on explicit request, through `lavish-helper-for-personal`.
+See [setup](../pstack-setup-pstack/SKILL.md) to enable or disable Pstack.

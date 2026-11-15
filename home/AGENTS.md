@@ -21,8 +21,8 @@
 - Reduce code and cyclomatic complexity
 - Global installs: declare portable baseline tools in dotfiles. Keep work-specific packages local and never auto-record them.
 - Personal Chrome debugging: reuse one long-lived bridge. Never start parallel or repeated attachment attempts.
-- Use Lavish for visual plans, reports, comparisons, diagrams, and review artifacts. Use `lavish-helper-for-personal`; the agent opens Mac Chrome and polls on the artifact's owning machine.
-- Before planning, writing, debugging, refactoring, or reviewing code, every agent, including FirstMate captains, crews, and secondmates, must read `~/.agents/skills/pstack-poteto-mode/SKILL.md` when it exists and `~/.local/state/agent-skills/pstack.disabled` is absent. Follow FirstMate's current assignment and keep its harness, model, and effort.
+- Use Lavish only when the user explicitly requests it, even if a skill or project suggests it. Then use `lavish-helper-for-personal`; the agent opens Mac Chrome and polls on the artifact's owning machine.
+- For technical work, load `~/.skills/poteto-mode/SKILL.md` when present; it selects relevant skills automatically. FirstMate owns agent orchestration.
 - Keep Codex Computer Use installed and enabled. Use native CLI skills and keep other MCP servers disabled.
 - Never delete or prune session transcripts under `.kiro`, `.claude`, or `.codex`.
 - Never delete with globs or unresolved paths. Check exact targets first and move generated files to a dated backup.

@@ -3,17 +3,12 @@ name: pstack-no-comments
 description: "Review comments and encode verified constraints within the authorized scope."
 ---
 
-Integration rule: FirstMate owns all worker dispatch and model choices mentioned below. Workers report delegation needs to their supervisor; standalone agents work directly. Do not launch nested agents, model panels, or a second orchestrator.
-
 # No comments
 
 Review comments for information the code cannot express. Use the caller's scope,
 or the current diff against its base branch, including the working tree.
 
-Use an existing read-only FirstMate or harness delegate when an independent
-review helps. Pass [comment-reviewer.md](references/comment-reviewer.md) and the
-scope, using the configured model and effort. Without delegation, perform a
-separate review pass yourself. No specialized agent or plugin is required.
+Review the scope using [comment-reviewer.md](references/comment-reviewer.md).
 
 1. Inspect each proposed deletion against nearby code and the reviewer's evidence.
    Reject scope escapes, application-code edits, and unsupported findings.

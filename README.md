@@ -277,13 +277,11 @@ worker dispatch, models, effort, worktrees, and handoffs. Workers request parall
 help through FirstMate. Installing Swarm does not start workers or authorize a
 large swarm. Lavish runs only when explicitly requested.
 
-Kun's portable skills include Kun, no-mistakes, Lavish, quota-axi,
-chrome-devtools-axi, gh-axi, vision, tasks-axi, headless, GNHF, whathappened,
-use-kunchenguid-design-system, AXI, and shorts-from-longform. Compact Adviser stays plugin-managed.
-Repository-internal contributor skills stay in their own repositories.
-GNHF is explicit-only and remains supervised by FirstMate. Whathappened needs
-Grok's native X tools. Bot UI, video, and Statechart workflows retain their
-optional platform or tool requirements; installation does not provision accounts.
+Existing portable skills include Kun, no-mistakes, Lavish, quota-axi,
+chrome-devtools-axi, gh-axi, vision, and tasks-axi. Compact Adviser stays
+plugin-managed. Additional skills require an explicit request; an author's
+other repositories are not an install list. Bot UI, video, and Statechart
+retain their optional tool requirements; installation does not provision accounts.
 
 Install additions with `scripts/link-portable-skills --additive` to preserve retired
 and unrelated skills already present. Run the installing checkout's

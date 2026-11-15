@@ -22,13 +22,6 @@ The setup uses released tools and snapshots each repository's authored skill fol
 | [backnotprop/pstack](https://github.com/backnotprop/pstack) | `f905b88ebdd877e6b36fcc791970d47f44d15a15` | All 58 flat namespaced skills; adapted Poteto mode, engineering guidance, supporting resources, and MIT licenses |
 | [cursor/plugins](https://github.com/cursor/plugins/tree/main/pstack) | `1ba91fc25c0977741dd0e267849e6234b037ed0a` | Inspected Pstack mirror; primary source comes from backnotprop/pstack |
 
-| [headless](https://github.com/kunchenguid/headless) | `1cf3667fa2c794dd959d9aaa59bcef157fabb463` | Headless setup skill and its scripts |
-| [gnhf](https://github.com/kunchenguid/gnhf) | `3e1179f8460ac53779063d1ca9dfa2c02ec02e38` | Explicit-only FirstMate-supervised workflow |
-| [whathappened](https://github.com/kunchenguid/whathappened) | `fe9e84bf1b8bcb40190c1757b55cb61d7ce79bb1` | Explicit X briefing; requires Grok native X tools |
-| [kunchenguid-design-system](https://github.com/kunchenguid/kunchenguid-design-system) | `956db475a1dd3674b60b048286510b4afea85100` | Reusable page design skill |
-
-| [axi](https://github.com/kunchenguid/axi) | `8033e86e32f23d272ef40b6f7e139a2811bf1459` | Agent-facing CLI design guidance |
-| [short-pipe](https://github.com/kunchenguid/short-pipe) | `c6aa9413158e280eed45eef52edebddffa5a0bea` | Video clipping guidance; Short Pipe tools required when invoked |
 
 ## Released tool pins
 
@@ -46,7 +39,6 @@ manifest is `home/npm-globals.txt`; Pi extensions are in `home/.pi/agent/setting
 | lavish-axi | 0.1.97 |
 | quota-axi | 0.1.69 |
 | tasks-axi | 0.2.6 |
-| gnhf | 0.1.52 |
 | @earendil-works/pi-coding-agent | 1.5.2 |
 | pi-web-access | 0.47.0 |
 | @ryan_nookpi/pi-extension-codex-fast-mode | 0.2.9 |
@@ -93,17 +85,15 @@ manifest is `home/npm-globals.txt`; Pi extensions are in `home/.pi/agent/setting
   FirstMate ownership rules retained. The upstream skill tree is unchanged since
   the November 11 review. Swarm, setup/help, Statechart, Sharpen, catch-up, video,
   and bot UI skills are now included. Setup/help use the managed Mac linker;
-  Swarm delegates through FirstMate and never chooses another model or runtime.
+  Swarm prepares work for FirstMate; Pstack never launches agents or selects models.
   Statechart can return Mermaid directly. Lavish remains explicit-only.
   Optional platform tools are checked when a workflow is invoked.
   `scripts/pstack-experiment on|off|status` controls the namespaced family without
   deleting its content or unrelated skills.
-- Kun's public portable skills were compared with their current sources.
-  Repository-internal contributor guidance and Grok Ship's separate supervisor workflows are not global skills. AXI and Short Pipe's portable clipping skill are included. Compact Adviser
-  remains owned by its official plugin. No-mistakes retains the latest released
+- Existing portable skills were compared with their current sources.
+  Other skills require an explicit request. Compact Adviser remains owned by
+  its official plugin. No-mistakes retains the latest released
   v1.106.1 skill instead of unreleased source instructions.
-- GNHF 0.1.52 is available only on explicit request through FirstMate. Its installed
-  skill does not turn generic overnight work into a second orchestration loop.
 - FirstMate's primary launcher and fresh worker defaults use Pi. Existing config,
   accounts, selected models, and active work remain owned by FirstMate. Fresh
   installs track the original upstream repository. No model context-window

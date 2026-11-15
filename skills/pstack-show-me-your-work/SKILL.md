@@ -3,8 +3,6 @@ name: pstack-show-me-your-work
 description: "Keep a reviewable decision trail for long-running or unattended work: a TSV log with one row per decision (what, why, evidence, result). Local by default; commit it when a reviewer needs the trail to trust the result."
 ---
 
-Integration rule: FirstMate owns all worker dispatch and model choices mentioned below. Workers report delegation needs to their supervisor; standalone agents work directly. Do not launch nested agents, model panels, or a second orchestrator.
-
 # Show me your work
 
 Keep one canonical log.
@@ -65,7 +63,7 @@ Correct the log, not the story. The audit never edits or removes a row, even an 
 
 ## Independent review of the trail
 
-Use an independent read-only review of the trail when the risk warrants one. The same configured model is valid. Without delegation, do a separate review pass and state that limit. Check for weak evidence, skipped verification, scope changes, and gaps that matter to the user. Report only concrete flags with evidence pointers. No extra review is required for routine, low-impact work.
+When risk warrants it, review the trail in a separate read-only pass. Check weak evidence, skipped verification, scope changes, and material gaps. Report concrete findings with evidence pointers. Call a review independent only when FirstMate supplied a separate reviewer. Skip this pass for routine work.
 
 ## Reviewing the trail
 

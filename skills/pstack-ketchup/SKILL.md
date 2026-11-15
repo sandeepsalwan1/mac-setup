@@ -4,8 +4,6 @@ description: "Catch the user up on what changed in this chat since their last me
 disable-model-invocation: true
 ---
 
-Integration rule: FirstMate owns all worker dispatch and model choices mentioned below. Workers report delegation needs to their supervisor; standalone agents work directly. Do not launch nested agents, model panels, or a second orchestrator.
-
 # Ketchup
 
 Catch the user up on what changed in this chat since the last message they wrote before `/ketchup`, and help them understand each change, not only where it stands. Then lay out every call waiting on them so they can make it from your reply alone. Notifications and subagent results are not their messages. Assume the user remembers their last message and nothing after it.

@@ -3,8 +3,6 @@ name: pstack-architect
 description: "Sketch types, signatures, and module structure before code, then stay in the loop while implementation fills in."
 ---
 
-Integration rule: FirstMate owns all worker dispatch and model choices mentioned below. Workers report delegation needs to their supervisor; standalone agents work directly. Do not launch nested agents, model panels, or a second orchestrator.
-
 # Architect
 
 Sketch types, function signatures, class shapes, and module boundaries with `not implemented` bodies and pseudocode. Compare independent design alternatives, then fill in code against the chosen sketch.
@@ -27,9 +25,7 @@ Skip Phase A only when the work is genuinely greenfield with no surrounding syst
 
 ## Phase B: Sketch
 
-Run the [arena](../pstack-arena/SKILL.md) guide with the design-sketch task and the Phase A grounding artifacts. Pass `references/runner-prompt.md` as each runner's prompt.
-
-Use existing FirstMate delegates or the current harness's delegation tools with their configured model and effort. Without delegation, compare designs in separate passes.
+Use [arena](../pstack-arena/SKILL.md) to compare design sketches against the Phase A evidence. Apply `references/runner-prompt.md` in separate passes, or compare candidates supplied by FirstMate.
 
 Design it twice. Require at least two structurally distinct candidates before synthesis, even when the first looks sufficient. This is the [exhaust-the-design-space](../pstack-principle-exhaust-the-design-space/SKILL.md) guide made concrete. Whole-shape alternatives, not point fixes inside one shape.
 

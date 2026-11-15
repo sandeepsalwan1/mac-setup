@@ -3,8 +3,6 @@ name: pstack-automate-me
 description: "Draft or revise a personal workflow skill from scoped evidence and existing preferences; review before applying memory changes."
 ---
 
-Integration rule: FirstMate owns all worker dispatch and model choices mentioned below. Workers report delegation needs to their supervisor; standalone agents work directly. Do not launch nested agents, model panels, or a second orchestrator.
-
 # Automate me
 
 A guided flow for turning the user's working conventions into a skill agents will follow. The output is one `-mode` skill tailored to them (e.g. `jay-mode`, `priya-mode`).
@@ -26,7 +24,7 @@ Update mode changes the rest of the flow:
 
 ### 1. Mine their history
 
-Locate the active workspace's transcripts before fanning out. Use only that workspace's directory. Don't glob across every project's directory. That crosses workspace boundaries and reads private chats from unrelated projects. Where they live depends on your harness:
+Locate the active workspace's transcripts. Read only that workspace's directory. Where they live depends on your harness:
 
 - **Cursor:** the system prompt names the workspace's `agent-transcripts/` directory under `~/.cursor/projects/`.
 - **Claude Code:** `~/.claude/projects/<slug>/*.jsonl`, where `<slug>` is the workspace path with every character that isn't a letter or digit turned into "-".
@@ -34,7 +32,7 @@ Locate the active workspace's transcripts before fanning out. Use only that work
 - **Codex:** `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl`. Keep only files whose first line has `payload.cwd` equal to the workspace path.
 - **Other harnesses:** the harness's session directory for this workspace.
 
-Survey recent agent conversations within that scope for recurring patterns. Run multiple parallel subagents across slices of history (e.g. last 2-4 weeks, split into 3 slices so each has enough material). Use the current harness's configured model and effort. Keep independent work isolated. Each slice mining subagent reads transcripts from the workspace-scoped path the parent provides, looks for the signals below, and returns a short structured list of patterns it saw with evidence pointers. Default signals worth hunting:
+Search scoped history for recurring patterns. Run independent searches in parallel; read only matching excerpts. Record patterns with evidence pointers, then compare across time slices. Look for:
 
 - Response preferences (length, tone, format, "dumb it down" corrections)
 - Delegation habits (subagents, models, specialized workflows, parallelism)

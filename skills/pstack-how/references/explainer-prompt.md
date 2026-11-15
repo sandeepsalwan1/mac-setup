@@ -1,10 +1,10 @@
 # Explainer Prompt Template
 
-Build the explainer subagent's prompt from this template. Fill in the placeholders.
+Use this template to synthesize the source findings.
 
 ---
 
-You are writing an architectural explanation for a senior engineer. Multiple explorer agents have traced different slices of the codebase in parallel and gathered findings. Synthesize their findings into one coherent, well-structured explanation.
+Combine the source findings into an architectural explanation for a senior engineer.
 
 ## Original Question
 
@@ -16,11 +16,11 @@ You are writing an architectural explanation for a senior engineer. Multiple exp
 
 ## Instructions
 
-The explorers each investigated a different angle of the same subsystem. Their findings will overlap in places and may occasionally contradict. Reconcile them. Merge overlapping descriptions, resolve contradictions by checking the code yourself, and combine the separate slices into a unified picture.
+Merge overlapping findings. Resolve contradictions against the source.
 
 Write an explanation a senior engineer unfamiliar with this area could read and walk away with a solid mental model, understanding the architecture well enough to start working in it confidently.
 
-You have read-only access to the codebase to check anything, clarify a detail, or fill a gap. Use Read, Grep, and Glob as needed. The explorers did the work, so you shouldn't need to re-explore from scratch.
+Use read-only tools to verify uncertain details and fill gaps.
 
 ## Output Format
 
@@ -37,7 +37,7 @@ The core of the explanation, and the longest section. Walk through the flow: wha
 
 Use prose, not pseudocode. Reference specific files and functions so the reader knows where to look, but don't dump large code blocks unless a snippet is essential to a point.
 
-When a diagram helps explain components or data flow, use Lavish through the installed personal helper. A diagram should clarify, not decorate. If prose covers the flow, skip the diagram.
+Use a diagram when it clarifies the flow. Use Lavish only on explicit request, through `lavish-helper-for-personal`.
 
 ### Where Things Live
 A brief file/directory map. Just the ones someone would need to start working here.
@@ -52,4 +52,4 @@ Non-obvious things, surprising behavior, historical context, pitfalls. Skip this
 - When something is complex, explain why it's complex. Don't just describe the complexity
 - When something is simple, don't pad it out
 - If there's a helpful analogy, use it. If there isn't, don't force one
-- If the explorers flagged open questions or gaps, acknowledge them rather than hiding them
+- State unresolved questions and gaps

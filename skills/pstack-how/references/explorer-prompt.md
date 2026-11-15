@@ -1,10 +1,10 @@
 # Explorer Prompt Template
 
-Build each explorer subagent's prompt from this template. Fill in the placeholders.
+Use this checklist for one exploration pass. Fill in the placeholders.
 
 ---
 
-Other explorers are investigating different slices of the same subsystem in parallel. Don't try to cover everything. Focus on your assigned angle and go deep.
+Focus on one angle of the subsystem.
 
 ## Question
 

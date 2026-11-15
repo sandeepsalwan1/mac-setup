@@ -3,8 +3,6 @@ name: pstack-reflect
 description: "Review scoped history through useful lenses and propose evidence-backed learnings without editing memory. Use when the user says reflect."
 ---
 
-Integration rule: FirstMate owns all worker dispatch and model choices mentioned below. Workers report delegation needs to their supervisor; standalone agents work directly. Do not launch nested agents, model panels, or a second orchestrator.
-
 # Reflect
 
 Mine the current conversation for durable learnings, then route them into skill edits.
@@ -33,7 +31,7 @@ Outside Cursor, take the newest candidates first and confirm one by finding the 
 
 ## 2. Review through relevant lenses
 
-Use the judgment, tooling, and divergent reviewer prompts in `references/` when those lenses add value. Read-only FirstMate or harness delegates may work independently using the configured model and effort. The same model is valid for all lenses. Otherwise perform separate passes yourself. Use only existing authorized read-only tools and do not enable plugins.
+Use the judgment, tooling, and divergent reviewer prompts in `references/` as separate review passes when useful. Use existing authorized read-only tools.
 
 ## 3. Synthesize
 
