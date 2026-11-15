@@ -192,6 +192,7 @@ in
     envExtra = ''
       export NOSYSZSHRC=1
       export CLAUDE_CODE_DISABLE_INLINE_SHELL_RM_PROMPT=${config.home.sessionVariables.CLAUDE_CODE_DISABLE_INLINE_SHELL_RM_PROMPT}
+      export CLAUDE_CODE_EVEN_MORE_DANGEROUSLY_SKIP_PERMISSIONS=''${CLAUDE_CODE_EVEN_MORE_DANGEROUSLY_SKIP_PERMISSIONS:-1}
       typeset -U path
       path=(
         /etc/profiles/per-user/${user}/bin

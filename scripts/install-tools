@@ -242,7 +242,7 @@ install_command_guard() {
 			)
 			| .hooks.PreToolUse |= map(select(.hooks | length > 0))
 			| .hooks.PreToolUse += [{
-				matcher: "Bash",
+				matcher: (if $settings == $claude_settings then "Bash|Monitor" else "Bash" end),
 				hooks: [{type: "command", command: $command, timeout: 3}]
 			}]
 		' "$settings" >"$temp"; then

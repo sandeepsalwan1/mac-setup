@@ -2,17 +2,14 @@
 
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { promises as fs } from "node:fs";
+import { constants, promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { createInterface } from "node:readline";
 
-const defaultClient = path.join(
-  os.homedir(),
-  ".codex/computer-use/Codex Computer Use.app/Contents/SharedSupport/" +
-    "SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient",
-);
-const client = process.env.CUA_CLIENT || defaultClient;
+const defaultCodexHome = path.join(os.homedir(), ".codex");
+const clientPath = "computer-use/Codex Computer Use.app/Contents/SharedSupport/" +
+  "SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient";
 const timeoutMs = Number.parseInt(process.env.CUA_TIMEOUT_MS || "30000", 10);
 
 const usage = `Usage: cua-cli <command> [options]
@@ -170,17 +167,34 @@ function buildCall(command, flags, positional) {
   }
 }
 
-async function connect(approveElicitation = false) {
+async function isExecutableFile(file) {
   try {
-    await fs.access(client);
+    if (!(await fs.stat(file)).isFile()) return false;
+    await fs.access(file, constants.X_OK);
+    return true;
   } catch {
+    return false;
+  }
+}
+
+async function connect(approveElicitation = false) {
+  let codexHome = process.env.CODEX_HOME || defaultCodexHome;
+  let client = process.env.CUA_CLIENT || path.join(codexHome, clientPath);
+  if (!process.env.CUA_CLIENT && codexHome !== defaultCodexHome && !(await isExecutableFile(client))) {
+    codexHome = defaultCodexHome;
+    client = path.join(codexHome, clientPath);
+  }
+  if (!(await isExecutableFile(client))) {
     fail(
-      `Computer Use client not found at ${client}. ` +
+      `Computer Use client is not an executable file at ${client}. ` +
         "Reinstall the Computer Use plugin once to restore the local runtime.",
     );
   }
 
-  const child = spawn(client, ["mcp"], { stdio: ["pipe", "pipe", "inherit"] });
+  const child = spawn(client, ["mcp"], {
+    stdio: ["pipe", "pipe", "inherit"],
+    env: process.env.CUA_CLIENT ? process.env : { ...process.env, CODEX_HOME: codexHome },
+  });
   const lines = createInterface({ input: child.stdout });
   const pending = new Map();
   let requestId = 0;

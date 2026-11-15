@@ -39,6 +39,7 @@ claude_env_json="$(nix eval --json \
 	"$ROOT#darwinConfigurations.mac.config.home-manager.users.\"$rectangle_user\"" \
 	--apply 'hm: {
 	  flag = hm.home.sessionVariables.CLAUDE_CODE_DISABLE_INLINE_SHELL_RM_PROMPT;
+	  vars = hm.home.sessionVariablesPackage.text;
 	  shell = hm.programs.zsh.envExtra;
 	  login = hm.launchd.agents.claude-inline-shell.config;
 	}')"
@@ -52,13 +53,25 @@ jq -e '
 	fail 'Claude inline-shell setting is absent from the launch environment'
 
 claude_test_home="$(dotfiles_test_tmproot claude-launch-env)"
-jq -r .shell <<<"$claude_env_json" >"$claude_test_home/.zshenv"
+jq -r '.vars, .shell' <<<"$claude_env_json" >"$claude_test_home/.zshenv"
 if ! env -u CLAUDE_CODE_DISABLE_INLINE_SHELL_RM_PROMPT \
+	-u CLAUDE_CODE_EVEN_MORE_DANGEROUSLY_SKIP_PERMISSIONS \
+	-u __HM_SESS_VARS_SOURCED -u __HM_ZSH_SESS_VARS_SOURCED \
 	HOME="$claude_test_home" ZDOTDIR="$claude_test_home" \
 	/bin/zsh -d <<'ZSH'; then
 test "$CLAUDE_CODE_DISABLE_INLINE_SHELL_RM_PROMPT" = 1
+test "$CLAUDE_CODE_EVEN_MORE_DANGEROUSLY_SKIP_PERMISSIONS" = 1
 ZSH
 	fail 'a fresh native zsh did not export the Claude inline-shell setting'
+fi
+
+if ! env -u __HM_SESS_VARS_SOURCED -u __HM_ZSH_SESS_VARS_SOURCED \
+	CLAUDE_CODE_EVEN_MORE_DANGEROUSLY_SKIP_PERMISSIONS=0 \
+	HOME="$claude_test_home" ZDOTDIR="$claude_test_home" \
+	/bin/zsh -d <<'ZSH'; then
+test "$CLAUDE_CODE_EVEN_MORE_DANGEROUSLY_SKIP_PERMISSIONS" = 0
+ZSH
+	fail 'a fresh native zsh discarded the explicit critical-path prompt override'
 fi
 
 pass 'Claude inline-shell approval setting reaches native zsh and macOS login launches'
