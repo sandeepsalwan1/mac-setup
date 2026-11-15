@@ -10,10 +10,10 @@
 (^|[;&|()`[:space:]])(sudo[[:space:]]+((-[a-zA-Z]+|--[a-z-]+)[[:space:]]+)*)?rm[[:space:]][^;&|]*--no-preserve-root([=[:space:]]|$)
 
 # Agent history is permanent. Keep deletion outside these trees.
-(^|[;&|()`[:space:]])(rm|unlink|rmdir)[[:space:]]+([^;&|]*[/[:space:]"'])?(\.kiro|\.claude|\.codex)(/|[[:space:]"'*?;]|$)
+(^|[;&|()`[:space:]])(rm|unlink|rmdir)[[:space:]]+([^;&|]*[/[:space:]"'])?(\.kiro|\.claude|\.codex)(-[0-9]+)?(/|[[:space:]"'*?;]|$)
 (^|[;&|()`[:space:]])(rm|unlink|rmdir)[[:space:]][^;&|]*\$(CODEX_HOME|\{CODEX_HOME\}|CLAUDE_CONFIG_DIR|\{CLAUDE_CONFIG_DIR\})(/|[[:space:]"']|$)
-(^|[;&|()`[:space:]])(cd|pushd)[[:space:]]+([^;&|]*[/[:space:]"'])?(\.kiro|\.claude|\.codex)(/[^;&|]*)?["']?[[:space:]]*[;&|].*(^|[;&|()`[:space:]])(rm|unlink|rmdir)[[:space:]]
-(^|[;&|()`[:space:]])find[[:space:]]+([^;&|]*[/[:space:]"'])?(\.kiro|\.claude|\.codex)(/|[[:space:]"'*?;]|$)[^;&|]*(-delete|-exec[[:space:]]+(rm|unlink|rmdir))([[:space:]]|$)
+(^|[;&|()`[:space:]])(cd|pushd)[[:space:]]+([^;&|]*[/[:space:]"'])?(\.kiro|\.claude|\.codex)(-[0-9]+)?(/[^;&|]*)?["']?[[:space:]]*[;&|].*(^|[;&|()`[:space:]])(rm|unlink|rmdir)[[:space:]]
+(^|[;&|()`[:space:]])find[[:space:]]+([^;&|]*[/[:space:]"'])?(\.kiro|\.claude|\.codex)(-[0-9]+)?(/|[[:space:]"'*?;]|$)[^;&|]*(-delete|-exec[[:space:]]+(rm|unlink|rmdir))([[:space:]]|$)
 (^|[;&|()`[:space:]])((codex|cx|co|pcc|pcx)[[:space:]]+(-[^;&|[:space:]"']+([[:space:]]+("[^"]*"|'[^']*'|[^;&|[:space:]"']+))?[[:space:]]+)*delete|(claude|cc)[[:space:]]+(-[^;&|[:space:]"']+([[:space:]]+("[^"]*"|'[^']*'|[^;&|[:space:]"']+))?[[:space:]]+)*(purge|rm))([[:space:]]|$)
 
 # Raw disks and filesystems.
@@ -23,7 +23,9 @@
 (^|[;&|()`[:space:]])diskutil[[:space:]]+(erase[A-Za-z]*|partitionDisk|zeroDisk|secureErase|apfs[[:space:]]+(delete|erase)[A-Za-z]*)
 
 # Fork bombs and piping downloads into a shell.
-(^|[;&|[:space:]])(function[[:space:]]+)?([^;&|(){}[:space:]]+)[[:space:]]*(\([[:space:]]*\))?[[:space:]]*\{[;[:space:]]*\3[[:space:]]*\|[[:space:]]*\3[[:space:]]*&[;[:space:]]*\}[;[:space:]]*\3([;&[:space:]]|$)
+(^|[;&|[:space:]])(function[[:space:]]+)?([^;&|(){}[:space:]]+)[[:space:]]*(\([[:space:]]*\))?[[:space:]]*\{[;[:space:]]*\3[[:space:]]*[|&][[:space:]]*\3[[:space:]]*[;&][;[:space:]]*\}
+(^|[;&|[:space:]])while[[:space:]]+(:|true|\[[[:space:]]+1[[:space:]]+\])[;[:space:]]+do[;[:space:]]+[^;&|]+&[;[:space:]]*done([;&[:space:]]|$)
+(^|[;&|[:space:]])for[[:space:]]*\(\([^;]*;[[:space:]]*;[^)]*\)\)[;[:space:]]*do[;[:space:]]+[^;&|]+&[;[:space:]]*done([;&[:space:]]|$)
 (^|[;&|()`[:space:]])(curl|wget)[[:space:]][^;&|]*\|[[:space:]]*(sudo[[:space:]]+)?(ba|z|da)?sh([[:space:]]|$)
 
 # Remote history and branch destruction. Force-with-lease stays allowed.

@@ -206,13 +206,17 @@ Bootstrap fills missing Claude settings from `home/.claude/settings.json`.
 It applies bypass mode to the standalone profile. The shell and macOS login
 environment export `CLAUDE_CODE_DISABLE_INLINE_SHELL_RM_PROMPT=1`, supported in
 Claude v2.1.288 and later. Claude ignores this variable in `settings.json`.
+New zsh shells also default `CLAUDE_CODE_EVEN_MORE_DANGEROUSLY_SKIP_PERMISSIONS=1`
+for Claude v2.1.311 and later, retaining an explicit `0` override. This removes
+the native critical-path prompt in bypass mode, including false alarms on
+shell syntax. It must be a launch environment variable.
 Open a new terminal before starting Claude after an update to pick up the launch environment.
-The shared catastrophic-command guard stays active. It permits targeted file
+The shared catastrophic-command guard stays active for Bash and Monitor. It permits targeted file
 and folder cleanup, including Markdown files, and blocks whole-root/home deletion,
 disk wipes, and recursive fork bombs. Literal quoted `cat` heredocs are treated
 as data; shell heredocs and pipelines remain checked.
 Other existing values win, and an external shared profile keeps control of its settings.
-The defaults request Opus 5.5 with the 1M context window, `xhigh` effort, ultracode,
+The defaults request Opus 5.5, `xhigh` effort, ultracode,
 bypass permissions without the startup prompt, automatic peer-message delivery,
 and 365,000-day transcript retention. Select a model your account supports
 if this default is unavailable.
@@ -304,7 +308,11 @@ and compaction extensions, and `~/.agents/hooks`; setup leaves them unchanged.
 Browser and Computer Use are proprietary plugins distributed with Codex, so their
 implementations are not copied into Git. The tracked `computer-use-cli` skill is a
 compact shell front end to the locally installed official Computer Use runtime;
-Home Manager installs its command as `~/.local/bin/cua-cli`. Browser stays managed
+Home Manager installs its command as `~/.local/bin/cua-cli`. The command uses the
+current Codex profile's installed runtime, falling back to the main profile when
+needed, and gives the client the matching runtime home. An explicit `CUA_CLIENT`
+keeps its inherited environment.
+Browser stays managed
 by its Codex plugin rather than being linked into the global skill directories;
 browser automation uses the pinned `chrome-devtools-axi` skill. The Homebrew
 `codex` cask supplies the CLI. Install and open the
@@ -336,6 +344,15 @@ sessions. A fresh conversation loads the new instructions and extensions.
 
 Use the normal workflow by default. Dynamic workflows and large swarms require
 an explicit request. FirstMate retains its existing dispatch rules and authority.
+
+Pi's supervision branch runs automatically when Pi owns the FirstMate session.
+The portable defaults also enable FirstMate's supported Claude supervision host
+for native Codex and other supported primaries, using FirstMate's default host
+model. On Codex, it handles work during `/afk`; attended wakes still reach the
+main session. A Codex owner picks up this setting at its next watcher arm.
+Existing host choices and `config/supervision-host-off` opt-outs are preserved.
+Codex's separate native Stop park remains subject to FirstMate's verified CLI
+version requirement; this setup does not bypass that check.
 
 Bootstrap and rebuild seed missing preferences and model settings. They preserve
 existing choices, credentials, and histories. An external profile-owner marker
