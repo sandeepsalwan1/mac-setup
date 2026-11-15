@@ -1,14 +1,14 @@
 ---
 name: pstack-setup-pstack
-description: "Check, enable, or disable the Pstack experiment on this managed Mac without changing FirstMate's configuration."
+description: "Install or update the requested Pstack skills without changing FirstMate's configuration."
 disable-model-invocation: true
 ---
 
 # Set up Pstack
 
-The managed source is mac-setup's `skills/pstack-*`. Use that checkout's `scripts/pstack-experiment status`, `on`, or `off`. The standard checkout is `~/.dotfiles`; resolve an installed skill's source if this Mac uses another worktree.
+The source is mac-setup's `skills/poteto-mode` and `skills/pstack-*`. Resolve an installed skill's source to find its checkout. Poteto mode is the default engineering workflow; no activation step is needed.
 
-Update only this bundle. Other skills require an explicit request. Use `scripts/link-portable-skills --additive <skill...>` for selected skills. Verify native discovery. Disabling preserves contents and unrelated skills; the disabled marker survives setup runs.
+Update only this bundle. Other skills require an explicit request. Use `scripts/link-portable-skills --additive <skill...>` for selected skills. Verify native discovery and preserve unrelated skills.
 
 FirstMate keeps orchestration, models, effort, accounts, and active sessions. Do not create Pstack model settings or run an upstream installer over this adapted bundle. Update by comparing the source revisions in `data/repos.md`, retaining local integration rules, running `tests/check.sh`, and relinking the reviewed source.
 

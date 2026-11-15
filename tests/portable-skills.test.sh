@@ -31,6 +31,7 @@ printf '%s\n' keep >"$portable_test_home/.pi/agent/skills/personal/SKILL.md"
 ln -s /missing/retired-skill "$portable_test_home/.claude/skills/safe-shell-deletion"
 ln -s /missing/retired-skill "$portable_test_home/.claude/skills/find-skills"
 ln -s /missing/retired-skill "$portable_test_home/.claude/skills/4x4"
+ln -s "$ROOT/skills/pstack-poteto-mode" "$portable_test_home/.claude/skills/pstack-poteto-mode"
 HOME="$portable_test_home" XDG_STATE_HOME="$portable_test_home/state" \
 	"$ROOT/scripts/link-portable-skills" --additive >"$portable_test_home/additive.out"
 grep -qx preserve "$portable_test_home/.codex/skills/4x4/SKILL.md"
@@ -41,6 +42,7 @@ HOME="$portable_test_home" XDG_STATE_HOME="$portable_test_home/state" \
 [ ! -L "$portable_test_home/.claude/skills/safe-shell-deletion" ]
 [ ! -L "$portable_test_home/.claude/skills/find-skills" ]
 [ ! -L "$portable_test_home/.claude/skills/4x4" ]
+[ ! -L "$portable_test_home/.claude/skills/pstack-poteto-mode" ]
 [ ! -e "$portable_test_home/.codex/skills/4x4" ]
 [ ! -e "$portable_test_home/.agents/skills/stow" ]
 grep -qx firstmate "$portable_test_home/firstmate/.agents/skills/stow/SKILL.md"

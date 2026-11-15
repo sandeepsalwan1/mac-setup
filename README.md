@@ -244,7 +244,7 @@ The repository keeps reviewed snapshots of:
 - lavish: create HTML artifacts for visual review
 - lavish-helper-for-personal: open local or server artifacts in Mac Chrome
 - no-mistakes: validate changes before publication
-- pstack-*: 58 native engineering and TypeScript skills with automatic Poteto guidance
+- poteto-mode: default engineering workflow, with 57 supporting pstack-* skills
 - quota-axi: report agent usage and remaining quota
 - read-all-adrs: read project decisions before continuing
 - remind: recap the task and recent progress
@@ -271,7 +271,7 @@ Some skills need an account, app, or local resource when invoked.
 `computer-use-cli` needs the official Codex runtime. Bundled snapshots follow
 this repository and `rebuild.sh`.
 
-Pstack includes all 58 upstream skills as native `pstack-*` entries, including
+Pstack includes `poteto-mode` and 57 native `pstack-*` skills, including
 Swarm, Arena, Statechart, setup/help, and the catch-up skills. FirstMate owns
 worker dispatch, models, effort, worktrees, and handoffs. Workers request parallel
 help through FirstMate. Installing Swarm does not start workers or authorize a
@@ -283,12 +283,10 @@ plugin-managed. Additional skills require an explicit request; an author's
 other repositories are not an install list. Bot UI, video, and Statechart
 retain their optional tool requirements; installation does not provision accounts.
 
-Install additions with `scripts/link-portable-skills --additive` to preserve retired
-and unrelated skills already present. Run the installing checkout's
-`scripts/pstack-experiment off`, `on`, or `status`.
-The standard checkout is `~/.dotfiles`; if skills come from a separate worktree,
-use that worktree's script. The switch preserves source content, unrelated skills,
-and transcripts. Later setup runs respect its persistent disabled marker.
+Poteto mode is the default for technical work. Its SKILL.md contains the workflow
+and selects supporting skills directly. No activation step or state flag is needed.
+Install selected additions with `scripts/link-portable-skills --additive <skill...>`
+from the checkout owning the installed skill. Unrelated skills remain intact.
 See [source and adaptations](data/repos.md).
 
 Pi keeps declarative settings in this repository but runs from writable settings

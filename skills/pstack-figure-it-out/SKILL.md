@@ -9,7 +9,7 @@ When the task matches no playbook, design one. The deliverable before any code i
 
 ## Start
 
-Apply [Poteto mode](../pstack-poteto-mode/SKILL.md), then track the phases that the actual work needs.
+Apply [Poteto mode](../poteto-mode/SKILL.md), then track the phases that the actual work needs.
 
 ## Phase A: Frame
 

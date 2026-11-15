@@ -19,7 +19,7 @@ The setup uses released tools and snapshots each repository's authored skill fol
 | [tasks-axi](https://github.com/kunchenguid/tasks-axi) | `9401ff899c0d1d8ae6b4fd8727b9025abda2032c` | Tasks skill and npm tool |
 | [davidondrej/skills](https://github.com/davidondrej/skills) | `8605863f211961c96208fe625d4024609cd7dbd5` | distribute-skill-to-all-agents, adr-verbatim, anti-sleep, better-prompt, read-all-adrs, remind, stop-overthinking, teach, global-agent-guardrails, and shared command hooks |
 | [shadcn](https://github.com/shadcn-ui/ui/tree/main/skills/shadcn) | `dd41d19e2f80ff6891951f7ced74c2c9a650b065` | Chat and design-system guidance refreshed; local invocation and styling adaptations retained |
-| [backnotprop/pstack](https://github.com/backnotprop/pstack) | `f905b88ebdd877e6b36fcc791970d47f44d15a15` | All 58 flat namespaced skills; adapted Poteto mode, engineering guidance, supporting resources, and MIT licenses |
+| [backnotprop/pstack](https://github.com/backnotprop/pstack) | `f905b88ebdd877e6b36fcc791970d47f44d15a15` | Poteto mode and 57 supporting skills; local engineering guidance and MIT licenses |
 | [cursor/plugins](https://github.com/cursor/plugins/tree/main/pstack) | `1ba91fc25c0977741dd0e267849e6234b037ed0a` | Inspected Pstack mirror; primary source comes from backnotprop/pstack |
 
 
@@ -88,8 +88,8 @@ manifest is `home/npm-globals.txt`; Pi extensions are in `home/.pi/agent/setting
   Swarm prepares work for FirstMate; Pstack never launches agents or selects models.
   Statechart can return Mermaid directly. Lavish remains explicit-only.
   Optional platform tools are checked when a workflow is invoked.
-  `scripts/pstack-experiment on|off|status` controls the namespaced family without
-  deleting its content or unrelated skills.
+  Poteto mode contains the default workflow directly. No experiment switch or
+  activation flag is used.
 - Existing portable skills were compared with their current sources.
   Other skills require an explicit request. Compact Adviser remains owned by
   its official plugin. No-mistakes retains the latest released
@@ -114,7 +114,7 @@ manifest is `home/npm-globals.txt`; Pi extensions are in `home/.pi/agent/setting
   other preferences were preserved.
 - The native `firstmate` launcher reports Pi 1.5.2. All 58 Pstack skills resolve
   to the reviewed source through nine local discovery paths. Native Pi discovers
-  149 skills with no diagnostics.
+  142 skills with no diagnostics after removing unrelated imports and the duplicate Poteto entry.
 - Pi's native ignore support excludes 23 redundant synced skill copies while
   retaining every previously available skill name and every source file. This
   machine-specific ignore list stays local; no plugin snapshots are published.

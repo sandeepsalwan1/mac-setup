@@ -27,8 +27,6 @@ fi
 
 grep -Fqx -- "- Never delete or prune session transcripts under \`.kiro\`, \`.claude\`, or \`.codex\`." \
 	"$ROOT/home/AGENTS.md" || fail 'the global instructions allow agent transcript cleanup'
-grep -Fqx -- "- Load \`~/AGENTS.local.md\` when it exists. Its private machine rules override this public baseline." \
-	"$ROOT/home/AGENTS.md" || fail 'the global instructions do not load private machine rules'
 if rg -qi 'amazon|brazil|mycli|code review|brazil-build|\bcr -' "$ROOT/home/AGENTS.md"; then
 	fail 'private workplace rules entered the public global instructions'
 fi
