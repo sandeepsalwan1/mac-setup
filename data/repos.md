@@ -99,6 +99,10 @@ manifest is `home/npm-globals.txt`; Pi extensions are in `home/.pi/agent/setting
   Reviewed against `backnotprop/pstack@97de40dcca2fa396124c3e70a1d8cc28005f60a3`
   on November 11. Its Arena model-family change is superseded by the local rule
   to keep FirstMate's assigned model. Changes to excluded Statechart files do not apply.
+  Poteto's entrypoint was also reviewed against
+  `backnotprop/pstack@f905b88ebdd877e6b36fcc791970d47f44d15a15` on November 15.
+  Its data-shape, direct-observation, delegation-cost, and decision-trail guidance
+  is adapted to the existing FirstMate workflow. Other Pstack skills retain their pins.
 - Shared hooks track the reviewed David Ondrej source with the local policy
   retained: targeted `rm` and `sudo rm` stay allowed; malformed input and
   missing patterns fail closed. The suite covers all three upstream payload
