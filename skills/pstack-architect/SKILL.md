@@ -29,7 +29,7 @@ Run the [arena](../pstack-arena/SKILL.md) guide with the design-sketch task and 
 
 Use existing FirstMate delegates or the current harness's delegation tools with their configured model and effort. Without delegation, compare designs in separate passes.
 
-Design it twice. Require at least two structurally distinct candidates before synthesis, even when the first looks sufficient. This is the [exhaust-the-design-space](../pstack-principle-exhaust-the-design-space/SKILL.md) guide made concrete. Whole-shape alternatives, not point fixes inside one shape.
+When the repo has a precedent for this shape, sketch from it and skip the arena. Otherwise, design it twice: require at least two structurally distinct candidates before synthesis. Whole-shape alternatives, not point fixes inside one shape.
 
 Screen every candidate against [`references/design-red-flags.md`](references/design-red-flags.md) before synthesis. Assume the next contributor is an agent that sees only the files it opened, copies the nearest example, and takes the shortest path that compiles. Prefer the design where a change that looks right from one file is right for the whole repo.
 

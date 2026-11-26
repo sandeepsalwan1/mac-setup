@@ -19,7 +19,7 @@ The setup uses released tools and snapshots each repository's authored skill fol
 | [tasks-axi](https://github.com/kunchenguid/tasks-axi) | `9401ff899c0d1d8ae6b4fd8727b9025abda2032c` | Tasks skill and npm tool |
 | [davidondrej/skills](https://github.com/davidondrej/skills) | `8605863f211961c96208fe625d4024609cd7dbd5` | distribute-skill-to-all-agents, adr-verbatim, anti-sleep, better-prompt, read-all-adrs, remind, stop-overthinking, teach, global-agent-guardrails, and shared command hooks |
 | [shadcn](https://github.com/shadcn-ui/ui/tree/main/skills/shadcn) | `dd41d19e2f80ff6891951f7ced74c2c9a650b065` | Chat and design-system guidance refreshed; local invocation and styling adaptations retained |
-| [backnotprop/pstack](https://github.com/backnotprop/pstack) | `25abb38559ddbabec563646224d09eff9a250eca` | 50 flat namespaced skills; adapted Poteto mode, engineering guidance, supporting resources, and MIT licenses |
+| [backnotprop/pstack](https://github.com/backnotprop/pstack) | `25abb38559ddbabec563646224d09eff9a250eca` | 46 flat namespaced skills; adapted Poteto mode, engineering guidance, supporting resources, and MIT licenses |
 | [cursor/plugins](https://github.com/cursor/plugins/tree/main/pstack) | `1ba91fc25c0977741dd0e267849e6234b037ed0a` | Inspected Pstack mirror; primary source comes from backnotprop/pstack |
 
 ## Released tool pins
@@ -80,13 +80,16 @@ manifest is `home/npm-globals.txt`; Pi extensions are in `home/.pi/agent/setting
 - Shadcn's chat rules, design-system guides, showcase assets, and coverage script
   match the source reviewed on November 11. Keep the local skill metadata and
   existing `cn` import convention.
-- Pstack exposes 50 individually discoverable, namespaced `SKILL.md` folders.
+- Pstack exposes 46 individually discoverable, namespaced `SKILL.md` folders.
   The same pinned primary source supplies all content and supporting resources.
   Each folder retains Lauren Tan's 2026 MIT license. Automatic Poteto guidance
   follows FirstMate and the configured model and effort. No runtime, model panel,
   questionnaire, extra hooks, or second orchestrator is installed.
   Excluded families: `swarm`, `setup-pstack`, `poteto-help`, `make-bot-ui`,
-  `sharpen`, `ketchup`, `ketchup-video`, and `statechart`.
+  `sharpen`, `ketchup`, `ketchup-video`, `statechart`, `recall`, `automate-me`,
+  `figure-it-out`, and `exhaust-the-design-space`.
+  Local rules keep the assigned model and effort, copy repo precedent before
+  designing alternatives, cap parallel readers, and keep decision trails local.
   Sibling links target local skills. Visual artifacts use Lavish through the
   personal helper. Scoped transcript reads remain read-only; reflection proposes
   changes without rewriting memory or applying Backpass.

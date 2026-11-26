@@ -14,9 +14,9 @@ for source_dir in "$ROOT"/skills/pstack-*; do
 	[ -f "$source_dir/SKILL.md" ]
 	NAMES+=("${source_dir##*/}")
 done
-[ "${#NAMES[@]}" -eq 50 ]
+[ "${#NAMES[@]}" -eq 46 ]
 [ ! -e "$ROOT/skills/pstack" ]
-for name in pstack-sharpen pstack-ketchup pstack-ketchup-video pstack-statechart pstack-swarm pstack-setup-pstack pstack-poteto-help; do
+for name in pstack-sharpen pstack-ketchup pstack-ketchup-video pstack-statechart pstack-swarm pstack-setup-pstack pstack-poteto-help pstack-recall pstack-automate-me pstack-figure-it-out pstack-principle-exhaust-the-design-space; do
 	[ ! -e "$ROOT/skills/$name" ]
 done
 if find "$ROOT"/skills/pstack-* -name guide.md -o -name catalog.md -o -name SOURCE.md | grep -q .; then
@@ -108,7 +108,7 @@ for enabled in (True, False, True):
             command for command in response["data"]["commands"]
             if command.get("name", "").startswith("skill:pstack-")
         ]
-        assert len(commands) == (50 if enabled else 0), commands
+        assert len(commands) == (46 if enabled else 0), commands
         if enabled:
             names = {command["name"] for command in commands}
             assert "skill:pstack-poteto-mode" in names

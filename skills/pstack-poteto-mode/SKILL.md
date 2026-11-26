@@ -15,9 +15,9 @@ Choose data shapes and ownership before writing logic. When a question can be an
 
 Use a direct path for occasional operations. Add tools or abstractions only for a concrete blocker or repeated need. Remove obsolete code before adding replacements. Prefer clear domain types, boundary validation, small interfaces, idempotent operations, and short call chains. Preserve unknown work, credentials, and session transcripts.
 
-Run independent work in parallel when the active harness supports it. Use existing FirstMate or harness delegates. Independent review can use the same configured model. Do not require a model panel, a questionnaire, a second orchestrator, or an unavailable service. Continue authorized reversible work.
+Run independent work in parallel when the active harness supports it. Use existing FirstMate or harness delegates. Independent review can use the same configured model. Do not require a model panel, a questionnaire, a second orchestrator, or an unavailable service. Continue authorized reversible work. Use the smallest useful parallelism after one end-to-end path works. Check the token-budget skill before starting more than three agents at once.
 
-Match effort and cost to the work within the assigned workflow. Routine bounded checks need less reasoning than concurrency bugs or uncertain designs. Give delegates the goal, scope, evidence paths, and completion check; review their results before reporting them.
+Keep the assigned model and effort for every task. Never lower effort for routine checks. Save tokens with smaller context instead. Give delegates the goal, scope, evidence paths, and completion check; review their results before reporting them.
 
 Open the native Pstack skill that matches the task:
 

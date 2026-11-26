@@ -1,6 +1,6 @@
 ---
 name: pstack-show-me-your-work
-description: "Keep a reviewable decision trail for long-running or unattended work: a TSV log with one row per decision (what, why, evidence, result). Local by default; commit it when a reviewer needs the trail to trust the result."
+description: "Keep a reviewable decision trail for long-running or unattended work: a TSV log with one row per decision (what, why, evidence, result). Keep it local; never commit it."
 ---
 
 # Show me your work
@@ -44,7 +44,7 @@ A run is one agent conversation, including its later turns and any summary of it
 
 By default the log is a working artifact, not committed. Keep it at `decisions.tsv` in the work dir, or `.audit/<task-slug>.tsv` when several efforts run at once, and leave it out of git.
 
-Commit it only when the work is ambitious enough that a reviewer needs the trail to trust the result.
+Never commit it. Keep it local, like decisions-HH-MM.md, and cite its path in the handoff.
 
 ## Rules
 
@@ -67,7 +67,7 @@ Use an independent read-only review of the trail when the risk warrants one. The
 
 ## Reviewing the trail
 
-Read top to bottom, follow the evidence pointers, spot-check. GitHub renders a committed TSV as a table. `column -s$'\t' -t decisions.tsv` renders it in a terminal.
+Read top to bottom, follow the evidence pointers, spot-check. `column -s$'\t' -t decisions.tsv` renders it in a terminal.
 
 ## Composing this skill
 

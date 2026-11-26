@@ -15,9 +15,10 @@ separate review pass yourself. No specialized agent or plugin is required.
 
 1. Inspect each proposed deletion against nearby code and the reviewer's evidence.
    Reject scope escapes, application-code edits, and unsupported findings.
-2. Keep legal headers, public API contracts, verified external constraints, and
-   explanations of behavior that remains non-obvious. If a constraint cannot be
-   verified, preserve it and report the gap.
+2. In new or changed lines, remove every comment except legal headers and API
+   docs the build requires. Keep legal headers, public API contracts, verified
+   external constraints, and explanations of behavior that remains non-obvious.
+   If a constraint cannot be verified, preserve it and report the gap.
 3. Remove narration, obsolete commented-out code, and redundant explanations
    within the authorized scope. Do not erase a safety or correctness suppression
    until its underlying defect is fixed and verified.

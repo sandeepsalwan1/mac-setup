@@ -13,7 +13,7 @@ Every candidate gets the same prompt, so the prompt is the contract.
 
 1. State the artifact each candidate is producing.
 2. Derive the rubric, 3-6 concrete gradeable criteria for what success looks like on *this* task. It is the picker's tool in Phase D. Candidates only see the task.
-3. Use existing FirstMate or harness delegates with the configured model and effort. Independent candidates may use the same model. Keep the candidate count proportional to the uncertainty, usually two. Without delegation, compare alternatives in separate passes.
+3. Use existing FirstMate or harness delegates with the configured model and effort. Independent candidates may use the same model. Keep the candidate count proportional to the uncertainty, usually two. Skip the arena when the repo already has a precedent for this shape, and copy the precedent instead. Check the token-budget skill before running more than three candidates. Without delegation, compare alternatives in separate passes.
 4. Give each candidate its own output location (a git worktree where possible, otherwise `/tmp/arena-<slug>/candidate-<n>/`), per the [separate-before-serializing-shared-state](../pstack-principle-separate-before-serializing-shared-state/SKILL.md) guide.
 
 ## Phase B: Fan out

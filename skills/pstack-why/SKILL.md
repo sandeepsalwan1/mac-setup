@@ -21,7 +21,7 @@ If the target is vague ("why do we do it this way?" with no clear referent), mak
 
 ## Step 2. Establish the Code Anchor
 
-Before spawning investigators, build the seed context inline: file paths and line ranges, key symbols (functions, classes, constants), the last few commits touching the target, PR numbers from merge commits (pattern `(#1234)` in the subject line), and any linked ticket IDs. Run `git blame -L <start>,<end> <file>` for last-touch commits, `git log --follow -p -- <file>` for full history with patches through renames, `git log --oneline -20 -- <file>` for recent commits with PR numbers visible, and `git log -1 --format=%B <commit>` to extract PR numbers. Then pull the PR bodies and discussion for any substantive commit: `gh pr view <number> --json title,body,author,createdAt,mergedAt,labels,closingIssuesReferences,comments,reviews`. This anchor goes to every investigator and to the synthesizer.
+Before spawning investigators, build the seed context inline: file paths and line ranges, key symbols (functions, classes, constants), the last few commits touching the target, PR numbers from merge commits (pattern `(#1234)` in the subject line), and any linked ticket IDs. Run `git blame -L <start>,<end> <file>` for last-touch commits, `git log --follow -p -- <file>` for full history with patches through renames, `git log --oneline -20 -- <file>` for recent commits with PR numbers visible, and `git log -1 --format=%B <commit>` to extract PR numbers. Then pull the PR bodies and discussion for any substantive commit: `gh pr view <number> --json title,body,author,createdAt,mergedAt,labels,closingIssuesReferences,comments,reviews`. This anchor goes to every investigator and to the synthesizer. For a review hosted outside GitHub, read the review and its comments with that system's installed CLI skill instead of `gh pr view`.
 
 ## Step 3. Spawn Parallel Investigators
 
@@ -41,7 +41,7 @@ Map each available source to an evidence category:
 6. Error / exception tracking
 7. Product analytics warehouse
 
-Source control is available through git and the installed GitHub CLI skill. For the other categories, use existing service skills and their command help. If a source fits more than one category, choose the one matching its primary evidence. Record ambiguous and unavailable sources.
+Source control is available through git and the installed GitHub CLI skill. For the other categories, use the installed search and service CLI skills (trackers, wikis, documents, chat, incidents) and their command help. If a source fits more than one category, choose the one matching its primary evidence. Record ambiguous and unavailable sources.
 
 Use independent read-only investigators for selected categories when existing delegation makes that useful. Otherwise search directly. Inherit the configured model and effort.
 
